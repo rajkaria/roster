@@ -45,18 +45,23 @@ export function maturity(repo: string, sha: string): Censor | null {
 /**
  * The session's own cost if ingest priced it, otherwise its summed tokens priced by src/price.
  * Sessions store totals, not per-request prompt sizes, so the tier uses the session's total prompt as a bound:
- * a session under 100k total is certainly short-tier, and one over it is null rather than a guessed tier.
+ * a session under 100k total is certainly short-tier; one over it is priced at the short tier and is a lower bound.
  */
-export function sessionCost(s: Session): number | null {
-  if (s.cost_usd !== null) return s.cost_usd;
+export function sessionCostDetail(s: Session): { usd: number | null; lower_bound: boolean } {
+  if (s.cost_usd !== null) return { usd: s.cost_usd, lower_bound: false };
   const promptTotal = s.tokens_in + s.cache_read + s.cache_write;
-  return priceSession(s.model, {
+  const r = priceSession(s.model, {
     input: s.tokens_in,
     output: s.tokens_out,
     cache_read: s.cache_read,
     cache_write: s.cache_write,
     prompt_tokens_bound: promptTotal,
-  }).usd;
+  });
+  return { usd: r.usd, lower_bound: r.lower_bound === true };
+}
+
+export function sessionCost(s: Session): number | null {
+  return sessionCostDetail(s).usd;
 }
 
 export function scoreSessions(repo: string, sessions: Session[]): ScoredOutcome[] {

@@ -12,7 +12,12 @@ export interface SetupRow {
   rules_hash: string | null;
   sessions: number;
   mature_sessions: number;
-  spend_usd: number;
+  /** null when any session in the setup is unpriced. */
+  spend_usd: number | null;
+  /** Absent in reviews published before T40. */
+  priced_sessions?: number;
+  /** Absent in reviews published before T40. */
+  spend_lower_bound?: boolean;
   unattended: number | null;
   survival: number | null;
   reverted: number | null;

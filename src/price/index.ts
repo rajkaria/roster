@@ -36,7 +36,7 @@ export type TokenCounts = {
   /**
    * Upper bound on any one request's prompt size, for when per-request sizes are not stored (a session's
    * total input is at least as large as any single request in it). Used only when it selects one tier;
-   * otherwise the tier is ambiguous and the price is null.
+   * otherwise the tier is unknown and the result is the short-tier price flagged as a lower bound.
    */
   prompt_tokens_bound?: number;
 };
@@ -44,6 +44,10 @@ export type TokenCounts = {
 export type PriceResult = {
   usd: number | null;
   row_id: string;
+  /** "assumed-short": the prompt size was unknown, so the base (short-context) row was used. It may understate. */
+  tier?: "assumed-short";
+  /** True with tier "assumed-short": the real cost is at least usd (the long tier costs more per token). */
+  lower_bound?: true;
 };
 
 const ROWS = rows.rows as PriceRow[];
@@ -82,15 +86,16 @@ function pickRow(
   base: string,
   promptTokens: number | undefined,
   bound: number | undefined,
-): PriceRow | "ambiguous" | undefined {
+): PriceRow | "assumed-short" | undefined {
   const candidates = ROWS.filter((r) => r.model_pattern === base);
   if (candidates.length === 0) return undefined;
   if (candidates.length === 1) return candidates[0];
   if (promptTokens === undefined) {
-    if (bound === undefined) return "ambiguous";
+    // prices.json documents no rule for an unknown prompt size, so fall back to the base (short-context) row.
+    if (bound === undefined) return "assumed-short";
     // A row is reachable when its range starts at or below the bound. Only one reachable row is certain.
     const reachable = candidates.filter((r) => r.min_prompt_tokens === undefined || r.min_prompt_tokens <= bound);
-    return reachable.length === 1 ? reachable[0] : "ambiguous";
+    return reachable.length === 1 ? reachable[0] : "assumed-short";
   }
   return candidates.find(
     (r) =>
@@ -102,9 +107,12 @@ function pickRow(
 /** Prices one token-count record for a model. Returns usd: null when the model or price is unknown. */
 export function priceSession(model: string, tokens: TokenCounts): PriceResult {
   const { base, regional } = normaliseModelId(model);
-  const row = pickRow(base, tokens.prompt_tokens, tokens.prompt_tokens_bound);
+  const picked = pickRow(base, tokens.prompt_tokens, tokens.prompt_tokens_bound);
+  if (picked === undefined) return { usd: null, row_id: "unknown" };
+  const assumed = picked === "assumed-short";
+  const row = assumed ? ROWS.find((r) => r.model_pattern === base && r.min_prompt_tokens === undefined) : picked;
   if (row === undefined) return { usd: null, row_id: "unknown" };
-  if (row === "ambiguous") return { usd: null, row_id: "unknown" };
+  const tier = assumed ? ({ tier: "assumed-short", lower_bound: true } as const) : {};
 
   const counts: [number, number | null | undefined][] = [
     [tokens.input, row.input],
@@ -116,8 +124,8 @@ export function priceSession(model: string, tokens: TokenCounts): PriceResult {
   let usd = 0;
   for (const [count, price] of counts) {
     if (count === 0) continue;
-    if (price === null || price === undefined) return { usd: null, row_id: row.id };
+    if (price === null || price === undefined) return { usd: null, row_id: row.id, ...tier };
     usd += (count * price) / 1_000_000;
   }
-  return { usd: regional ? usd * REGIONAL_PREMIUM : usd, row_id: row.id };
+  return { usd: regional ? usd * REGIONAL_PREMIUM : usd, row_id: row.id, ...tier };
 }

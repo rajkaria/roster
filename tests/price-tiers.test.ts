@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { priceSession } from "../src/price/index.ts";
-import { aggregateBySetup, outcomesReport, sessionCost, type ScoredOutcome } from "../src/score/index.ts";
+import { aggregateBySetup, outcomesReport, sessionCost, sessionCostDetail, type ScoredOutcome } from "../src/score/index.ts";
 import type { Session } from "../src/types.ts";
 
 const M = 1_000_000;
@@ -31,11 +31,12 @@ describe("Haiku 5.5 tier from a session's prompt bound", () => {
     expect(r.usd).toBeCloseTo(0.1, 10);
   });
 
-  test("a bound over 100,000 could be either tier, so the price is null", () => {
-    expect(priceSession(HAIKU, { input: M, output: 0, prompt_tokens_bound: 100_001 })).toEqual({
-      usd: null,
-      row_id: "unknown",
-    });
+  test("a bound over 100,000 could be either tier, so it is the short price flagged as a lower bound", () => {
+    const r = priceSession(HAIKU, { input: M, output: 0, prompt_tokens_bound: 100_001 });
+    expect(r.usd).toBeCloseTo(0.1, 10);
+    expect(r.row_id).toBe("claude-haiku-5-5-short");
+    expect(r.tier).toBe("assumed-short");
+    expect(r.lower_bound).toBe(true);
   });
 
   test("an exact prompt size wins over the bound", () => {
@@ -75,9 +76,12 @@ describe("sessionCost never reports a priced Haiku session as zero", () => {
     expect(sessionCost(base)).toBeGreaterThan(0);
   });
 
-  test("a Haiku session whose total prompt is over 100k is null, not $0", () => {
+  test("a Haiku session whose total prompt is over 100k is priced at the short tier as a lower bound", () => {
     const big = { ...base, cache_read: 2_000_000 };
-    expect(sessionCost(big)).toBeNull();
+    const expected = (1_000 * 0.1 + 50_000 * 0.5 + 2_000_000 * 0.01 + 5_000 * 0.125) / M;
+    expect(sessionCost(big)).toBeCloseTo(expected, 12);
+    expect(sessionCostDetail(big).lower_bound).toBe(true);
+    expect(sessionCostDetail(base).lower_bound).toBe(false);
   });
 
   test("a session's own cost wins", () => {

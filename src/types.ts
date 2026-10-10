@@ -172,8 +172,12 @@ export interface SetupRow {
   rules_hash: string | null;
   sessions: number;
   mature_sessions: number;
-  /** Σ known session cost; 0 when no session is priced. */
-  spend_usd: number;
+  /** Σ session cost; null when any session in the setup is unpriced (never 0 from nulls). */
+  spend_usd: number | null;
+  /** Sessions with a known cost. Equals `sessions` exactly when spend_usd is non-null. */
+  priced_sessions: number;
+  /** True when a priced session's prompt size was unknown, so spend_usd is priced at the short tier and is a floor. */
+  spend_lower_bound: boolean;
   unattended: number | null;
   survival: number | null;
   reverted: number | null;

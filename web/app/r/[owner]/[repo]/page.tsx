@@ -13,7 +13,18 @@ const pct = (v: number | null) => (v === null ? <span className="na">n/a</span> 
 const usd = (v: number | null) => (v === null ? <span className="na">n/a</span> : `$${v.toFixed(2)}`);
 
 function costPerSurviving(s: SetupRow) {
-  return s.surviving_changes > 0 ? s.spend_usd / s.surviving_changes : null;
+  return s.spend_usd !== null && s.surviving_changes > 0 ? s.spend_usd / s.surviving_changes : null;
+}
+
+/** An unknown spend is never shown as $0: say how many sessions are priced. A lower bound reads "≥ $x". */
+function spend(s: SetupRow) {
+  if (s.spend_usd === null) return `unknown (${s.priced_sessions ?? 0}/${s.sessions} priced)`;
+  return `${s.spend_lower_bound ? "≥ " : ""}$${s.spend_usd.toFixed(2)}`;
+}
+
+function spendPerSession(s: SetupRow) {
+  if (s.spend_usd === null) return <span className="na">n/a</span>;
+  return s.sessions > 0 ? `${s.spend_lower_bound ? "≥ " : ""}$${(s.spend_usd / s.sessions).toFixed(2)}` : <span className="na">n/a</span>;
 }
 
 export default async function ReviewPage({ params }: { params: Promise<{ owner: string; repo: string }> }) {
@@ -68,13 +79,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
                     <span className="sub">{s.harness} · {s.model}</span>
                   </td>
                   <td className="num">{s.sessions}</td>
-                  <td className="num">{usd(s.spend_usd)}</td>
-                  <td className="num">{usd(s.sessions > 0 ? s.spend_usd / s.sessions : null)}</td>
+                  <td className="num">{spend(s)}</td>
+                  <td className="num">{spendPerSession(s)}</td>
                   <td className="num">{pct(s.unattended)}</td>
                   <td className="num">{pct(s.survival)}</td>
                   <td className="num">{pct(s.reverted)}</td>
                   <td className="num">{pct(s.rework_human)}</td>
-                  <td className="num">{usd(costPerSurviving(s))}</td>
+                  <td className="num">{s.spend_lower_bound && costPerSurviving(s) !== null ? "≥ " : null}{usd(costPerSurviving(s))}</td>
                   <td><span className="badge" title="Evidence level">{s.evidence_level}</span></td>
                 </tr>
               ))}

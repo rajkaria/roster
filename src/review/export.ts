@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { inferenceAccuracy, parseTag } from "../identity/index.ts";
-import { aggregateBySetup, type ScoredOutcome, UNKNOWN_SETUP } from "../score/index.ts";
+import { aggregateBySetup, type ScoredOutcome, sessionCostDetail, UNKNOWN_SETUP } from "../score/index.ts";
 import type { EvidenceLevel, Outcome, Review, ReviewLabel, ReviewTags, Session, SetupRow } from "../types.ts";
 
 /** Keys of the Review type in src/types.ts. Kept in step by the `satisfies Review` check in tests. */
@@ -34,6 +34,8 @@ export const SETUP_ROW_KEYS = [
   "sessions",
   "mature_sessions",
   "spend_usd",
+  "priced_sessions",
+  "spend_lower_bound",
   "unattended",
   "survival",
   "reverted",
@@ -107,8 +109,15 @@ function validateSetupRow(row: unknown, at: string): string[] {
   if (isFiniteNum(row.sessions) && isFiniteNum(row.mature_sessions) && row.mature_sessions > row.sessions) {
     errs.push(`${at}.mature_sessions exceeds sessions`);
   }
-  for (const k of ["spend_usd", "surviving_changes"] as const) {
+  if (row.spend_usd !== null && !(isFiniteNum(row.spend_usd) && row.spend_usd >= 0)) {
+    errs.push(`${at}.spend_usd must be null or a number >= 0`);
+  }
+  for (const k of ["priced_sessions", "surviving_changes"] as const) {
     if (!isFiniteNum(row[k]) || row[k] < 0) errs.push(`${at}.${k} must be a number >= 0`);
+  }
+  if (typeof row.spend_lower_bound !== "boolean") errs.push(`${at}.spend_lower_bound must be a boolean`);
+  if (isFiniteNum(row.priced_sessions) && isFiniteNum(row.sessions) && row.priced_sessions > row.sessions) {
+    errs.push(`${at}.priced_sessions exceeds sessions`);
   }
   if (row.cost_per_surviving_change !== null && !(isFiniteNum(row.cost_per_surviving_change) && row.cost_per_surviving_change >= 0)) {
     errs.push(`${at}.cost_per_surviving_change must be null or a number >= 0`);
@@ -266,7 +275,11 @@ export function buildSetupRows(sessions: Session[], outcomes: Outcome[]): SetupR
         rules_hash: s.rules_hash,
         sessions: a.sessions,
         mature_sessions: a.mature,
-        spend_usd: a.cost_usd ?? 0,
+        spend_usd: a.cost_usd,
+        priced_sessions: a.priced_sessions,
+        spend_lower_bound: sessions.some(
+          (x) => x.setup_id === a.setup_id && x.cost_usd !== null && sessionCostDetail({ ...x, cost_usd: null }).lower_bound,
+        ),
         unattended: rate(a.unattended),
         survival: a.survival_mean,
         reverted: rate(a.reverted),
@@ -308,6 +321,8 @@ export interface ReviewReport {
 
 const pct = (x: number | null) => (x === null ? "—" : `${(100 * x).toFixed(1)}%`);
 const usd = (x: number) => `$${x.toFixed(2)}`;
+const spend = (r: SetupRow) =>
+  r.spend_usd === null ? `unknown (${r.priced_sessions}/${r.sessions} priced)` : `${r.spend_lower_bound ? "≥ " : ""}${usd(r.spend_usd)}`;
 
 export function renderReviewMarkdown(report: ReviewReport): string {
   const { review, note, notes } = report;
@@ -330,7 +345,7 @@ export function renderReviewMarkdown(report: ReviewReport): string {
     "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :---: |",
     ...(review.setups ?? buildSetupRows(report.sessions, report.outcomes)).map(
       (r) =>
-        `| \`${r.setup_id}\` | ${r.label} | ${r.sessions} | ${r.mature_sessions} | ${usd(r.spend_usd)} | ${young(r, pct(r.survival))} | ${young(r, pct(r.reverted))} | ${young(r, pct(r.rework_human))} | ${young(r, pct(r.unattended))} | ${r.cost_per_surviving_change === null ? "—" : usd(r.cost_per_surviving_change)} | ${r.evidence_level} |`,
+        `| \`${r.setup_id}\` | ${r.label} | ${r.sessions} | ${r.mature_sessions} | ${spend(r)} | ${young(r, pct(r.survival))} | ${young(r, pct(r.reverted))} | ${young(r, pct(r.rework_human))} | ${young(r, pct(r.unattended))} | ${r.cost_per_surviving_change === null ? "—" : usd(r.cost_per_surviving_change)} | ${r.evidence_level} |`,
     ),
     ...(review.tags
       ? [
