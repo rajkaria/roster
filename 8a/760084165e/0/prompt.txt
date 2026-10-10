@@ -1,0 +1,30 @@
+[roster setup=A task=T53]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T53 · W2 · Make a review of a large repo fast
+GOAL: `roster review --observational` takes about 15 minutes on a public repo with 127 sessions (teslamint/entirecontext). The
+paste-a-repo page needs a 150-session review in under 2 minutes.
+READ: src/cli/review.ts (stage order), src/score/survival.ts, src/score/revert.ts, src/score/rework.ts, src/difficulty/index.ts,
+src/difficulty/graph.ts, src/ingest/parse.ts.
+OWNS: src/cli/review.ts (timing output only), src/score/survival.ts, src/score/revert.ts, src/score/rework.ts, src/difficulty/graph.ts,
+src/difficulty/index.ts, tests/review-perf.test.ts
+BUILD: (1) Print per-stage wall time (fetch, parse, identify, score, difficulty, export) at the end of a review. (2) git blame runs at
+most once per (file, HEAD) for the whole review and is shared across sessions; reverts and rework use a single `git log --numstat`
+pass over the window instead of a git call per session. (3) Difficulty: `entire graph` calls are bounded (concurrency 4, timeout 10 s
+each, at most one call per touched file per review, results cached); on timeout use the fallback and record it. (4) Up to 8 git
+processes run in parallel where independent. Outputs must be identical to before.
+ACCEPTANCE: tests on the T01 fixture assert identical review output before and after, and (by counting spawned git commands through
+an injectable runner) that blame runs once per file per HEAD. Whole suite green, typecheck clean.
+TEST: bun test tests/review-perf.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
