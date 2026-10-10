@@ -131,6 +131,8 @@ export interface Replay {
   trace_url: string | null;
   /** Why the run failed before or inside the harness (environment error or harness error kind); null when it did not. */
   error?: string | null;
+  /** The turn cap this run was given. */
+  turn_cap?: number | null;
 }
 
 export type GateVerdict = "promote" | "reject";

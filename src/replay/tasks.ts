@@ -19,6 +19,8 @@ export interface ReplayTask {
   originalSha: string;
   hiddenTests: { path: string; content: string }[];
   userPrompts: number;
+  /** Assistant turns in the original session's transcript; null when the transcript is not available. */
+  originalTurns: number | null;
   tercile: 1 | 2 | 3 | null;
   track: "tests" | "judge-only" | "none";
   reason: string;
@@ -52,6 +54,29 @@ interface Link {
   sha: string;
   time: number;
   importStrategy: boolean;
+  /** Assistant turns in this link's session transcript, read on demand; null when unreadable. */
+  turns: () => number | null;
+}
+
+/** Assistant turns in a Claude Code transcript: distinct assistant messages (one message can span several rows). */
+export function countAssistantTurns(text: string | null): number | null {
+  if (!text) return null;
+  const ids = new Set<string>();
+  let anon = 0;
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    let r: any;
+    try {
+      r = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (r?.type !== "assistant" || !r.message) continue;
+    if (typeof r.message.id === "string" && r.message.id) ids.add(r.message.id);
+    else anon++;
+  }
+  const n = ids.size + anon;
+  return n > 0 ? n : null;
 }
 
 /** Session id → commits whose checkpoint trailer names a checkpoint holding that session. */
@@ -87,6 +112,7 @@ function linkIndex(repo: string): Map<string, Link[]> {
           sha,
           time: Number(ct),
           importStrategy: root.strategy === "import",
+          turns: () => countAssistantTurns(tryGit(repo, ["show", `${ref}:${dir}/${i}/full.jsonl`])),
         });
       }
     }
@@ -114,7 +140,7 @@ export function planReplayTasks(
     for (const x of mine) {
       if (x.commit_sha && !found.has(x.commit_sha)) {
         const t = tryGit(repo, ["show", "-s", "--format=%ct", x.commit_sha]);
-        if (t !== null) found.set(x.commit_sha, { sha: x.commit_sha, time: Number(t), importStrategy: false });
+        if (t !== null) found.set(x.commit_sha, { sha: x.commit_sha, time: Number(t), importStrategy: false, turns: () => null });
       }
     }
     const commits = [...found.values()].sort((a, b) => a.time - b.time || a.sha.localeCompare(b.sha));
@@ -139,6 +165,9 @@ export function planReplayTasks(
     else if (tests.length === 0) [track, reason] = ["judge-only", "no hidden tests in the original change"];
     else [track, reason] = ["tests", `${tests.length} hidden test file(s)`];
 
+    const turnCounts = (links.get(s.id) ?? []).map((l) => l.turns()).filter((n): n is number => n !== null);
+    const originalTurns = turnCounts.length ? Math.max(...turnCounts) : null;
+
     const { tag, prompt } = stripTag(s.first_prompt);
     tasks.push({
       id: s.id,
@@ -150,6 +179,7 @@ export function planReplayTasks(
       originalSha: latest.sha,
       hiddenTests: tests,
       userPrompts,
+      originalTurns,
       tercile: tercile.get(s.id) ?? null,
       track,
       reason,
