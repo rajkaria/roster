@@ -1,0 +1,28 @@
+[roster setup=D task=T24]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T24 · W5 · Acceptance-writer agent (DeepSeek)
+GOAL: Write acceptance tests for each forward task from its text alone, before any setup runs it.
+READ: docs/DESIGN.md §"Forward run" (acceptance tests written blind), §"Models Roster itself uses". Uses src/llm (T21).
+OWNS: src/forward/acceptance.ts, src/cli/acceptance.ts, tests/acceptance.test.ts
+BUILD: `roster acceptance --backlog <file> --out experiments/acceptance/`: for each task block, call src/llm (DeepSeek, model from
+ROSTER_ACCEPTANCE_MODEL default "deepseek-v4-pro") with only the task text and the current exported signatures (src/types.ts plus
+the INTERFACE line), asking for one bun:test file that imports the interface from its stated path; write it to
+experiments/acceptance/<Fxx>/acceptance.test.ts; reject outputs that contain implementation of the interface (heuristic: defines a
+function with the interface's name) and retry once; record model, cost and sha256 of each file in experiments/acceptance/INDEX.json.
+Refuses to overwrite existing acceptance files (frozen once written).
+ACCEPTANCE: with the fake LLM client, produces files + INDEX.json for a 3-task backlog; second run changes nothing; an output that
+implements the function is rejected and retried.
+TEST: bun test tests/acceptance.test.ts
+DO NOT TOUCH: anything outside OWNS.
