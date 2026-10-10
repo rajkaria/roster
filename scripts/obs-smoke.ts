@@ -19,7 +19,10 @@ await withSpan("WORKFLOW", "review", { repo: "roster" }, async (root) => {
   });
 });
 
-await flushObs();
+if (!(await flushObs())) {
+  console.error(`review ${reviewId} was NOT confirmed sent: the SDK reported the export failed (see the warning above).`);
+  process.exit(1);
+}
 console.log(`review ${reviewId} sent as one trace`);
 console.log(`trace id: ${traceId ?? "(SDK did not expose a trace id)"}`);
 console.log("trace url: not printed; neatlogs 1.1.28 exposes no trace URL, so find this trace id in the neatlogs dashboard");

@@ -3,7 +3,7 @@
 // Without NEATLOGS_API_KEY every call is a no-op and the wrapped work still runs.
 import type { TraceOptions } from "neatlogs";
 import { EvidenceLevel, FailureCode } from "../types.ts";
-import { type SpanAttrs, type SpanKind, toAttributes } from "./attributes.ts";
+import { type SpanAttrs, type SpanKind, capAttr, toAttributes } from "./attributes.ts";
 
 export type { SpanAttrs, SpanKind } from "./attributes.ts";
 
@@ -25,6 +25,26 @@ let sdk: NeatlogsModule | null = null;
 let wrapOpenAI: WrapOpenAI | null = null;
 let sessionId: string | undefined;
 let warned = false;
+let initPromise: Promise<boolean> | null = null;
+let pendingSpans = 0;
+let sentSpans = 0;
+let failedSpans = 0;
+
+/** Test hook: runs on `mod` as if initObs had started it (bun's mock.module cannot swap an SDK another file already loaded). */
+export function _useSdkForTests(mod: unknown): void {
+  sdk = mod as NeatlogsModule;
+  initPromise = Promise.resolve(true);
+}
+
+/** Test hook: forgets the running SDK so a test can start from a clean process state. */
+export function _resetObsForTests(): void {
+  sdk = null;
+  wrapOpenAI = null;
+  sessionId = undefined;
+  warned = false;
+  initPromise = null;
+  pendingSpans = sentSpans = failedSpans = 0;
+}
 
 function warnOnce(msg: string): void {
   if (warned) return;
@@ -36,7 +56,20 @@ function warnOnce(msg: string): void {
  * Starts neatlogs for this process. Resolves to true when tracing is live.
  * With NEATLOGS_API_KEY unset (or the SDK not installed) it resolves to false and warns once.
  */
-export async function initObs(opts: { workflowName: string }): Promise<boolean> {
+export function initObs(opts: { workflowName: string }): Promise<boolean> {
+  // One SDK init per process: later calls (any workflow name) reuse it; callers open their own root span.
+  if (!initPromise) {
+    const attempt = startSdk(opts);
+    initPromise = attempt;
+    // A failed start is not cached: a key set later may still start tracing.
+    void attempt.then((ok) => {
+      if (!ok && initPromise === attempt) initPromise = null;
+    });
+  }
+  return initPromise;
+}
+
+async function startSdk(opts: { workflowName: string }): Promise<boolean> {
   const apiKey = process.env.NEATLOGS_API_KEY;
   if (!apiKey) {
     warnOnce("NEATLOGS_API_KEY is not set");
@@ -87,6 +120,7 @@ export async function withSpan<T>(
   // The SDK groups a review's traces by session on the WORKFLOW root; every span also carries it as an attribute.
   const options: TraceOptions = { name, kind };
   if (kind === "WORKFLOW" && sessionId !== undefined) options.sessionId = sessionId;
+  pendingSpans += 1;
   return client.trace(options, async (span) => {
     for (const [key, value] of Object.entries(toAttributes(attrs))) span.setAttribute(key, value);
     if (sessionId !== undefined) span.setAttribute("session.id", sessionId);
@@ -99,7 +133,7 @@ function toObsSpan(span: NeatlogsSpan): ObsSpan {
   // A bare `traceId` field is honored too, for span stand-ins that carry one directly.
   const direct = (span as { traceId?: string }).traceId;
   return {
-    setAttribute: (key, value) => void span.setAttribute(key, value),
+    setAttribute: (key, value) => void span.setAttribute(key, capAttr(value)),
     traceId: direct ?? span.spanContext?.().traceId,
   };
 }
@@ -132,7 +166,11 @@ export interface FlushOptions {
  * Runs `flush` until it succeeds, each attempt bounded by a timeout. A throw, a timeout or a `false` result is a
  * failed attempt. When every attempt fails it logs one line and resolves to false; it never throws.
  */
-export async function flushWithRetry(flush: () => Promise<unknown>, opts: FlushOptions = {}): Promise<boolean> {
+export function flushWithRetry(flush: () => Promise<unknown>, opts: FlushOptions = {}): Promise<boolean> {
+  return flushCounted(flush, opts, 0);
+}
+
+async function flushCounted(flush: () => Promise<unknown>, opts: FlushOptions, batch: number): Promise<boolean> {
   const timeoutMs = opts.timeoutMs ?? FLUSH_TIMEOUT_MS;
   const attempts = 1 + (opts.retries ?? 1);
   let reason = "";
@@ -145,14 +183,22 @@ export async function flushWithRetry(flush: () => Promise<unknown>, opts: FlushO
       const r = await Promise.race([Promise.resolve().then(flush), timeout]);
       if (r === "timeout") reason = `timed out after ${timeoutMs / 1000} s`;
       else if (r === false) reason = "the SDK reported a failed export";
-      else return true;
+      else {
+        sentSpans += batch;
+        pendingSpans -= batch;
+        return true;
+      }
     } catch (err) {
       reason = err instanceof Error ? err.message : String(err);
     } finally {
       clearTimeout(timer);
     }
   }
-  (opts.log ?? console.warn)(`[roster] neatlogs flush failed after ${attempts} attempts (${reason}); traces may be incomplete`);
+  failedSpans += batch;
+  pendingSpans -= batch;
+  (opts.log ?? console.warn)(
+    `[roster] neatlogs flush failed after ${attempts} attempts (${reason}); ${sentSpans} spans sent, ${failedSpans} failed; traces may be incomplete`,
+  );
   return false;
 }
 
@@ -165,8 +211,10 @@ export async function flushObs(opts: FlushOptions = {}): Promise<boolean> {
   const client = sdk;
   const timeoutMs = opts.timeoutMs ?? FLUSH_TIMEOUT_MS;
   // flushAll takes our timeout; SDK builds (and test stand-ins) without it fall back to flush().
-  return flushWithRetry(
+  // The SDK batches internally and reports no per-span result, so counts are spans opened since the last flush.
+  return flushCounted(
     () => (typeof client.flushAll === "function" ? client.flushAll(timeoutMs) : client.flush()),
     { ...opts, timeoutMs },
+    pendingSpans,
   );
 }
