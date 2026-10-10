@@ -1,0 +1,31 @@
+[roster setup=A task=T01]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T01 · W1 · Shared types and a real-format fixture repo builder
+GOAL: Create the shared contracts every module uses, plus a script that builds a small test git repo whose
+`entire/checkpoints/v1` branch has the exact layout of real Entire checkpoints.
+READ: docs/DESIGN.md §"Data model", §"Entire checkpoint format" (the layout comes from the spike notes copied there).
+OWNS: src/types.ts, tests/fixtures/make-fixture.ts, tests/fixtures/samples/ (redacted real samples), tests/types.test.ts
+BUILD:
+- src/types.ts: Session, Setup, Outcome, Plan, Replay, GateDecision, ForwardPair, Review (fields per DESIGN.md data model),
+  plus enums FailureCode (F1..F7) and EvidenceLevel ('A'|'B'|'C').
+- tests/fixtures/make-fixture.ts <outDir> [--scenario basic|confound|revert|multisession]: creates a git repo with
+  ~12 commits made by 3 fake setups (different model + rules file), each agent commit carrying an `Entire-Checkpoint:`
+  trailer and a matching checkpoint on the branch, using the real file layout and keys from tests/fixtures/samples/.
+  Include: one reverted commit, one human commit (no trailer) that reworks agent lines, one checkpoint with two sessions.
+  Scenario `confound`: setup X gets only the large changes. Deterministic (fixed dates, fixed author).
+ACCEPTANCE: `bun tests/fixtures/make-fixture.ts /tmp/fx --scenario basic` creates the repo; tests/types.test.ts asserts the
+branch layout matches samples (same file names and top-level JSON keys) and that 12 commits / 4 trailers / 1 revert exist.
+TEST: bun test tests/types.test.ts
+DO NOT TOUCH: anything outside OWNS.
