@@ -1,0 +1,27 @@
+[roster setup=B task=T44]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T44 · W3 · Hidden tests at the commit the change was merged, not after later features changed them
+GOAL: A replay of T12 failed its hidden tests because the test file was taken at the maturity commit, after later tasks (T27/T28)
+changed it for a feature T12 never had. Hidden tests should be the version the team accepted when the change landed.
+READ: src/grade/hidden.ts (hiddenTests, hiddenTestsForCommits and the maturity rule), src/replay/tasks.ts, docs/DESIGN.md §"Grade".
+OWNS: src/grade/hidden.ts, tests/hidden-version.test.ts
+BUILD: Hidden test content = the file at the session's latest linked commit (or at the merge commit that brought it into the main line,
+when there is one), not at maturity. Maturity stays a scoring rule (survival/revert need age) and doesn't decide test content. Keep
+hiddenTests' existing signature for callers.
+ACCEPTANCE: a repo where a session adds tests/x.test.ts and a later unrelated commit edits that file: the task's hidden test content is
+the session's version. Existing tests updated only where they encode the old maturity rule (this task may modify those assertions in
+tests/hidden-range.test.ts; say which).
+TEST: bun test tests/hidden-version.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS (plus the allowed assertions in tests/hidden-range.test.ts).
