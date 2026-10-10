@@ -7,7 +7,7 @@ SETUP="$1"; TASK="$2"; MSG="$3"
 ROOT="$(git rev-parse --show-toplevel)"
 WT="${ROSTER_WT:-/Users/Shared/roster-wt}/$TASK"
 LOG="$ROOT/.roster/runs/$TASK.$SETUP"
-sid="$(grep -ho '"session_id":"[^"]*"' "$LOG".jsonl "$LOG".resume.jsonl 2>/dev/null | tail -n 1 | cut -d'"' -f4)"
+sid="$(cat "$LOG".jsonl "$LOG".resume.jsonl 2>/dev/null | grep -o '"session_id":"[^"]*"' | tail -n 1 | cut -d'"' -f4 || true)"
 [ -n "$sid" ] || { echo "resume-task: no session id for $TASK" >&2; exit 2; }
 CFG="$ROOT/setups/$SETUP.json"; [ -f "$CFG" ] || CFG="$ROOT/setups/candidates/$SETUP.json"
 model="$(jq -r .model "$CFG")"
