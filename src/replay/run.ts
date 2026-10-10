@@ -14,9 +14,13 @@ import type { HarnessResult } from "../harness/types.ts";
 import { grade, isTestFile, type GradeResult } from "../grade/index.ts";
 import { classify, parseTranscript, type Transcript } from "../grade/taxonomy.ts";
 import { createSandbox, destroySandbox, proveIsolation, runGit, type IsolationProof } from "../sandbox/index.ts";
-import type { RunnableSetup } from "../setups/registry.ts";
+import { identify } from "../identity/index.ts";
+import { fetchCheckpoints } from "../ingest/fetch.ts";
+import { parseCheckpoints } from "../ingest/parse.ts";
+import { loadSetups, type RunnableSetup } from "../setups/registry.ts";
 import { FailureCode, type Replay, type ReplayVerdict } from "../types.ts";
-import type { ReplayTask } from "./tasks.ts";
+import type { ReplayBatch, ToolBackend } from "../agent/tools.ts";
+import { planReplayTasks, type ReplayTask } from "./tasks.ts";
 
 export interface SkippedRun {
   task: string;
@@ -267,6 +271,54 @@ async function runOne(
   } finally {
     if (sandboxPath && !o.keepSandboxes) await destroySandbox(sandboxPath);
   }
+}
+
+export interface ReplayRunnerDeps {
+  /** The repo under review (git URL or local path), as given to `roster run`. */
+  repo?: string;
+  cacheDir: string;
+  /** Where setups/ lives. Default: the working directory. */
+  setupsRoot?: string;
+  env?: Record<string, string | undefined>;
+  workRoot?: string;
+  parallel?: number;
+  harness?: typeof runClaude;
+  testCmd?: string;
+}
+
+/** The coordinator's `runReplays` dependency: resolves task and setup ids, then runs them. */
+export function replayRunner(deps: ReplayRunnerDeps): ToolBackend["runReplays"] {
+  return async ({ plan_id, tasks: taskIds, setups: setupIds, max_cost_usd }) => {
+    if (!deps.repo) throw new Error("no repo configured for replays");
+    const f = await fetchCheckpoints(deps.repo, { cacheDir: deps.cacheDir });
+    if (f.backend === "none") throw new Error("no Entire checkpoints found in this repo");
+    const sessions = parseCheckpoints(f.repoPath, f.backend === "refs" ? "git-refs" : "branch").map((s) => ({
+      ...s,
+      setup_id: identify(s, f.repoPath).setupId,
+    }));
+    const planned = new Map(planReplayTasks(f.repoPath, sessions, []).tasks.map((t) => [t.id, t]));
+    const missingTasks = taskIds.filter((t) => !planned.has(t));
+    if (missingTasks.length) throw new Error(`no replayable task for session(s) ${missingTasks.join(", ")}`);
+    const known = new Map(loadSetups(deps.setupsRoot ?? process.cwd(), deps.env ?? process.env).map((s) => [s.id, s]));
+    const missingSetups = setupIds.filter((s) => !known.has(s));
+    if (missingSetups.length) throw new Error(`unknown setup(s) ${missingSetups.join(", ")}`);
+
+    const skipped: SkippedRun[] = [];
+    const replays = await runReplays({
+      repo: f.repoPath,
+      tasks: taskIds.map((t) => planned.get(t)!),
+      setups: setupIds.map((s) => known.get(s)!),
+      workRoot: deps.workRoot ?? defaultWorkRoot(),
+      parallel: deps.parallel,
+      maxCostUsd: max_cost_usd,
+      harness: deps.harness,
+      testCmd: deps.testCmd,
+      planId: plan_id,
+      onSkip: (s) => skipped.push(s),
+    });
+    const cost_usd = replays.reduce((s, r) => s + (r.cost_usd ?? 0), 0);
+    return { replays, cost_usd, skipped } as ReplayBatch;
+  };
 }
 
 export async function runReplays(opts: RunReplaysOptions): Promise<Replay[]> {

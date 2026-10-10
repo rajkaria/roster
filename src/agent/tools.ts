@@ -12,6 +12,7 @@ import { reviewSlug, summarizeSetups } from "../review/export.ts";
 import { FailureCode, type GateDecision, type Outcome, type Replay, type Review, type Session } from "../types.ts";
 import type { ToolCall, ToolSpec } from "../llm/types.ts";
 import { checkPlan, type PlanRevision } from "./plan.ts";
+import { replayRunner, type ReplayRunnerDeps } from "../replay/run.ts";
 
 /** A gate decision as the coordinator records it: every rejection names its failed tasks. */
 export interface Decision extends GateDecision {
@@ -429,11 +430,13 @@ export async function executeToolCall(
 export interface DefaultBackendOptions {
   cacheDir?: string;
   reportsDir?: string;
+  /** What `run_replays` needs: the repo under review, plus optional overrides (setups root, work root, harness). */
+  replay?: Omit<ReplayRunnerDeps, "cacheDir">;
 }
 
 /**
  * The backend over the modules that exist today: ingest (fetch → parse → identify) and the observational
- * review in reports/<slug>/. Replay, gate, promote and revert are not built yet and report so.
+ * review in reports/<slug>/, and run_replays over src/replay/run.ts. The rest are not wired yet and report so.
  */
 export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
   const cacheDir = resolve(opts.cacheDir ?? ".roster/cache");
@@ -465,7 +468,7 @@ export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
       return { review, setups: summarizeSetups(sessions, outcomes) };
     },
     sampleTasks: missing("stratified task sampling (src/difficulty is not built); name the tasks explicitly"),
-    runReplays: missing("run_replays (src/replay is not built)"),
+    runReplays: replayRunner({ cacheDir, ...opts.replay }),
     getReplayResults: missing("get_replay_results (src/replay is not built)"),
     rerun: missing("rerun (src/replay is not built)"),
     classifyFailures: missing("classify_failures (src/grade has no taxonomy classifier yet)"),
