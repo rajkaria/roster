@@ -112,7 +112,7 @@ fi
 
 started="$(date +%s)"
 set +e
-(cd "$WT" && env "${SCRUB[@]}" CLAUDE_CONFIG_DIR="$CONFIG_DIR" "${PROVIDER_ENV[@]}" "${cmd[@]}") </dev/null >"$LOG" 2>"$ERR"
+(cd "$WT" && env "${SCRUB[@]}" CLAUDE_CONFIG_DIR="$CONFIG_DIR" ${PROVIDER_ENV[@]+"${PROVIDER_ENV[@]}"} "${cmd[@]}") </dev/null >"$LOG" 2>"$ERR"
 code=$?
 set -e
 secs=$(( $(date +%s) - started ))

@@ -17,6 +17,6 @@ done
 fail=0
 for i in "${!pids[@]}"; do
   if wait "${pids[$i]}"; then :; else fail=1; fi
-  echo "${names[$i]}: $(head -n 1 "$ROOT/.roster/runs/${names[$i]}.wave")"
+  echo "${names[$i]}: $(grep '^run-setup: .* exit=' "$ROOT/.roster/runs/${names[$i]}.wave" | tail -n 1)"
 done
 exit "$fail"
