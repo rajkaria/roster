@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "8bd176d9fac8",
+  "strategy": "manual-commit",
+  "branch": "task/T19",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/gate/index.ts",
+    "tests/gate.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/8b/d176d9fac8/0/metadata.json",
+      "transcript": "/8b/d176d9fac8/0/full.jsonl",
+      "compact_transcript": "/8b/d176d9fac8/0/transcript.jsonl",
+      "content_hash": "/8b/d176d9fac8/0/content_hash.txt",
+      "prompt": "/8b/d176d9fac8/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 20,
+    "cache_creation_tokens": 26918,
+    "cache_read_tokens": 291006,
+    "output_tokens": 12167,
+    "api_call_count": 10
+  }
+}
