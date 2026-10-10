@@ -84,7 +84,7 @@ case "$harness" in
     args=(-p "$PROMPT" --model "$model" --output-format stream-json --verbose
           --max-turns 150 --permission-mode acceptEdits
           --allowedTools "$allowed" --disallowedTools "$denied"
-          --setting-sources project --strict-mcp-config)
+          --setting-sources project,local --strict-mcp-config)
     cmd=(claude "${args[@]}")
     ;;
   codex)
@@ -106,7 +106,8 @@ if [ ! -d "$WT" ]; then
 fi
 # Extra rules (setup D) go in CLAUDE.local.md: Claude Code loads it as project memory and the
 # session transcript records it, so the setup is identifiable from the recording alone.
-# (Pre-registration amendment 3. CLAUDE.local.md is gitignored, so it never lands in a commit.)
+# Needs the "local" setting source: under --setting-sources project alone it is silently skipped.
+# (Pre-registration amendments 3 and 4. CLAUDE.local.md is gitignored, so it never lands in a commit.)
 if [ -n "$append" ]; then
   { cat "$ROOT/$append"; } > "$WT/CLAUDE.local.md"
 else

@@ -87,3 +87,14 @@ This was decided before any review ran.
 - **The earlier D sessions:** T06, T09 and T11 keep their prompt tags as ground truth.
 - **Integration tasks** found during the build are numbered T27 and up. Their setups come from a second seeded shuffle (seed `20261011`, a balanced pool of 16), taken in order:
   `T27=B T28=D T29=D T30=C T31=C T32=A T33=B T34=B T35=A T36=C T37=A T38=A T39=C T40=D T41=B T42=D`.
+
+### Amendment 4: 2026-10-10 21:05 IST, protocol deviation, T18 and T28 ran without setup D's strict rules
+Under amendment 3, D's rules were written to `CLAUDE.local.md`. Sessions ran with `--setting-sources project`, which silently skips `CLAUDE.local.md`. We confirmed this with a one-question probe: the file loads only with `project,local`.
+- **Affected:** T18 and T28 (assigned D) ran with the default rules only. That's B's configuration on D's model.
+- **Unaffected:** T06, T09 and T11 got the strict rules through the appended system prompt.
+- **How T18 and T28 are analysed:**
+  - excluded from every D comparison
+  - reported in a sensitivity analysis as B-configured sessions
+  - their tags stay as recorded
+- **The fix:** sessions now run with `--setting-sources project,local`. No other session is affected.
+- **Who found it:** Roster's own setup inference, which kept merging B and D into one setup.
