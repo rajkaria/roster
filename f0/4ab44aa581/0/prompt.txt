@@ -1,0 +1,27 @@
+[roster setup=D task=T11]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T11 · W3 · Grader: hidden acceptance, suite, scope guard
+GOAL: Grade a finished replay objectively against what the team eventually accepted.
+READ: docs/DESIGN.md §"Grade".
+OWNS: src/grade/index.ts, src/grade/hidden.ts, src/grade/scope.ts, tests/grade.test.ts
+BUILD: hiddenTests(repo, originalSha) → test files the original change added/modified, taken at the commit where those lines matured
+(≥ 5 commits later, or HEAD). grade({sandbox, hidden, testCmd, preexistingTests}) → {hiddenPass, suitePass, scopeOk,
+violations[], perTest[]}. Grades in a SEPARATE fresh copy (base + agent.patch + hidden tests), never in the agent's workspace;
+synthesises a failing case for any hidden file that collects 0 tests (bun's JUnit reporter silently drops import failures); detects modification of pre-existing tests and
+edits outside the touched-directories set. testCmd auto-detected (bun/npm/pnpm/pytest/go test) with override.
+ACCEPTANCE: fixture: a correct replay → all true; a replay that edits an existing test → scopeOk=false, violation F1; a replay that
+breaks the suite → suitePass=false.
+TEST: bun test tests/grade.test.ts
+DO NOT TOUCH: anything outside OWNS.
