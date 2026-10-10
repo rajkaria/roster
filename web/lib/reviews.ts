@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Review, SetupRow } from "./types";
+import type { Review, ReviewLabel, SetupRow } from "./types";
 
 const DATA = join(process.cwd(), "public", "data");
 
@@ -69,4 +69,50 @@ export function listParams(): { owner: string; repo: string }[] {
     }
   }
   return out;
+}
+
+/** One row of the /r index. Totals are summed over setups; sessions and mature_sessions are counts. */
+export interface ReviewSummary {
+  owner: string;
+  repo: string;
+  href: string;
+  sessions: number;
+  mature_sessions: number;
+  setups: number;
+  label: ReviewLabel;
+  generated_at: string;
+}
+
+/**
+ * Every review under dataDir (default public/data) except the `_sample` layout dir, sorted by sessions
+ * descending, then repo name. Dirs that hold no readable review are skipped.
+ */
+export function listReviews(dataDir: string = DATA): ReviewSummary[] {
+  if (!existsSync(dataDir)) return [];
+  const out: ReviewSummary[] = [];
+  for (const d of readdirSync(dataDir, { withFileTypes: true })) {
+    if (!d.isDirectory() || d.name === "_sample") continue;
+    const file = join(dataDir, d.name, "review.json");
+    if (!existsSync(file)) continue;
+    let r: Review | null = null;
+    try {
+      r = normalize(JSON.parse(readFileSync(file, "utf8")));
+    } catch {
+      r = null;
+    }
+    if (!r) continue;
+    const [owner, repo] = r.repo.split("/");
+    if (!owner || !repo) continue;
+    out.push({
+      owner,
+      repo,
+      href: `/r/${owner}/${repo}`,
+      sessions: r.setups.reduce((n, s) => n + s.sessions, 0),
+      mature_sessions: r.setups.reduce((n, s) => n + s.mature_sessions, 0),
+      setups: r.setups.length,
+      label: r.label,
+      generated_at: r.generated_at,
+    });
+  }
+  return out.sort((a, b) => b.sessions - a.sessions || `${a.owner}/${a.repo}`.localeCompare(`${b.owner}/${b.repo}`));
 }
