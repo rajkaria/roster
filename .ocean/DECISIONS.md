@@ -45,3 +45,4 @@ doors get the full block.
 - **Where they went:** both moved to SP5, through integration task T27 and corpus task T26.
 - **Plan change:** acceptance moved; scope did not.
 - 2026-10-10 21:15 IST · Reviews of any repo go to `reports/<owner>__<repo>/`, including this one (`reports/rajkaria__roster/`). `reports/self/` holds only the experiment's own files: the task ledger, the forward run and the pre-registration hash. Two-way door.
+- 2026-10-11 01:54 IST · T54 (D) also edited src/harness/types.ts, which wasn't in its OWNS, to add the errorKind variant. Merged; noted as a scope deviation (F7-type) for the record.
