@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "ce119aff0a85",
+  "session_id": "54b90f3b-9575-4229-8f9e-e5a7e17ac99d",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T19:18:11.928452Z",
+  "branch": "task/T48",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/agent/backend.ts",
+    "src/agent/tools.ts",
+    "src/cli/run.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-haiku-5-5",
+  "turn_id": "c959e63171d7",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 108,
+    "cache_creation_tokens": 205716,
+    "cache_read_tokens": 7842180,
+    "output_tokens": 115815,
+    "api_call_count": 54
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T19:18:11.887212Z",
+    "agent_lines": 52,
+    "agent_removed": 69,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 52,
+    "total_lines_changed": 121,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 385,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "src/agent/backend.ts": 385
+      }
+    }
+  ]
+}
