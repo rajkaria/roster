@@ -1,0 +1,37 @@
+[roster setup=C task=T30]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T30 · W1 · Fix pricing that reports $0 for Haiku 5.5 sessions
+GOAL: Every session with known tokens on a priced model gets a non-zero cost; an unknown price is null and shown as unknown,
+never as $0.
+READ: src/price/index.ts, src/price/prices.json, src/score/index.ts (aggregateBySetup), reports/self/review.json (Haiku spend 0
+for 5 sessions with tokens).
+OWNS: src/price/index.ts, src/score/index.ts, tests/price-tiers.test.ts
+BUILD: Find why claude-haiku-5-5 sessions price to 0 (tier selection for rows with max/min_prompt_tokens, or null cost summed as 0).
+Fix it. Tier selection uses the per-request prompt size when available and otherwise the documented rule in prices.json; aggregate
+spend is null when any session in the setup has an unknown cost, plus a `priced_sessions` count.
+ACCEPTANCE: tests: Haiku tokens on both sides of the tier boundary price to the right row; a setup with one null-cost session gets
+spend null and priced_sessions n-1; existing price and score tests still pass.
+TEST: bun test tests/price-tiers.test.ts tests/price.test.ts tests/score-outcomes.test.ts
+DO NOT TOUCH: anything outside OWNS. Don't edit prices.json rows.
+
+---
+
+<task-notification>
+<task-id>byrrw0xgn</task-id>
+<tool-use-id>toolu_018kHve7skPUXrMSbP1ipxsG</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T30/4adf5036-1dff-4ce2-b42f-0bc68f404797/tasks/byrrw0xgn.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full test suite and typecheck" completed (exit code 0)</summary>
+</task-notification>
