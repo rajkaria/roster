@@ -1,15 +1,27 @@
+import { join } from "node:path";
+import type { Metadata } from "next";
+import { loadReview } from "@/lib/reviews";
+import { SELF_OWNER, SELF_REPO, forwardStarted } from "@/components/LandingData";
+import { Hero, OwnReview, HowItWorks, Experiment, BuiltWith } from "@/components/LandingSections";
+
+const TITLE = "Roster: performance reviews for your AI coding agents";
+const DESCRIPTION =
+  "Roster finds the agent setup that is quietly making your codebase worse, tests a better one on your own past tasks, and ships it only if nothing regresses.";
+
+export const metadata: Metadata = {
+  openGraph: { title: TITLE, description: DESCRIPTION, type: "website" },
+};
+
 export default function Home() {
+  const review = loadReview(SELF_OWNER, SELF_REPO);
+  const started = forwardStarted(join(process.cwd(), "public", "data"));
   return (
     <>
-      <h1>Roster is an agent that runs performance reviews for a team&apos;s AI coding agents.</h1>
-      <p className="lede">
-        It reads every session your coding agents recorded with Entire and works out what each
-        session cost, and whether its change survived, was reverted, or was reworked by a human.
-      </p>
-      {/* TODO: link target is a placeholder until our own review is published. */}
-      <p>
-        <a href="/r/_sample/_sample">See an example review (sample data) →</a>
-      </p>
+      <Hero />
+      <OwnReview review={review} />
+      <HowItWorks />
+      <Experiment started={started} />
+      <BuiltWith />
     </>
   );
 }

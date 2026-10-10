@@ -4,10 +4,18 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { forwardStarted, landingRows, landingTotals } from "../web/components/LandingData.tsx";
 import type { Review } from "../web/lib/types.ts";
 
 const ROOT = join(import.meta.dir, "..");
+
+// The root tsconfig has no jsx setting, so it cannot resolve a .tsx import statically. Bun loads it at runtime.
+interface LandingRow { setup_id: string; label: string; sessions: number; spend: string; unattended: string }
+const HELPER = join(ROOT, "web", "components", "LandingData.tsx");
+const { forwardStarted, landingRows, landingTotals }: {
+  forwardStarted: (dataDir: string) => boolean;
+  landingRows: (review: Review) => LandingRow[];
+  landingTotals: (review: Review) => { sessions: number; spend: string };
+} = await import(HELPER);
 const REAL = join(ROOT, "reports", "rajkaria__roster", "review.json");
 const load = (): Review => JSON.parse(readFileSync(REAL, "utf8"));
 
