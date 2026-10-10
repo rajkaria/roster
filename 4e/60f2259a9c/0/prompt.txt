@@ -1,0 +1,30 @@
+[roster setup=D task=T50]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T50 · W4 · Map review setup ids to runnable setups; show the coordinator its candidates
+GOAL: In a coordinator dry run on this repo, run_replays answered "unknown setup(s)" for every id: the review's setup ids are hashes
+(e.g. 6a200cd990a7), while the runner only knows setups/A–D and candidates E/F. The coordinator was also never told that the candidates
+are E and F (pre-registration amendment 2: every candidate runs Claude Code on DeepSeek).
+READ: src/agent/backend.ts, src/agent/tools.ts (plan_replays, run_replays, get_scorecard), src/setups/registry.ts, src/identity/index.ts,
+reports/rajkaria__roster/review.json (`tags` block: setup tag → inferred ids), experiments/PREREGISTRATION.md amendment 2.
+OWNS: src/agent/backend.ts, src/agent/tools.ts (only the tool descriptions and the id resolution path), tests/backend-setups.test.ts,
+and any assertion in tests/agent-backend.test.ts that encodes the old id handling (you may modify those; say which)
+BUILD: resolveSetup(id) accepts a definition id (A–F) or a review setup id. A review id maps to the definition whose sessions carry
+that tag by majority (from the review's tags block); without tags, to the definition with the same harness, model and rules hash; if
+none matches, an error that lists the valid ids. get_scorecard and plan_replays' tool descriptions list the candidate ids (E, F) and
+state that candidates come only from setups/candidates. run_replays accepts either id form.
+ACCEPTANCE: tests: a review id that tags map to "C" resolves to setup C; an unmatched id errors with the valid list; candidates E/F
+appear in get_scorecard's output; a scripted run replays incumbent + E. Whole suite green.
+TEST: bun test tests/backend-setups.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
