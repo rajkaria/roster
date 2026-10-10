@@ -1,0 +1,24 @@
+[roster setup=C task=T20]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T20 · W3 · Failure taxonomy classifier
+GOAL: Explain why each failed replay failed, using codes F1–F7, from the run's tool calls and grade.
+READ: docs/DESIGN.md §"Failure taxonomy".
+OWNS: src/grade/taxonomy.ts, tests/taxonomy.test.ts
+BUILD: classify(replay, grade, transcript) → FailureCode[] with evidence strings (e.g. "edited tests/foo.test.ts at turn 7"):
+F1 edited tests, F2 never ran tests (no test command in tool calls), F3 suite regression, F4 stopped early, F5 loop/timeout/turn cap,
+F6 environment/setup error (install/build failed before the agent's edits), F7 off-scope edits. F6 marks the task excluded.
+ACCEPTANCE: fixtures captured from real spike transcripts (not hand-written) cover F1, F2, F5, F6.
+TEST: bun test tests/taxonomy.test.ts
+DO NOT TOUCH: anything outside OWNS.
