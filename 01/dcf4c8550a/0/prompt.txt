@@ -1,0 +1,18 @@
+<task-notification>
+<task-id>b8u3mmkk8</task-id>
+<tool-use-id>toolu_01Q5fxS24byddAnwN52Jyq5p</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T26/3a27526c-0032-42f0-8dd6-20a7e48aa6c7/tasks/b8u3mmkk8.output</output-file>
+<status>killed</status>
+<summary>Background command "Live corpus run, parallel" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgrfi93qk</task-id>
+<tool-use-id>toolu_01CeJiGbZQwPZdicypqqjReo</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T26/3a27526c-0032-42f0-8dd6-20a7e48aa6c7/tasks/bgrfi93qk.output</output-file>
+<status>completed</status>
+<summary>Background command "Live corpus run with bounded script" completed (exit code 0)</summary>
+</task-notification>
