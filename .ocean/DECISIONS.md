@@ -38,3 +38,9 @@ doors get the full block.
   - Candidates run Claude Code against `https://api.deepseek.com/anthropic` (E = deepseek-flash, F = deepseek-v4-pro).
 - **What it costs:** that endpoint ignores `cache_control`, and its pricing depends on time of day.
 - **To reverse it:** add Claude candidates back to `setups/candidates/`. The pre-registration amendment stays on the record.
+
+## 2026-10-10 20:30 IST · SP4 closed with two items carried into SP5
+- **What happened:** `roster review --observational` works end to end on this repo (17 sessions, all correctly censored as too young).
+- **Carried over:** the web/CLI review shapes diverged, because they were built in parallel. The public-repo review is also outstanding.
+- **Where they went:** both moved to SP5, through integration task T27 and corpus task T26.
+- **Plan change:** acceptance moved; scope did not.
