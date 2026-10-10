@@ -1,7 +1,7 @@
 // Replayable tasks from recorded sessions (DESIGN.md §"Plan (coordinator)", §"Replay at the parent commit"):
 // what was asked, the commit to start from, and the tests the team kept.
 
-import { hiddenTests } from "../grade/hidden.ts";
+import { hiddenTestsForCommits } from "../grade/hidden.ts";
 import { runGit } from "../sandbox/index.ts";
 import type { Outcome, Session } from "../types.ts";
 
@@ -131,7 +131,7 @@ export function planReplayTasks(
     }
 
     const userPrompts = Math.max(...mine.map((x) => x.n_user_prompts));
-    const tests = hiddenTests(repo, latest.sha);
+    const tests = hiddenTestsForCommits(repo, commits.map((c) => c.sha));
     let track: ReplayTask["track"];
     let reason: string;
     if (commits.some((c) => c.importStrategy)) [track, reason] = ["none", "imported history, not captured live"];
