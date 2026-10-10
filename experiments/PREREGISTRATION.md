@@ -58,3 +58,13 @@ counts: A 7, B 6, C 6, D 6. T25 (the Codex harness adapter) is pinned to C and i
 Commits prefixed `ops:` or `human:` are operational or human work. They're excluded from every comparison.
 
 ## Amendments
+
+### Amendment 1: 2026-10-10 19:00 IST, setup C fallback applied
+Codex CLI wasn't installed and logged in by 19:00 IST, so setup C is Claude Code + Haiku 5.5 (`claude-haiku-5-5`) + default rules, as the rule above specified.
+- The assignment table is unchanged.
+- T25 (the Codex harness adapter) is still built. Its live test is skipped until Codex is available.
+- Model ids resolved by `scripts/probe-models.sh` on Claude Code 2.1.296:
+  - A → `claude-opus-5-5`
+  - B → `claude-sonnet-5-5`
+  - C → `claude-haiku-5-5`
+  - D → `claude-sonnet-5-5`
