@@ -1,0 +1,4 @@
+[test]
+# Pre-registered acceptance tests for unbuilt forward tasks live in experiments/; the forward
+# harness runs each one explicitly in its task worktree. They are not part of the main suite.
+pathIgnorePatterns = ["experiments/**"]
