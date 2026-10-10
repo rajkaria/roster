@@ -1,0 +1,28 @@
+[roster setup=D task=T40]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T40 · W1 · Haiku 5.5 sessions still price to null, and the review shows null spend as $0.00
+GOAL: In this repo's own review, all 11 claude-haiku-5-5 sessions have tokens but cost_usd null (sessions.json), and the setup row
+shows spend_usd 0. Price them, and never render an unknown cost as zero.
+READ: src/price/index.ts, src/price/prices.json (the two claude-haiku-5-5 tier rows), src/review/export.ts (setup row spend),
+src/score/index.ts (aggregateBySetup), reports/rajkaria__roster/sessions.json for real token shapes.
+OWNS: src/price/index.ts, src/review/export.ts, tests/price-haiku.test.ts, tests/review-export-nulls.test.ts
+BUILD: (1) priceSession must price a session on a tiered model when the per-request prompt size is unknown: use the documented rule in
+prices.json for that case; if none is documented, use the base (short-context) row and mark `tier: "assumed-short"` on the result.
+(2) The review setup row's spend_usd is null when any session in the setup is unpriced, with priced_sessions shown; never 0 from
+nulls.
+ACCEPTANCE: a session with the Haiku token shape from sessions.json prices to a positive number; a setup with one unpriced session
+has spend_usd null; existing tests pass.
+TEST: bun test tests/price-haiku.test.ts tests/review-export-nulls.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS; don't change prices.json rows.
