@@ -1,0 +1,31 @@
+[roster setup=A task=T10]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T10 · W3 · Claude Code headless harness adapter
+GOAL: Run one replay task under a given setup in a sandbox and capture everything needed to grade and price it.
+READ: docs/DESIGN.md §"Replay", §"Harness adapters" (exact flags from the spike notes).
+OWNS: src/harness/claude.ts, src/harness/types.ts, tests/harness-claude.test.ts
+BUILD: runClaude({sandboxPath, prompt, model, rulesFile, maxTurns, timeoutMs, budgetUsd, env}) → {sessionId, turns, durationMs,
+costUsd, tokens, isError, errorKind, transcriptPath, diff}. Swaps the setup's rules file into the sandbox before the run;
+commits it as `setup:` so the agent diff excludes it; runs with `--output-format json --permission-mode acceptEdits
+--permission-prompts none --allowedTools <allowlist> --setting-sources project --strict-mcp-config --disable-slash-commands
+--max-budget-usd <cap>` and a scrubbed child env (drop CLAUDECODE, CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_MESSAGING_*); records the
+RESOLVED model from `modelUsage`, not the flag; saves `agent.patch` (`git diff --binary`) and the raw JSON; kills on timeout and returns errorKind
+'timeout'; never throws on agent failure (returns isError). Retries only on 429/5xx (2×, backoff), each attempt numbered.
+ACCEPTANCE: unit tests with a stub `claude` binary on PATH (a script that prints captured real JSON from the spike notes);
+one opt-in live test (`ROSTER_LIVE=1`) that runs a trivial task with the cheapest model and asserts cost > 0.
+SEED: src/replay/_spike/replay.ts is the kickoff spike harness (written 2026-10-10 15:10–15:20 IST, committed in B0 as
+`ops: spike seed`). Reuse its sandbox/grade/verdict logic; it was proven on real runs but never authenticated headless.
+TEST: bun test tests/harness-claude.test.ts
+DO NOT TOUCH: anything outside OWNS.
