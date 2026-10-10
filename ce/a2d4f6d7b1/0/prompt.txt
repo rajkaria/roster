@@ -1,0 +1,37 @@
+[roster setup=A task=T47]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T47 · W4 · Landing page that shows a real review
+GOAL: The home page is a placeholder pointing at sample data. Make it the page a founder lands on: what Roster does in plain words,
+then this repo's own live review, then how it works, then what's real and what's pending. Every number on it comes from report
+files, never typed in.
+READ: web/app/page.tsx, web/app/layout.tsx, web/app/globals.css, web/lib/reviews.ts, web/lib/types.ts, web/components/Sections.tsx,
+docs/DESIGN.md §"Overview", experiments/PREREGISTRATION.md (for the experiment summary wording), reports/rajkaria__roster/review.json.
+OWNS: web/app/page.tsx, web/components/Landing*.tsx, web/app/globals.css (additions only), tests/web-landing.test.ts
+BUILD: Sections, top to bottom.
+1. Hero: "Roster runs performance reviews for your AI coding agents." Sub-line: it finds the setup that's quietly making your codebase
+   worse, tests a better one on your own past tasks, and ships it only if nothing regresses.
+2. "Our own AI team's review": a compact table rendered from public/data/rajkaria__roster/review.json (setups, sessions, spend,
+   unattended), with the evidence level badge and a link to /r/rajkaria/roster.
+3. "How it works": the evidence levels A (observational), B (controlled replay at the parent commit) and C (pre-registered forward
+   test) in three short cards.
+4. "The experiment": the backlog freeze and its link to experiments/FREEZE.txt and PREREGISTRATION.md on GitHub, plus the status line
+   "forward run not started" until public/data/self/forward.json exists.
+5. "Built with Entire, neatlogs and cfo.ai": one plain sentence each on what the tool does in Roster.
+Use plain words, no hype words, no em dashes. Dark theme consistent with the existing pages. Mobile-safe at 375px width. og:title and
+og:description in layout metadata.
+ACCEPTANCE: tests/web-landing.test.ts renders the page's data helper with a fixture review and asserts the table rows match the file;
+`cd web && bun run build` succeeds; no number literal for sessions or spend in the page source.
+TEST: bun test tests/web-landing.test.ts && (cd web && bun run build) && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
