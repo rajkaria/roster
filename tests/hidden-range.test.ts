@@ -89,13 +89,13 @@ describe("hiddenTestsForCommits", () => {
     expect(task!.track).toBe("tests");
   });
 
-  test("a test file deleted by the maturity commit is skipped", () => {
+  test("a test file deleted later is still the session's version (no maturity rule)", () => {
     const { dir, c1, c2, c3 } = sessionRepo("deleted");
     git(dir, ["rm", "-q", "tests/x.test.ts"]);
     git(dir, ["commit", "-q", "-m", "drop test"], {
       env: { GIT_AUTHOR_DATE: "2026-10-01T01:00:00Z", GIT_COMMITTER_DATE: "2026-10-01T01:00:00Z" },
     });
-    expect(hiddenTestsForCommits(dir, [c1, c2, c3])).toEqual([]);
+    expect(hiddenTestsForCommits(dir, [c1, c2, c3]).map((t) => t.path)).toEqual(["tests/x.test.ts"]);
   });
 
   test("no commits gives no tests", () => {
