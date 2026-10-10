@@ -68,3 +68,14 @@ Codex CLI wasn't installed and logged in by 19:00 IST, so setup C is Claude Code
   - B → `claude-sonnet-5-5`
   - C → `claude-haiku-5-5`
   - D → `claude-sonnet-5-5`
+
+### Amendment 2: 2026-10-10 19:40 IST, candidate setups run on DeepSeek; Roster's own model calls go to DeepSeek
+This was decided before any review ran.
+- **Control vs candidates.** The original setups (A–D) are replayed exactly as they are, as the control. Every candidate Roster proposes runs the Claude Code harness against DeepSeek's Anthropic-compatible endpoint:
+  - `setups/candidates/E.json`: `deepseek-flash`
+  - `setups/candidates/F.json`: `deepseek-v4-pro`
+  - Rules-file variants of either, generated from failure codes.
+- **H1 is unchanged in form.** The forward run pairs the demoted setup with the promoted candidate.
+- **H2 (cost) uses time-of-day pricing.** DeepSeek publishes peak and off-peak rates, so each run is priced at the rate for its own timestamp.
+- **Roster's own reasoning uses DeepSeek** through its OpenAI-compatible API. That covers the coordinator, the blind diff-judge and the acceptance-test writer. No Claude API is used by the product itself.
+- **T25** was pinned to C and never randomised. It now builds DeepSeek provider support for the harness and the price table instead of a Codex adapter.

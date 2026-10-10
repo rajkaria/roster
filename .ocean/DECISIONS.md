@@ -29,3 +29,12 @@ doors get the full block.
 - **Decision:** `entire/checkpoints/v1`, not hidden refs.
 - **Why:** it's visible on GitHub, and `entire judge add` fetches `refs/heads/entire/*`.
 - **Reader:** Roster still reads both backends.
+
+## 2026-10-10 19:40 IST · DeepSeek for the product, Claude only for replaying the setups under review (one-way door, operator decision)
+- **What the operator decided:** "don't use claude apis for the product", plus their answer to the question "DeepSeek candidates only".
+- **The rule now:**
+  - Roster's own LLM calls (coordinator, judge, acceptance writer) go to DeepSeek's OpenAI-compatible API, traced with neatlogs `wrapOpenAI`.
+  - Originals are replayed as they are, as the control.
+  - Candidates run Claude Code against `https://api.deepseek.com/anthropic` (E = deepseek-flash, F = deepseek-v4-pro).
+- **What it costs:** that endpoint ignores `cache_control`, and its pricing depends on time of day.
+- **To reverse it:** add Claude candidates back to `setups/candidates/`. The pre-registration amendment stays on the record.

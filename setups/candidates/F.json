@@ -1,0 +1,18 @@
+{
+  "id": "F",
+  "label": "Claude Code harness on DeepSeek V4 Pro (deepseek-v4-pro), default rules",
+  "harness": "claude-code",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "rules": "setups/rules/default.md",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "${DEEPSEEK_API_KEY}",
+    "ANTHROPIC_MODEL": "deepseek-v4-pro",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-flash",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-flash"
+  },
+  "source": "https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code (checked 2026-10-10)"
+}
