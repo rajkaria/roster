@@ -9,6 +9,7 @@
 import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { priceDeepSeek } from "../price/deepseek.ts";
 import { gitEnv } from "../sandbox/index.ts";
 import type {
   HarnessAttempt,
@@ -36,8 +37,25 @@ export function childEnv(extra: Record<string, string | undefined> = {}): Record
   );
 }
 
+/** A HarnessResult that also keeps the cost the harness itself reported. */
+export interface ClaudeHarnessResult extends HarnessResult {
+  /** The harness's own total_cost_usd, summed over attempts (Claude prices). For provider setups `costUsd` is Roster's. */
+  reportedCostUsd?: number | null;
+}
+
+/** True when the setup env points Claude Code at a non-Anthropic endpoint, where its cost numbers are Claude prices. */
+export function isProviderRun(env: Record<string, string | undefined> | undefined): boolean {
+  const base = env?.ANTHROPIC_BASE_URL;
+  if (!base) return false;
+  try {
+    return new URL(base).hostname !== "api.anthropic.com";
+  } catch {
+    return true;
+  }
+}
+
 export function claudeArgs(o: HarnessRunOptions): string[] {
-  return [
+  const args = [
     "-p", o.prompt,
     "--model", o.model,
     "--output-format", "json",
@@ -50,8 +68,10 @@ export function claudeArgs(o: HarnessRunOptions): string[] {
     "--strict-mcp-config",
     "--disable-slash-commands",
     "--no-session-persistence",
-    "--max-budget-usd", String(o.budgetUsd),
   ];
+  // Provider runs are capped by Roster (turn cap, then a token-priced check after the run), not by Claude prices.
+  if (!isProviderRun(o.env)) args.push("--max-budget-usd", String(o.budgetUsd));
+  return args;
 }
 
 // ---------- git ----------
@@ -228,13 +248,14 @@ const num = (v: unknown): number | null => (typeof v === "number" && Number.isFi
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- entry ----------
-export async function runClaude(o: HarnessRunOptions): Promise<HarnessResult> {
+export async function runClaude(o: HarnessRunOptions): Promise<ClaudeHarnessResult> {
   const sandboxPath = resolve(o.sandboxPath);
   const outDir = resolve(o.outDir ?? `${sandboxPath}.out`);
   const args = claudeArgs(o);
   const bin = o.bin ?? "claude";
-  const res: HarnessResult = {
-    harness: HARNESS, sessionId: null, model: null, models: [], turns: null, durationMs: null, costUsd: null,
+  const provider = isProviderRun(o.env);
+  const res: ClaudeHarnessResult = {
+    harness: HARNESS, sessionId: null, model: null, models: [], turns: null, durationMs: null, costUsd: null, reportedCostUsd: null,
     tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, isError: true, errorKind: null, stopReason: null,
     transcriptPath: null, diff: null, setupSha: null, attempts: [], command: [bin, ...args],
   };
@@ -267,10 +288,16 @@ export async function runClaude(o: HarnessRunOptions): Promise<HarnessResult> {
     const errorKind = errorKindOf(j, x, apiStatus);
     const rawPath = join(outDir, `claude.attempt-${n}.json`);
     writeFileSync(rawPath, j ? JSON.stringify(j, null, 2) : JSON.stringify({ stdout: x.out, stderr: x.err.slice(-4000), spawnError: x.spawnError }, null, 2));
-    const costUsd = num(j?.total_cost_usd);
+    const reported = num(j?.total_cost_usd);
+    const t = tokensOf(j);
+    let costUsd = reported;
+    if (provider) {
+      const counts = { input: t.input, output: t.output, cache_read: t.cacheRead, cache_write: t.cacheWrite };
+      costUsd = j ? (priceDeepSeek(resolvedModel(j).model ?? o.model, counts, new Date())?.usd ?? null) : null;
+    }
     res.attempts.push({ n, exitCode: x.code, timedOut: x.timedOut, wallMs: x.wallMs, isError: errorKind !== null, errorKind, apiStatus, rawPath, costUsd });
     if (costUsd !== null) res.costUsd = (res.costUsd ?? 0) + costUsd;
-    const t = tokensOf(j);
+    if (reported !== null) res.reportedCostUsd = (res.reportedCostUsd ?? 0) + reported;
     res.tokens = { input: res.tokens.input + t.input, output: res.tokens.output + t.output, cacheRead: res.tokens.cacheRead + t.cacheRead, cacheWrite: res.tokens.cacheWrite + t.cacheWrite };
     last = j;
     res.isError = errorKind !== null;
@@ -278,6 +305,12 @@ export async function runClaude(o: HarnessRunOptions): Promise<HarnessResult> {
     res.transcriptPath = rawPath;
     if (!(errorKind !== null && retryable(apiStatus) && n <= maxRetries)) break;
     await sleep((o.retryBaseMs ?? 2000) * 2 ** (n - 1));
+  }
+
+  // Roster's own per-run cap for provider setups: a run that otherwise finished but cost more than budget is "budget".
+  if (provider && !res.isError && res.costUsd !== null && res.costUsd > o.budgetUsd) {
+    res.isError = true;
+    res.errorKind = "budget";
   }
 
   const { model, models } = resolvedModel(last);
