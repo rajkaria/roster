@@ -24,7 +24,8 @@ SETUP="${1:?usage: run-setup.sh <setup> <task>}"
 TASK="${2:?usage: run-setup.sh <setup> <task>}"
 ROOT="$(git rev-parse --show-toplevel)"
 CFG="$ROOT/setups/$SETUP.json"
-[ -f "$CFG" ] || { echo "run-setup: no setup '$SETUP' ($CFG)" >&2; exit 2; }
+[ -f "$CFG" ] || CFG="$ROOT/setups/candidates/$SETUP.json"
+[ -f "$CFG" ] || { echo "run-setup: no setup '$SETUP'" >&2; exit 2; }
 TASKS="${ROSTER_TASKS:?run-setup: set ROSTER_TASKS to the task-block file}"
 WT_ROOT="${ROSTER_WT:-/Users/Shared/roster-wt}"
 WT="$WT_ROOT/$TASK"
@@ -54,6 +55,25 @@ ERR="$LOGDIR/$TASK.$SETUP.err"
 # Host-session plumbing must not leak into the child (it would join the parent session).
 SCRUB=(-u CLAUDECODE -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_ENTRYPOINT
        -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN)
+
+# Provider env from the setup file (e.g. DeepSeek candidates). ${VAR} values are filled from
+# the repo's .env. Secrets reach the child process only, never the prompt or a log line.
+PROVIDER_ENV=()
+if jq -e '.env' "$CFG" >/dev/null 2>&1; then
+  if [ -f "$ROOT/.env" ]; then set -a; . "$ROOT/.env"; set +a; fi
+  while IFS=$'\t' read -r k v; do
+    case "$v" in
+      '${'*'}') var="${v:2:${#v}-3}"; v="${!var:-}"
+                [ -n "$v" ] || { echo "run-setup: $var is not set (.env)" >&2; exit 4; } ;;
+    esac
+    PROVIDER_ENV+=("$k=$v")
+  done < <(jq -r '.env | to_entries[] | "\(.key)\t\(.value)"' "$CFG")
+fi
+CONFIG_DIR="${ROSTER_CLAUDE_CONFIG:-$HOME/.roster-claude}"
+if [ "$(jq -r '.provider // "anthropic"' "$CFG")" != "anthropic" ]; then
+  CONFIG_DIR="${CONFIG_DIR}-$(jq -r .provider "$CFG")"   # separate config: no OAuth session mixed in
+  mkdir -p "$CONFIG_DIR"
+fi
 
 case "$harness" in
   claude-code)
@@ -92,7 +112,7 @@ fi
 
 started="$(date +%s)"
 set +e
-(cd "$WT" && env "${SCRUB[@]}" CLAUDE_CONFIG_DIR="${ROSTER_CLAUDE_CONFIG:-$HOME/.roster-claude}" "${cmd[@]}") </dev/null >"$LOG" 2>"$ERR"
+(cd "$WT" && env "${SCRUB[@]}" CLAUDE_CONFIG_DIR="$CONFIG_DIR" "${PROVIDER_ENV[@]}" "${cmd[@]}") </dev/null >"$LOG" 2>"$ERR"
 code=$?
 set -e
 secs=$(( $(date +%s) - started ))

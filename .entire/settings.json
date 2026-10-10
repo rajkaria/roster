@@ -12,6 +12,10 @@
       "email": true,
       "phone": true,
       "address": false
+    },
+    "custom_redactions": {
+      "deepseek_api_key": "sk-[0-9a-f]{32}",
+      "generic_sk_key": "sk-[A-Za-z0-9_-]{20,}"
     }
   }
 }
