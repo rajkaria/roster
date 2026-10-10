@@ -63,7 +63,7 @@ describe("hiddenTests", () => {
     expect(h[0]!.content).toBe(MUL_TEST);
   });
 
-  test("takes the version from 5 commits later once matured", () => {
+  test("keeps the version from when the change landed, not later edits", () => {
     const fixed = MUL_TEST.replace("toBe(6)", "toBe(6); // matured");
     put(repo, "tests/mul.test.ts", fixed);
     commit("c1");
@@ -71,10 +71,9 @@ describe("hiddenTests", () => {
       put(repo, "notes.txt", `n${i}\n`);
       commit(`c${i}`);
     }
-    // c1 is the 1st commit after original; the 5th is c5, which still has the fixed version.
-    put(repo, "tests/mul.test.ts", MUL_TEST);
-    commit("c6 later churn");
-    expect(hidden()[0]!.content).toBe(fixed);
+    // The later edit (c1) and the commits after it do not change what the session added.
+    expect(hidden()[0]!.content).toBe(MUL_TEST);
+    expect(hidden()[0]!.content).not.toBe(fixed);
   });
 });
 
