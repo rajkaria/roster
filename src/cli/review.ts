@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import type { Command } from "../cli.ts";
 import { priceSession } from "../price/index.ts";
 import { flushObs, initObs, setSession, withSpan } from "../obs/index.ts";
+import { ATTR, summaryAttr } from "../obs/attributes.ts";
 import { fetchCheckpoints } from "../ingest/fetch.ts";
 import { type ParsedSession, parseCheckpoints } from "../ingest/parse.ts";
 import { type Identity, identify, inferenceAccuracy } from "../identity/index.ts";
@@ -244,7 +245,8 @@ export async function runReview(args: ReviewArgs): Promise<number> {
   const times: Timings = new Map();
   const t0 = performance.now();
   try {
-    return await withSpan("WORKFLOW", "review", { repo: label }, async () => {
+    // One span per stage, never one per session: session-level detail goes into one roster.summary count line.
+    return await withSpan("WORKFLOW", "review", { repo: label }, async (root) => {
       const fetched = await stage(times, 1, "fetch", label, async () => {
         const f = await fetchCheckpoints(args.repo, { cacheDir: resolve(args.cache) });
         return [f, `backend=${f.backend} head=${f.headSha.slice(0, 12) || "none"}`];
@@ -298,6 +300,18 @@ export async function runReview(args: ReviewArgs): Promise<number> {
           `${mature} mature, ${outcomes.length - mature} too young${failed.length ? `, ${failed.length} failed` : ""}`,
         ];
       });
+
+      root.setAttribute(
+        ATTR.summary,
+        summaryAttr({
+          sessions: sessions.length,
+          mature: scored.outcomes.filter((o) => o.status === "mature").length,
+          too_young: scored.outcomes.filter((o) => o.status === "too_young").length,
+          failed: scored.failed.length,
+          setups: new Set(identities.map((i) => i.setupId).filter((x) => x !== null)).size,
+          unpriced: scored.out.filter((s) => s.cost_usd === null).length,
+        }),
+      );
 
       const notes = [
         `${scored.outcomes.filter((o) => o.status === "too_young").length} sessions are too young or have no commit: a session is mature at ≥ ${MIN_DEPTH} first-parent commits and ≥ ${MIN_AGE_S / 3600} h before HEAD`,
