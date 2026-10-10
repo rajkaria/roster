@@ -1,0 +1,26 @@
+[roster setup=C task=T55]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T55 · W4 · Reviews index page and site navigation
+GOAL: The site has reviews for several public repos, but no page lists them and no navigation joins the pages.
+READ: web/app/layout.tsx, web/app/page.tsx, web/lib/reviews.ts (listParams, loadReview), web/lib/types.ts, web/app/globals.css.
+OWNS: web/app/r/page.tsx (new), web/components/Nav.tsx (new), web/app/layout.tsx (only to render Nav), web/lib/reviews.ts (only to
+add a listReviews helper), web/app/globals.css (additions only), tests/web-index.test.ts
+BUILD: /r lists every review under public/data except `_sample`: repo, sessions, setups, mature sessions, suspect label, generated
+date, linked to /r/<owner>/<repo>, sorted by sessions descending, with the evidence-level note "level A: observational". A top nav on
+every page: Roster (home), Reviews (/r), Experiment (/experiment), GitHub (https://github.com/rajkaria/roster). Mobile-safe at 375px.
+ACCEPTANCE: tests/web-index.test.ts calls listReviews on a fixture data dir and asserts rows and order (excluding _sample);
+`cd web && bun run build` succeeds.
+TEST: bun test tests/web-index.test.ts && (cd web && bun run build) && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
