@@ -92,7 +92,9 @@ export function reviewSlug(repo: string): string {
   return repoLabel(repo).replace("/", "__").replace(/[^A-Za-z0-9._-]+/g, "-");
 }
 
-const RATE_KEYS = ["unattended", "survival", "reverted", "rework_human"] as const;
+/** Mature-session rates: null when mature_sessions is 0. `unattended` is over all sessions with a known prompt count. */
+const MATURE_RATE_KEYS = ["survival", "reverted", "rework_human"] as const;
+const RATE_KEYS = ["unattended", ...MATURE_RATE_KEYS] as const;
 
 function validateSetupRow(row: unknown, at: string): string[] {
   if (!isRecord(row)) return [`${at} must be an object`];
@@ -125,7 +127,9 @@ function validateSetupRow(row: unknown, at: string): string[] {
   for (const k of RATE_KEYS) {
     const v = row[k];
     if (v !== null && !(isFiniteNum(v) && v >= 0 && v <= 1)) errs.push(`${at}.${k} must be null or a number in [0, 1]`);
-    if (row.mature_sessions === 0 && v !== null) errs.push(`${at}.${k} must be null when mature_sessions is 0`);
+    if (row.mature_sessions === 0 && v !== null && (MATURE_RATE_KEYS as readonly string[]).includes(k)) {
+      errs.push(`${at}.${k} must be null when mature_sessions is 0`);
+    }
   }
   if (!(EVIDENCE as readonly unknown[]).includes(row.evidence_level)) errs.push(`${at}.evidence_level must be A, B or C`);
   return errs;
@@ -198,7 +202,7 @@ export interface SetupSummary {
   reverted: number | null;
   /** Mean human rework share over mature sessions. */
   rework_human: number | null;
-  /** Share of mature sessions that needed exactly one user prompt. */
+  /** Share of sessions with a known prompt count that needed exactly one user prompt, mature or not. */
   unattended: number | null;
 }
 
@@ -241,7 +245,7 @@ export function summarizeSetups(sessions: Session[], outcomes: Outcome[]): Setup
       const survival = outs.map((o) => o.survival).filter((x): x is number => x !== null);
       const reverted = outs.map((o) => o.reverted).filter((x): x is boolean => x !== null);
       const human = outs.map((o) => o.rework_human).filter((x): x is number => x !== null);
-      const unattended = outs.map((o) => o.unattended).filter((x): x is boolean => x !== null);
+      const unattended = group.map((s) => byId.get(s.id)?.unattended).filter((x): x is boolean => x !== undefined && x !== null);
       const priced = group.map((s) => s.cost_usd).filter((x): x is number => x !== null);
       const first = group[0]!;
       return {
@@ -303,7 +307,7 @@ export function buildSetupRows(sessions: Session[], outcomes: Outcome[]): SetupR
         spend_lower_bound: sessions.some(
           (x) => x.setup_id === a.setup_id && x.cost_usd !== null && sessionCostDetail({ ...x, cost_usd: null }).lower_bound,
         ),
-        unattended: rate(a.unattended),
+        unattended: a.unattended_known === 0 ? null : a.unattended / a.unattended_known,
         survival: a.survival_mean,
         reverted: rate(a.reverted),
         rework_human: mean(human),
@@ -368,7 +372,7 @@ export function renderReviewMarkdown(report: ReviewReport): string {
     "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :---: |",
     ...(review.setups ?? buildSetupRows(report.sessions, report.outcomes)).map(
       (r) =>
-        `| \`${r.setup_id}\` | ${r.label} | ${r.sessions} | ${r.mature_sessions} | ${spend(r)} | ${young(r, pct(r.survival))} | ${young(r, pct(r.reverted))} | ${young(r, pct(r.rework_human))} | ${young(r, pct(r.unattended))} | ${r.cost_per_surviving_change === null ? "—" : usd(r.cost_per_surviving_change)} | ${r.evidence_level} |`,
+        `| \`${r.setup_id}\` | ${r.label} | ${r.sessions} | ${r.mature_sessions} | ${spend(r)} | ${young(r, pct(r.survival))} | ${young(r, pct(r.reverted))} | ${young(r, pct(r.rework_human))} | ${pct(r.unattended)} | ${r.cost_per_surviving_change === null ? "—" : usd(r.cost_per_surviving_change)} | ${r.evidence_level} |`,
     ),
     ...(review.tags
       ? [

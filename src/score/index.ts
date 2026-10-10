@@ -109,6 +109,8 @@ export interface SetupAggregate {
   reverted: number;
   /** Sessions with a known prompt count that needed exactly one prompt, mature or not. */
   unattended: number;
+  /** Sessions with a known prompt count, mature or not: the denominator of the unattended share. */
+  unattended_known: number;
   survival_sum: number;
   survival_mean: number | null;
   /** Σ cost over all sessions; null when any session's cost is unknown (a partial sum would understate spend). */
@@ -144,6 +146,7 @@ export function aggregateBySetup(outcomes: ScoredOutcome[]): SetupAggregate[] {
         too_young: rows.length - mature.length,
         reverted: mature.filter((o) => o.reverted).length,
         unattended: rows.filter((o) => o.unattended).length,
+        unattended_known: rows.filter((o) => o.unattended !== null).length,
         survival_sum: survivalSum,
         survival_mean: mature.length ? survivalSum / mature.length : null,
         cost_usd: known.length === rows.length ? known.reduce((a, o) => a + (o.cost_usd ?? 0), 0) : null,
