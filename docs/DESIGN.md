@@ -201,7 +201,7 @@ Only *mature* sessions are scored: the commit is ≥ 5 first-parent commits **an
 
 ### Grade
 1. **Grade in a separate copy:** base + `agent.patch` + hidden tests. Never grade in the agent's workspace.
-2. **Hidden tests:** the test files the original change added or modified, taken from the commit where those lines matured. That's the version the team accepted.
+2. **Hidden tests:** the test files the session added or modified in any of its commits, at the version the session itself left: its latest linked commit, or the merge that brought it into the main line. Maturity decides scoring only (survival and revert need age), not which test content counts. Later commits often edit a test file for features the original task never had, so reading the file at maturity judges the task against a contract it never saw.
 3. **Run:** the agent's suite, then the full suite with per-test JUnit written outside the workspace. A hidden file that collects 0 tests counts as a failing case (bun's JUnit reporter silently drops files that fail to import).
 4. **Scope guard:** pre-existing test cases are unmodified (appending new cases is allowed), no files outside the touched-directory set change, and typecheck and lint pass if configured.
 5. **Blind diff-judge:** compares the two diffs under random labels. It's advisory.
