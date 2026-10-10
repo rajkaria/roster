@@ -1,0 +1,77 @@
+{
+  "run_id": "ocean-20261010-181216",
+  "created_at": 1791636136,
+  "spec_path": "docs/DESIGN.md",
+  "goal": "Build Roster per docs/DESIGN.md: an agent that reviews AI coding-agent setups, replays tasks, gates promotions, and books results into cfo.ai; built by 4 recorded setups",
+  "status": "running",
+  "current_sprint": 0,
+  "sprints": [
+    {
+      "id": 1,
+      "title": "Skeleton and launcher",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 2,
+      "title": "Recorded agent sessions working",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 3,
+      "title": "Wave 1: T01 T05 T09 T13 T15",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 4,
+      "title": "Waves 2-4: T02-T04 T06-T08 T10-T12 T14 T16",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 5,
+      "title": "B2: T17-T26",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 6,
+      "title": "Forward backlog freeze",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 7,
+      "title": "First performance review",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 8,
+      "title": "Forward run",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 9,
+      "title": "Evidence: corpus, neatlogs v1-v2, cfo.ai book, /try",
+      "status": "todo",
+      "commit": ""
+    },
+    {
+      "id": 10,
+      "title": "Final sweep",
+      "status": "todo",
+      "commit": ""
+    }
+  ],
+  "verify_cmd": "bun test && bun run typecheck",
+  "iteration": 0,
+  "reopen_count": 0,
+  "last_checkpoint": 1791636165,
+  "heartbeat": 1791636165,
+  "blockers": [],
+  "notes": ""
+}
