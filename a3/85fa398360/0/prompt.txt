@@ -1,0 +1,100 @@
+[roster setup=C task=T57]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T57 · W1 · Sessions with no recorded rules still belong to a setup
+GOAL: Three public repos (BbrSofiane/sof-pi, itsmeyaw/binden, entireio/forgemark) review as "0 setups": every session's rules hash is
+null, so no session gets a setup id. Example: sof-pi's 51 sessions are all harness "Pi" with rules_hash null. Not having a rules file
+is a real configuration, not an unknown one.
+READ: src/identity/index.ts (identify, rulesAtParent, setupIdOf), src/ingest/parse.ts (rules_hash from transcripts),
+reports/BbrSofiane__sof-pi/sessions.json for real shapes.
+OWNS: src/identity/index.ts, tests/identity-norules.test.ts
+BUILD: When the transcript records no rules, fall back to the rules files present at the parent of the session's first linked commit,
+for any harness: CLAUDE.md, AGENTS.md, .cursorrules, .cursor/rules/*, .github/copilot-instructions.md. If none exist there, the rules
+hash is the fixed sentinel sha256("no-rules-file") and rulesPath is "(none)". An empty model becomes "unknown-model" for the setup id,
+so sessions still group by harness. Only a session with no linked commit and no transcript rules keeps setupId null.
+ACCEPTANCE: tests: a Pi session with no rules in its transcript and no rules file at its parent gets a setup id equal to another such
+session's; adding an AGENTS.md at the parent changes the id; existing identity tests pass.
+TEST: bun test tests/identity-norules.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bzxft6q61</task-id>
+<tool-use-id>toolu_01NYcFG3sUdxopxDG3iBxtM7</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T57/ea82b045-4cee-4c13-a25c-4a03b3a752a0/tasks/bzxft6q61.output</output-file>
+<status>completed</status>
+<summary>Monitor "Report when baseline test suite finishes" stream ended</summary>
+<event>[roster] neatlogs: 0 spans exported, unknown dropped (flush failed)
+[roster] neatlogs: 1 spans exported, unknown dropped
+511 pass
+2 skip
+0 fail
+1938 expect() calls
+Ran 513 tests across 56 files. [184.85s]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bl3isccvn</task-id>
+<tool-use-id>toolu_01DyZWm2EMvkr3WXstndxh16</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T57/ea82b045-4cee-4c13-a25c-4a03b3a752a0/tasks/bl3isccvn.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for baseline test suite to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b6c1u8fyi</task-id>
+<tool-use-id>toolu_01LAUTNqxePwV9DeER4xdZ5U</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T57/ea82b045-4cee-4c13-a25c-4a03b3a752a0/tasks/b6c1u8fyi.output</output-file>
+<status>completed</status>
+<summary>Monitor "Report when baseline test suite finishes" stream ended</summary>
+<event>[roster] neatlogs: 0 spans exported, unknown dropped (flush failed)
+[roster] neatlogs: 1 spans exported, unknown dropped
+511 pass
+2 skip
+0 fail
+1938 expect() calls
+Ran 513 tests across 56 files. [184.85s]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b2cccfcwr</task-id>
+<tool-use-id>toolu_01T345G3sRmfBYLmxGnp69yG</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T57/ea82b045-4cee-4c13-a25c-4a03b3a752a0/tasks/b2cccfcwr.output</output-file>
+<status>completed</status>
+<summary>Monitor "Report when baseline test suite finishes" stream ended</summary>
+<event>[roster] neatlogs: 0 spans exported, unknown dropped (flush failed)
+[roster] neatlogs: 1 spans exported, unknown dropped
+511 pass
+2 skip
+0 fail
+1938 expect() calls
+Ran 513 tests across 56 files. [184.85s]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bdzfuqo84</task-id>
+<tool-use-id>toolu_01V5fNdPFV7Z7vE8jGXKmdzc</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T57/ea82b045-4cee-4c13-a25c-4a03b3a752a0/tasks/bdzfuqo84.output</output-file>
+<status>completed</status>
+<summary>Background command "Run baseline test suite and typecheck" completed (exit code 0)</summary>
+</task-notification>
