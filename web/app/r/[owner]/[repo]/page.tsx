@@ -1,5 +1,7 @@
 import { loadReview, listParams } from "@/lib/reviews";
 import type { SetupRow } from "@/lib/types";
+import { Section, SuspectCard, ReplaysTable, GateList, ForwardTable } from "@/components/Sections";
+import { loadReplays, loadGate, loadForward, loadOutcomes } from "./sidecar";
 
 export const dynamicParams = false;
 
@@ -27,6 +29,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
     );
   }
 
+  const terciles = new Map(loadOutcomes(owner, repo).map((o) => [o.session_id, o.tercile]));
+
   return (
     <>
       <h1>{review.repo}</h1>
@@ -34,6 +38,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
       {review.sample && (
         <div className="banner">Sample data for layout purposes. These are not real results.</div>
       )}
+      <Section title="Setups" level="A">
       {!review.has_entire_data ? (
         <div className="empty">No Entire data: this repo has no recorded Entire sessions, so there is nothing to review.</div>
       ) : review.setups.length === 0 ? (
@@ -77,6 +82,19 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
           </table>
         </div>
       )}
+      </Section>
+      <Section title="Suspect" level="A">
+        <SuspectCard review={review} />
+      </Section>
+      <Section title="Replays" level="B">
+        <ReplaysTable replays={loadReplays(owner, repo)} terciles={terciles} setups={review.setups} />
+      </Section>
+      <Section title="Gate decisions" level="B">
+        <GateList rows={loadGate(owner, repo)} />
+      </Section>
+      <Section title="Forward" level="C">
+        <ForwardTable rows={loadForward(owner, repo)} />
+      </Section>
     </>
   );
 }
