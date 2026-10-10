@@ -84,14 +84,17 @@ interface ScoreContext {
   headTime: number;
 }
 
-const tooYoung = (session_id: string): Outcome => ({
+/** One user prompt means nobody steered the session. Needs no commit age; null when the count is unknown. */
+const isUnattended = (s: ParsedSession): boolean | null => (Number.isFinite(s.n_user_prompts) ? s.n_user_prompts === 1 : null);
+
+const tooYoung = (session_id: string, unattended: boolean | null = null): Outcome => ({
   session_id,
   status: "too_young",
   survival: null,
   reverted: null,
   rework_human: null,
   rework_agent: null,
-  unattended: null,
+  unattended,
   tests_at_commit: null,
   difficulty: null,
   tercile: null,
@@ -103,10 +106,10 @@ const tooYoung = (session_id: string): Outcome => ({
  */
 export function scoreSession(session: ParsedSession, ctx: ScoreContext): Outcome {
   const sha = session.commit_sha;
-  if (sha === null) return tooYoung(session.id);
+  if (sha === null) return tooYoung(session.id, isUnattended(session));
   const depth = Number(git(ctx.repo, ["rev-list", "--count", "--first-parent", `${sha}..${ctx.head}`]).trim());
   const age = ctx.headTime - Number(git(ctx.repo, ["show", "-s", "--format=%ct", sha]).trim());
-  if (depth < MIN_DEPTH || age < MIN_AGE_S) return tooYoung(session.id);
+  if (depth < MIN_DEPTH || age < MIN_AGE_S) return tooYoung(session.id, isUnattended(session));
 
   const surv = survival(ctx.repo, [sha], ctx.head);
   const rw = rework(ctx.repo, sha);
@@ -117,7 +120,7 @@ export function scoreSession(session: ParsedSession, ctx: ScoreContext): Outcome
     reverted: reverted(ctx.repo, sha),
     rework_human: rw.human,
     rework_agent: rw.agent,
-    unattended: session.n_user_prompts === 1,
+    unattended: isUnattended(session),
     tests_at_commit: null,
     difficulty: null,
     tercile: null,
@@ -190,7 +193,7 @@ export async function runReview(args: ReviewArgs): Promise<number> {
             outcomes.push(scoreSession(s, ctx));
           } catch (err) {
             failed.push(`${s.id}: ${err instanceof Error ? err.message : String(err)}`);
-            outcomes.push(tooYoung(s.id));
+            outcomes.push(tooYoung(s.id, isUnattended(s)));
           }
         });
         const mature = outcomes.filter((o) => o.status === "mature").length;

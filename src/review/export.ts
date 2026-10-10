@@ -202,11 +202,32 @@ export interface SetupSummary {
   unattended: number | null;
 }
 
+/**
+ * Display labels per setup_id: "harness · model", plus " (rules a1b2c3)" (first 6 chars of rules_hash) when
+ * another setup shares the harness and model. Session does not record which rules files were loaded, so the
+ * hash is the only discriminator available here.
+ */
+function setupLabels(sessions: Session[]): Map<string, string> {
+  const first = new Map<string, Session>();
+  for (const s of sessions) if (s.setup_id !== null && !first.has(s.setup_id)) first.set(s.setup_id, s);
+  const plain = (s: Session) => `${s.harness} · ${s.model}`;
+  const shared = new Map<string, number>();
+  for (const s of first.values()) shared.set(plain(s), (shared.get(plain(s)) ?? 0) + 1);
+  return new Map(
+    [...first].map(([id, s]) => {
+      const base = plain(s);
+      if ((shared.get(base) ?? 0) < 2) return [id, base];
+      return [id, `${base} (rules ${s.rules_hash === null ? "unknown" : s.rules_hash.slice(0, 6)})`];
+    }),
+  );
+}
+
 const mean = (xs: number[]): number | null => (xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length);
 
 /** Groups sessions by setup_id. Sessions with no setup are left out; the caller counts them. */
 export function summarizeSetups(sessions: Session[], outcomes: Outcome[]): SetupSummary[] {
   const byId = new Map<string, Outcome>(outcomes.map((o) => [o.session_id, o]));
+  const labels = setupLabels(sessions);
   const groups = new Map<string, Session[]>();
   for (const s of sessions) {
     if (s.setup_id === null) continue;
@@ -225,7 +246,7 @@ export function summarizeSetups(sessions: Session[], outcomes: Outcome[]): Setup
       const first = group[0]!;
       return {
         setup_id,
-        label: `${first.harness} · ${first.model}`,
+        label: labels.get(setup_id)!,
         sessions: group.length,
         mature: outs.length,
         spend_usd: sum(priced),
@@ -259,6 +280,8 @@ export function buildSetupRows(sessions: Session[], outcomes: Outcome[]): SetupR
   const first = new Map<string, Session>();
   for (const s of sessions) if (s.setup_id !== null && !first.has(s.setup_id)) first.set(s.setup_id, s);
 
+  const labels = setupLabels(sessions);
+
   return aggregateBySetup(scored)
     .filter((a) => a.setup_id !== UNKNOWN_SETUP)
     .map((a) => {
@@ -269,7 +292,7 @@ export function buildSetupRows(sessions: Session[], outcomes: Outcome[]): SetupR
       const rate = (n: number) => (a.mature === 0 ? null : n / a.mature);
       return {
         setup_id: a.setup_id,
-        label: `${s.harness} · ${s.model}`,
+        label: labels.get(a.setup_id)!,
         harness: s.harness,
         model: s.model,
         rules_hash: s.rules_hash,
