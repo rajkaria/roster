@@ -1,0 +1,29 @@
+[roster setup=D task=T43]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T43 · W3 · Price DeepSeek replays from tokens, and cap them with Roster's own budget
+GOAL: For a DeepSeek-backed setup, Claude Code's total_cost_usd uses Claude prices, so a deepseek-flash replay reported $2.01 and was
+stopped by `--max-budget-usd` after 53 turns. Cost and caps for provider setups must come from Roster's own price table.
+READ: src/harness/claude.ts (how --max-budget-usd and costUsd are set), src/harness/provider.ts, src/price/deepseek.ts,
+src/replay/run.ts (budget per run), /Users/Shared/roster-replays/g4-result.json is NOT readable to you; use this shape instead:
+setup E, model deepseek-flash, 53 turns, reported cost 2.010872, verdict agent_error, error "budget".
+OWNS: src/harness/claude.ts, src/replay/run.ts, tests/provider-cost.test.ts
+BUILD: For setups with a non-Anthropic provider (setup.env has ANTHROPIC_BASE_URL not pointing at anthropic.com): don't pass
+--max-budget-usd; compute costUsd from the run's token usage with priceDeepSeek at the run's timestamp; enforce the per-run budget by
+Roster itself (turn cap plus a token-based cost check after the run; if over budget, mark error "budget" with the Roster-computed
+cost). Anthropic setups keep the current behaviour. Record both numbers on the result: costUsd (Roster) and reportedCostUsd (harness).
+ACCEPTANCE: tests with a stubbed harness result for a DeepSeek setup: no --max-budget-usd in the command; costUsd equals priceDeepSeek
+of the tokens; reportedCostUsd kept; an Anthropic setup still gets --max-budget-usd. Existing tests pass.
+TEST: bun test tests/provider-cost.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
