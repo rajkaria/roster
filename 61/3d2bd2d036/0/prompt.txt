@@ -1,0 +1,47 @@
+[roster setup=C task=T48]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T48 · W4 · Coordinator tool backend: replace the stubs with the modules that exist
+GOAL: A dry run of `roster run .` showed the coordinator can't do a review: it can't list replayable tasks, and get_replay_results,
+rerun, classify_failures, gate, promote and revert all return "not available" although src/replay, src/grade/taxonomy.ts and
+src/gate exist. Wire them.
+READ: src/agent/tools.ts (the ToolBackend interface and the `missing(...)` entries near the end), src/replay/run.ts (runReplays,
+replayRunner), src/replay/tasks.ts (buildReplayTasks), src/setups/registry.ts, src/gate/index.ts (gate, discordant),
+src/grade/taxonomy.ts (classify, parseTranscript), src/cli/run.ts (how the backend is built), tests/agent.test.ts.
+OWNS: src/agent/backend.ts (new: the real backend), src/agent/tools.ts (only to add a `list_tasks` tool and to use the real backend
+by default), src/cli/run.ts (only to construct the real backend), tests/agent-backend.test.ts
+BUILD:
+- list_tasks(setup?) → replayable tasks {id, setup, track, tercile, userPrompts, originalTurns} from buildReplayTasks over the
+  repo's sessions, so the model can name task ids. sampleTasks: a deterministic simple sampler (up to N tasks of the suspect setup,
+  tests track first, spread across terciles, seeded), labelled "simple sampler" in its output.
+- get_replay_results and rerun read and write the replay rows the run produced (in memory plus .roster/roster.db when available).
+- classify_failures uses src/grade/taxonomy.ts on each failed replay's transcript.
+- gate uses src/gate/index.ts with the plan's budget; its verdict is the only thing that can promote.
+- promote and revert record the decision in reports/<slug>/promotion.json ({promoted, from, reasons, at}); opening a pull request
+  is a separate command and is not done here.
+- propose_rules_candidate stays "not available yet" (built later).
+ACCEPTANCE: tests with a stub harness on the T01 fixture repo: list_tasks returns ids; a scripted model run calls plan_replays with
+listed ids → run_replays → get_replay_results → gate → promote, and promotion.json is written; existing agent tests pass.
+TEST: bun test tests/agent-backend.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bpzl1qjt6</task-id>
+<tool-use-id>toolu_01FZrckuCZ5TcvMTYCD73xYZ</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T48/54b90f3b-9575-4229-8f9e-e5a7e17ac99d/tasks/bpzl1qjt6.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full test suite baseline" completed (exit code 0)</summary>
+</task-notification>
