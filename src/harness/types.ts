@@ -36,6 +36,7 @@ export type HarnessErrorKind =
   | "budget" // spend cap hit
   | "rate_limited" // 429, retries exhausted
   | "server_error" // 5xx, retries exhausted
+  | "provider_unavailable" // billing, auth or availability error from the provider (401/402/403, "Insufficient Balance", ...)
   | "agent_error" // the harness reported is_error for another reason (auth, refusal, ...)
   | "unparseable_output" // exited without a result JSON
   | "spawn_failed" // binary missing or not executable

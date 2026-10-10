@@ -201,6 +201,21 @@ export function apiStatusOf(j: Json | null, stderr: string): number | null {
 
 const retryable = (s: number | null) => s !== null && (s === 429 || (s >= 500 && s <= 599));
 
+const PROVIDER_STATUSES = new Set([401, 402, 403]);
+const PROVIDER_MESSAGE = /insufficient balance|authentication|rate.?limit|overloaded/i;
+
+/**
+ * A billing, auth or availability failure of the provider, not of the agent: status 401/402/403, or a message like
+ * "Insufficient Balance". `status` is null when only the message told. Null when the failure is something else.
+ * 429/5xx keep their own kinds (rate_limited, server_error) after retries; the runner treats those the same way.
+ */
+export function providerErrorOf(j: Json | null, stderr: string, apiStatus: number | null): { status: number | null } | null {
+  if (apiStatus !== null && PROVIDER_STATUSES.has(apiStatus)) return { status: apiStatus };
+  if (apiStatus !== null) return null;
+  const text = `${typeof j?.result === "string" ? j.result : ""}\n${stderr}`;
+  return PROVIDER_MESSAGE.test(text) ? { status: null } : null;
+}
+
 function errorKindOf(j: Json | null, x: Exec, apiStatus: number | null): HarnessErrorKind | null {
   if (x.timedOut) return "timeout";
   if (x.spawnError) return "spawn_failed";
@@ -212,6 +227,7 @@ function errorKindOf(j: Json | null, x: Exec, apiStatus: number | null): Harness
   if (/budget/i.test(subtype)) return "budget";
   if (apiStatus === 429) return "rate_limited";
   if (retryable(apiStatus)) return "server_error";
+  if (providerErrorOf(j, x.err, apiStatus)) return "provider_unavailable";
   return "agent_error";
 }
 

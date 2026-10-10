@@ -153,7 +153,12 @@ const ERROR_CODE: Partial<Record<string, FailureCode>> = {
   budget: FailureCode.F5,
   spawn_failed: FailureCode.F6,
   setup_failed: FailureCode.F6,
+  provider_unavailable: FailureCode.F6,
 };
+
+/** Consecutive provider_unavailable results after which a setup's remaining runs are skipped. */
+const PROVIDER_DOWN_AFTER = 2;
+const isProviderDown = (r: Replay) => r.error?.startsWith("provider_unavailable") === true;
 
 /** One (task, setup) run. Never throws. */
 async function runOne(
@@ -247,6 +252,9 @@ async function runOne(
 
     if (res.isError) {
       row.error = res.errorKind ?? "agent_error";
+      if (res.errorKind === "provider_unavailable") {
+        row.error = `provider_unavailable: ${res.attempts.at(-1)?.apiStatus ?? "unknown"}`;
+      }
       const codes = new Set(classify({ verdict: "agent_error" }, null, t).map((c) => c.code));
       const forced = res.errorKind ? ERROR_CODE[res.errorKind] : undefined;
       if (forced === FailureCode.F6) codes.clear();
@@ -362,9 +370,14 @@ export async function runReplays(opts: RunReplaysOptions): Promise<Replay[]> {
   const out: Array<{ order: number; replay: Replay }> = [];
   let spent = 0;
   let next = 0;
+  const downStreak = new Map<string, number>();
   const worker = async () => {
     while (next < queue.length) {
       const job = queue[next++]!;
+      if ((downStreak.get(job.setup.id) ?? 0) >= PROVIDER_DOWN_AFTER) {
+        skip(job.task.id, job.setup.id, "provider unavailable");
+        continue;
+      }
       const left = opts.maxCostUsd - spent;
       if (left <= 0) {
         skip(job.task.id, job.setup.id, `budget: spent $${spent.toFixed(4)} of $${opts.maxCostUsd}`);
@@ -372,6 +385,7 @@ export async function runReplays(opts: RunReplaysOptions): Promise<Replay[]> {
       }
       const replay = await runOne(o, job.task, job.setup, Math.min(opts.perRunUsd ?? DEFAULT_PER_RUN_USD, left));
       spent += replay.cost_usd ?? 0;
+      downStreak.set(job.setup.id, isProviderDown(replay) ? (downStreak.get(job.setup.id) ?? 0) + 1 : 0);
       out.push({ order: job.order, replay });
     }
   };
