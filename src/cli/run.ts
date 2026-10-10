@@ -83,7 +83,7 @@ export async function runRun(args: RunArgs): Promise<number> {
         repo: args.repo,
         budgetUsd: args.budgetUsd,
         llm,
-        backend: defaultBackend({ cacheDir: args.cache }),
+        backend: defaultBackend({ cacheDir: args.cache, replay: { repo: args.repo } }),
         outDir,
         dbPath: resolve(args.db),
         runId,
