@@ -1,13 +1,16 @@
 // T53: the batched scorer gives the same outcomes as the per-session one, with fewer, bounded git calls.
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { formatTimings, scoreAll, scoreSession } from "../src/cli/review.ts";
+import { commitChange, difficulty, reviewDifficulty, type DifficultyScore } from "../src/difficulty/index.ts";
+import { GRAPH_PARALLEL, REVIEW_TIMEOUT_MS } from "../src/difficulty/graph.ts";
+import { identify } from "../src/identity/index.ts";
 import { parseCheckpoints, type ParsedSession } from "../src/ingest/parse.ts";
 import { gitPool, GIT_PARALLEL, spawnGit, type GitRunner } from "../src/score/rework.ts";
 import { survivalMany, type BlameCache } from "../src/score/survival.ts";
-import type { Outcome } from "../src/types.ts";
+import type { Outcome, Session } from "../src/types.ts";
 import { git, makeFixture, SCENARIOS } from "./fixtures/make-fixture.ts";
 
 setDefaultTimeout(120_000);
@@ -151,6 +154,61 @@ describe("roster review on the T01 fixture", () => {
   test("ends with the wall time of every stage", () => {
     const line = out.trim().split("\n").at(-1)!;
     expect(line).toMatch(/^time: fetch \d+\.\d\ds · parse \d+\.\d\ds · identify \d+\.\d\ds · score \d+\.\d\ds · difficulty not run · export \d+\.\d\ds · total \d+\.\d\ds$/);
+  });
+});
+
+describe("difficulty: bounded, cached graph calls", () => {
+  let sessions: Session[];
+  let repo: string;
+
+  beforeAll(() => {
+    repo = join(root, "difficulty");
+    makeFixture(repo, "confound");
+    sessions = parseCheckpoints(repo, "auto", { warn: () => {} }).map((s) => ({ ...s, setup_id: identify(s, repo).setupId }));
+  });
+
+  const touchedFiles = () => {
+    const files = sessions.map((s) => (s.files.length > 0 ? s.files : commitChange(repo, s.commit_sha!)?.files ?? []));
+    return new Set(files.flat()).size;
+  };
+
+  test("graph unavailable: same scores as the per-session path, fallback recorded", async () => {
+    const noGraph = { entireBin: join(root, "no-such-entire") };
+    const ref = difficulty(sessions, repo, noGraph);
+    const { scores, queue } = await reviewDifficulty(sessions, repo, { ...noGraph, run: counting().run });
+    const strip = (rows: DifficultyScore[]) => rows.map((r) => ({ ...r, features: { ...r.features, impact_fallback: undefined } }));
+    expect(strip(scores)).toEqual(strip(ref));
+    expect(scores.some((s) => s.features.impact_fallback === "unavailable")).toBe(true);
+    expect(queue.calls).toBeLessThanOrEqual(touchedFiles());
+  });
+
+  test("a hanging graph times out, falls back to fan-in, and stays within its bounds", async () => {
+    const log = join(root, "entire.log");
+    const bin = join(root, "slow-entire.sh");
+    writeFileSync(bin, `#!/bin/sh\necho "$*" >> "${log}"\nexec sleep 5\n`);
+    chmodSync(bin, 0o755);
+    const t0 = performance.now();
+    const { scores, queue } = await reviewDifficulty(sessions, repo, { entireBin: bin, timeoutMs: 300, run: counting().run });
+    const elapsed = performance.now() - t0;
+
+    // Every spawned call timed out; a stub killed early may not have logged, so the log is a subset.
+    const asked = queue.timedOut;
+    expect(asked.length).toBe(queue.calls);
+    const logged = readFileSync(log, "utf8").trim().split("\n").map((l) => l.split(" --symbol ")[1]!.split(" ")[0]!);
+    expect(logged.every((s) => asked.includes(s))).toBe(true);
+    expect(new Set(logged).size).toBe(logged.length);
+    expect(new Set(asked).size).toBe(asked.length); // each symbol once: cached
+    expect(asked.length).toBeLessThanOrEqual(touchedFiles()); // one call per touched file at most
+    expect(queue.peak).toBeLessThanOrEqual(GRAPH_PARALLEL);
+    expect(scores.every((s) => s.features.impact_method === "fan-in")).toBe(true);
+    expect(scores.some((s) => s.features.impact_fallback === "timeout")).toBe(true);
+    // Calls are killed at the timeout, GRAPH_PARALLEL at a time, never the 5 s the stub sleeps.
+    expect(elapsed).toBeLessThan(Math.ceil(asked.length / GRAPH_PARALLEL) * 300 + 5_000);
+  });
+
+  test("the review default timeout is 10 s", () => {
+    expect(REVIEW_TIMEOUT_MS).toBe(10_000);
+    expect(GRAPH_PARALLEL).toBe(4);
   });
 });
 

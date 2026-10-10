@@ -3,9 +3,10 @@
 // length. Terciles split the sessions by that score so setups are compared like for like.
 
 import type { Session, Tercile } from "../types.ts";
-import { impactSize, type GraphOptions, type ImpactMethod } from "./graph.ts";
+import { gitPool, type GitRunner } from "../score/rework.ts";
+import { GraphQueue, impactSize, impactSizes, type GraphOptions, type ImpactFallback, type ImpactMethod } from "./graph.ts";
 
-export type { ImpactMethod } from "./graph.ts";
+export type { ImpactFallback, ImpactMethod } from "./graph.ts";
 
 export interface DifficultyFeatures {
   /** Added + deleted lines in the session's commit; null when the session has no commit. */
@@ -14,6 +15,8 @@ export interface DifficultyFeatures {
   impact: number;
   /** Which impact method produced `impact`. */
   impact_method: ImpactMethod;
+  /** Set by reviewDifficulty: why the graph was asked but fan-in used (null when it was not). */
+  impact_fallback?: ImpactFallback | null;
   first_prompt_len: number;
 }
 
@@ -31,7 +34,12 @@ function git(repo: string, args: string[]): { ok: boolean; out: string } {
 
 /** Lines and files changed by `sha` (binary files count as one file, zero lines). */
 export function commitChange(repo: string, sha: string): { lines: number; files: string[] } | null {
-  const r = git(repo, ["show", "--numstat", "--format=", "--no-renames", sha]);
+  return parseNumstat(git(repo, [...NUMSTAT, sha]));
+}
+
+const NUMSTAT = ["show", "--numstat", "--format=", "--no-renames"];
+
+function parseNumstat(r: { ok: boolean; out: string }): { lines: number; files: string[] } | null {
   if (!r.ok) return null;
   let lines = 0;
   const files: string[] = [];
@@ -93,7 +101,52 @@ export function terciles<T extends { session_id: string; difficulty: number }>(r
 
 /** Difficulty and tercile of every session, scored against the others in `sessions`. */
 export function difficulty(sessions: Session[], repo: string, opts: GraphOptions = {}): DifficultyScore[] {
-  const feats = sessions.map((s) => features(s, repo, opts));
+  return scoreFeatures(sessions, sessions.map((s) => features(s, repo, opts)));
+}
+
+export interface ReviewDifficultyOptions extends GraphOptions {
+  /** Git runner; default a pool of GIT_PARALLEL processes. */
+  run?: GitRunner;
+  /** Concurrent graph calls; default GRAPH_PARALLEL. */
+  concurrency?: number;
+}
+
+/**
+ * `difficulty` for a whole review, with bounded graph calls: at most one per touched file in the
+ * review, GRAPH_PARALLEL at once, REVIEW_TIMEOUT_MS each, every symbol asked once. A session whose
+ * graph call times out, fails or exceeds the budget uses fan-in, and `impact_fallback` says why.
+ */
+export async function reviewDifficulty(
+  sessions: Session[],
+  repo: string,
+  opts: ReviewDifficultyOptions = {},
+): Promise<{ scores: DifficultyScore[]; queue: GraphQueue }> {
+  const run = opts.run ?? gitPool();
+  const changes = await Promise.all(
+    sessions.map(async (s) => (s.commit_sha ? parseNumstat(await run(repo, [...NUMSTAT, s.commit_sha])) : null)),
+  );
+  const touched = sessions.map((s, i) => (s.files.length > 0 ? s.files : changes[i]?.files ?? []));
+  const queue = new GraphQueue(repo, { ...opts, maxCalls: new Set(touched.flat()).size });
+  const impacts = await impactSizes(
+    queue,
+    run,
+    sessions.map((s, i) => ({ sha: changes[i] ? s.commit_sha : null, files: touched[i]! })),
+    opts.maxSymbols,
+  );
+  const feats = sessions.map(
+    (s, i): DifficultyFeatures => ({
+      lines_changed: changes[i]?.lines ?? null,
+      files_touched: touched[i]!.length,
+      impact: impacts[i]!.size,
+      impact_method: impacts[i]!.method,
+      impact_fallback: impacts[i]!.fallback,
+      first_prompt_len: s.first_prompt.length,
+    }),
+  );
+  return { scores: scoreFeatures(sessions, feats), queue };
+}
+
+function scoreFeatures(sessions: Session[], feats: DifficultyFeatures[]): DifficultyScore[] {
   const scores = difficultyFromFeatures(feats);
   const rows = sessions.map((s, i) => ({ session_id: s.id, features: feats[i]!, difficulty: scores[i]! }));
   const t = terciles(rows);
