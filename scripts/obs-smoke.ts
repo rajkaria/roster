@@ -4,7 +4,7 @@ import { flushObs, initObs, setSession, withSpan } from "../src/obs/index.ts";
 
 const enabled = await initObs({ workflowName: "roster-obs-smoke" });
 if (!enabled) {
-  console.error("NEATLOGS_API_KEY is not set or neatlogs is not installed; nothing was sent.");
+  console.error("neatlogs did not start (NEATLOGS_API_KEY is unset or init failed; see the warning above); nothing was sent.");
   process.exit(1);
 }
 
@@ -22,4 +22,4 @@ await withSpan("WORKFLOW", "review", { repo: "roster" }, async (root) => {
 await flushObs();
 console.log(`review ${reviewId} sent as one trace`);
 console.log(`trace id: ${traceId ?? "(SDK did not expose a trace id)"}`);
-console.log("trace url: not printed; the SDK documents no URL helper, so find this trace id in the neatlogs dashboard");
+console.log("trace url: not printed; neatlogs 1.1.28 exposes no trace URL, so find this trace id in the neatlogs dashboard");
