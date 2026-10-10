@@ -1,0 +1,28 @@
+[roster setup=C task=T52]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T52 · W4 · Unattended share above 1 breaks review validation
+GOAL: `roster review` now fails with "setups[0].unattended must be null or a number in [0, 1]". In src/review/export.ts the setup
+row computes unattended as rate(a.unattended), and rate divides by a.mature, but a.unattended counts all sessions with a known prompt
+count (T42), mature or not. With 6 mature sessions out of 52 the share goes above 1.
+READ: src/review/export.ts (the setup-row builder around `const rate = (n: number) => (a.mature === 0 ? null : n / a.mature)`),
+src/score/index.ts (aggregateBySetup: unattended, sessions, mature, and how many sessions have a known prompt count).
+OWNS: src/review/export.ts, src/score/index.ts (only to expose the count of sessions with a known prompt count, if missing),
+tests/unattended-share.test.ts
+BUILD: unattended share = sessions needing exactly one prompt ÷ sessions with a known prompt count (all sessions, not only mature);
+null when that denominator is 0. Survival, reverted and rework stay over mature sessions.
+ACCEPTANCE: a test with 10 sessions (2 mature, 8 too young, 9 with one prompt) gives unattended 0.9 and the review validates; the
+review of the T01 fixture validates end to end. Whole suite green.
+TEST: bun test tests/unattended-share.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
