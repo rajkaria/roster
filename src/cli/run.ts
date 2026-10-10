@@ -6,7 +6,7 @@ import { deepseekClient } from "../llm/client.ts";
 import { flushObs, initObs, setSession, withSpan } from "../obs/index.ts";
 import { repoLabel, reviewSlug } from "../review/export.ts";
 import { DEFAULT_DB, newRunId, runCoordinator } from "../agent/coordinator.ts";
-import { defaultBackend } from "../agent/tools.ts";
+import { defaultBackend } from "../agent/backend.ts";
 import { DEFAULT_CACHE, UsageError } from "./review.ts";
 
 const USAGE = `usage: roster run <repo> --budget <usd> [--out <dir>] [--run-id <id>] [--db <path>] [--model <m>] [--cache <dir>]
@@ -83,7 +83,7 @@ export async function runRun(args: RunArgs): Promise<number> {
         repo: args.repo,
         budgetUsd: args.budgetUsd,
         llm,
-        backend: defaultBackend({ cacheDir: args.cache, replay: { repo: args.repo } }),
+        backend: defaultBackend({ cacheDir: args.cache, dbPath: resolve(args.db), replay: { repo: args.repo } }),
         outDir,
         dbPath: resolve(args.db),
         runId,

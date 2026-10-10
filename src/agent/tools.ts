@@ -1,18 +1,14 @@
 // In-process tools the coordinator model may call (DESIGN.md §"Coordinator tools").
 // Each tool validates its arguments, runs inside a TOOL span, and answers with JSON. Bad calls get an error
 // message back, never a crash. The gate decides what ships: `promote` refuses any candidate the gate did not approve.
-import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { fetchCheckpoints } from "../ingest/fetch.ts";
-import { parseCheckpoints } from "../ingest/parse.ts";
-import { identify } from "../identity/index.ts";
 import { ATTR } from "../obs/attributes.ts";
 import { type SpanAttrs, withSpan } from "../obs/index.ts";
-import { reviewSlug, summarizeSetups } from "../review/export.ts";
-import { FailureCode, type GateDecision, type Outcome, type Replay, type Review, type Session } from "../types.ts";
+import { FailureCode, type GateDecision, type Replay } from "../types.ts";
 import type { ToolCall, ToolSpec } from "../llm/types.ts";
 import { checkPlan, type PlanRevision } from "./plan.ts";
-import { replayRunner, type ReplayRunnerDeps } from "../replay/run.ts";
+
+// The real backend lives in ./backend.ts; it is re-exported here so the coordinator's default stays one import.
+export { defaultBackend, type DefaultBackendOptions } from "./backend.ts";
 
 /** A gate decision as the coordinator records it: every rejection names its failed tasks. */
 export interface Decision extends GateDecision {
@@ -44,20 +40,37 @@ export interface ReplayBatch {
   cost_usd: number;
 }
 
+/** A replayable task as list_tasks shows it. originalTurns is null when the checkpoint metadata does not record it. */
+export interface TaskSummary {
+  id: string;
+  setup: string | null;
+  track: "tests" | "judge-only" | "none";
+  tercile: 1 | 2 | 3 | null;
+  userPrompts: number;
+  originalTurns: number | null;
+}
+
 /** What the tools wrap. Methods that throw NotAvailableError report "not available yet" to the model. */
 export interface ToolBackend {
   ingestRepo(a: { repo: string }): Promise<unknown>;
   getScorecard(a: { repo: string }): Promise<unknown>;
+  /** Replayable tasks, optionally of one setup. Optional: a backend without it answers "not available yet". */
+  listTasks?(a: { repo: string; setup?: string }): Promise<TaskSummary[]>;
   /** A stratified task sample (≤ max), used when the model plans without naming tasks. */
   sampleTasks(a: { repo: string; max: number; exclude: string[] }): Promise<string[]>;
   runReplays(a: { plan_id: string; tasks: string[]; setups: string[]; max_cost_usd: number }): Promise<ReplayBatch>;
   getReplayResults(a: { plan_id: string; setup?: string }): Promise<Replay[]>;
   rerun(a: { plan_id: string; task: string; setup: string; max_cost_usd: number }): Promise<ReplayBatch>;
   classifyFailures(a: { plan_id: string; setup: string }): Promise<unknown>;
-  /** Deterministic gate (DESIGN.md §"Gate"). The coordinator records it and cannot override it. */
-  gate(a: { plan_id: string; candidate: string }): Promise<Omit<Decision, "failed_tasks"> & { failed_tasks?: string[] }>;
-  promote(a: { candidate: string; decision: Decision }): Promise<unknown>;
-  revert(a: { setup: string; reason: string }): Promise<unknown>;
+  /** Deterministic gate (DESIGN.md §"Gate"). The incumbent and budget come from the plan. The coordinator cannot override it. */
+  gate(a: {
+    plan_id: string;
+    candidate: string;
+    incumbent: string | null;
+    budget_usd: number;
+  }): Promise<Omit<Decision, "failed_tasks"> & { failed_tasks?: string[] }>;
+  promote(a: { repo: string; candidate: string; decision: Decision; from: string | null }): Promise<unknown>;
+  revert(a: { repo: string; setup: string; reason: string }): Promise<unknown>;
 }
 
 export class NotAvailableError extends Error {
@@ -148,6 +161,19 @@ const TOOLS: ToolDef[] = [
   },
   {
     spec: {
+      name: "list_tasks",
+      description:
+        "Replayable tasks from the repo's sessions: id, setup, track (tests, judge-only or none), tercile, user prompts and original turns. Name task ids from here in plan_replays.",
+      parameters: obj({ setup: str("Only this setup's tasks.") }),
+    },
+    async run(a, _s, ctx, b) {
+      if (!b.listTasks) throw new NotAvailableError("list_tasks");
+      const tasks = await b.listTasks({ repo: ctx.repo, setup: a.setup as string | undefined });
+      return { count: tasks.length, tasks };
+    },
+  },
+  {
+    spec: {
       name: "plan_replays",
       description:
         "Write or revise plan.json. Give a one-paragraph rationale, the suspect setup, ≤ 3 candidate setup ids and ≤ 12 task session ids (omit tasks for a stratified sample). Call again to replan after a gate rejection or F6.",
@@ -166,6 +192,7 @@ const TOOLS: ToolDef[] = [
     },
     async run(a, state, ctx, b) {
       const input = { ...a };
+      const sampled = input.tasks === undefined;
       if (input.tasks === undefined) {
         input.tasks = await b.sampleTasks({ repo: ctx.repo, max: 12, exclude: state.excludedTasks });
       }
@@ -179,7 +206,7 @@ const TOOLS: ToolDef[] = [
       });
       if (!check.ok) throw new ToolError(`plan rejected: ${check.errors.join("; ")}`);
       state.plans.push(check.revision);
-      return { plan_id: planId(ctx.runId, check.revision), ...check.revision };
+      return { plan_id: planId(ctx.runId, check.revision), ...check.revision, ...(sampled ? { sampled_by: "simple sampler" } : {}) };
     },
   },
   {
@@ -222,6 +249,10 @@ const TOOLS: ToolDef[] = [
     },
     async run(a, state, ctx, b, span) {
       const plan = requirePlan(state);
+      if (!plan.body.tasks.includes(a.task as string)) throw new ToolError(`${a.task} is not in the current plan`);
+      if (![plan.body.suspect, ...plan.body.candidates].includes(a.setup as string)) {
+        throw new ToolError(`${a.setup} is not in the current plan`);
+      }
       span.attrs.task = a.task as string;
       span.attrs.setup = a.setup as string;
       const batch = await b.rerun({
@@ -268,7 +299,12 @@ const TOOLS: ToolDef[] = [
       if (!plan.body.candidates.includes(candidate)) throw new ToolError(`${candidate} is not a candidate in the current plan`);
       span.attrs.setup = candidate;
       const raw = await withSpan("GUARDRAIL", "gate", { setup: candidate, evidenceLevel: "B" }, () =>
-        b.gate({ plan_id: planId(ctx.runId, plan), candidate }),
+        b.gate({
+          plan_id: planId(ctx.runId, plan),
+          candidate,
+          incumbent: plan.body.suspect,
+          budget_usd: plan.body.budget_usd,
+        }),
       );
       const decision: Decision = { ...raw, failed_tasks: raw.failed_tasks ?? [] };
       if (
@@ -302,7 +338,7 @@ const TOOLS: ToolDef[] = [
         (d) => d.candidate === candidate && d.plan_id === planId(ctx.runId, plan) && d.verdict === "promote",
       );
       if (!decision) throw new ToolError(`the gate has not approved ${candidate} on the current plan; the gate decides what ships`);
-      const res = await b.promote({ candidate, decision });
+      const res = await b.promote({ repo: ctx.repo, candidate, decision, from: plan.body.suspect });
       state.promoted = candidate;
       return res;
     },
@@ -313,9 +349,9 @@ const TOOLS: ToolDef[] = [
       description: "Revert a previously promoted setup.",
       parameters: obj({ setup: str("Setup id."), reason: str("Why.") }, ["setup", "reason"]),
     },
-    async run(a, state, _ctx, b, span) {
+    async run(a, state, ctx, b, span) {
       span.attrs.setup = a.setup as string;
-      const res = await b.revert({ setup: a.setup as string, reason: a.reason as string });
+      const res = await b.revert({ repo: ctx.repo, setup: a.setup as string, reason: a.reason as string });
       state.reverted.push(a.setup as string);
       if (state.promoted === a.setup) state.promoted = null;
       return res;
@@ -427,53 +463,3 @@ export async function executeToolCall(
   });
 }
 
-export interface DefaultBackendOptions {
-  cacheDir?: string;
-  reportsDir?: string;
-  /** What `run_replays` needs: the repo under review, plus optional overrides (setups root, work root, harness). */
-  replay?: Omit<ReplayRunnerDeps, "cacheDir">;
-}
-
-/**
- * The backend over the modules that exist today: ingest (fetch → parse → identify) and the observational
- * review in reports/<slug>/, and run_replays over src/replay/run.ts. The rest are not wired yet and report so.
- */
-export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
-  const cacheDir = resolve(opts.cacheDir ?? ".roster/cache");
-  const reportsDir = resolve(opts.reportsDir ?? "reports");
-  const readJson = <T>(repo: string, file: string): T | null => {
-    const p = join(reportsDir, reviewSlug(repo), file);
-    return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")) as T) : null;
-  };
-  const missing = (what: string) => async (): Promise<never> => {
-    throw new NotAvailableError(what);
-  };
-  return {
-    async ingestRepo({ repo }) {
-      const f = await fetchCheckpoints(repo, { cacheDir });
-      if (f.backend === "none") throw new ToolError("no Entire checkpoints found in this repo");
-      const sessions = parseCheckpoints(f.repoPath, f.backend === "refs" ? "git-refs" : "branch");
-      const counts: Record<string, number> = {};
-      for (const s of sessions) {
-        const id = identify(s, f.repoPath).setupId ?? "unknown";
-        counts[id] = (counts[id] ?? 0) + 1;
-      }
-      return { backend: f.backend, head: f.headSha, sessions: sessions.length, sessions_per_setup: counts };
-    },
-    async getScorecard({ repo }) {
-      const review = readJson<Review>(repo, "review.json");
-      if (!review) throw new ToolError(`no review for ${repo}; run \`roster review ${repo} --observational\` first`);
-      const sessions = readJson<Session[]>(repo, "sessions.json") ?? [];
-      const outcomes = readJson<Outcome[]>(repo, "outcomes.json") ?? [];
-      return { review, setups: summarizeSetups(sessions, outcomes) };
-    },
-    sampleTasks: missing("stratified task sampling (src/difficulty is not built); name the tasks explicitly"),
-    runReplays: replayRunner({ cacheDir, ...opts.replay }),
-    getReplayResults: missing("get_replay_results (src/replay is not built)"),
-    rerun: missing("rerun (src/replay is not built)"),
-    classifyFailures: missing("classify_failures (src/grade has no taxonomy classifier yet)"),
-    gate: missing("gate (src/gate is not built)"),
-    promote: missing("promote (src/act is not built)"),
-    revert: missing("revert (src/act is not built)"),
-  };
-}
