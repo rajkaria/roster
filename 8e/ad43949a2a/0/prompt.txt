@@ -1,0 +1,26 @@
+[roster setup=C task=T14]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T14 · W4 · neatlogs instrumentation of Roster's own runs
+GOAL: Every Roster run is one neatlogs trace: a WORKFLOW root, an AGENT span for the coordinator, TOOL spans per step and attempt,
+a GUARDRAIL span for the gate, with roster.* attributes.
+READ: docs/DESIGN.md §"neatlogs". neatlogs TypeScript SDK docs (docs.neatlogs.com): init, span/trace, wrapClaudeAgentSDK, flush.
+OWNS: src/obs/index.ts, src/obs/attributes.ts, tests/obs.test.ts
+BUILD: initObs({workflowName}) (no-op with a single warning if NEATLOGS_API_KEY is unset); withSpan(kind, name, attrs, fn);
+recordAttempt(spanAttrs, attempt, outcome); setSession(reviewId); flushObs(). Attribute names exactly: roster.setup, roster.task,
+roster.attempt, roster.failure_code, roster.evidence_level, roster.repo, roster.cost_usd. Export traceUrl() if the SDK exposes it.
+ACCEPTANCE: tests run with the SDK mocked at the module boundary and assert span tree shape + attributes; a script
+`bun scripts/obs-smoke.ts` (opt-in, needs key) sends one 3-span trace and prints its id/url.
+TEST: bun test tests/obs.test.ts
+DO NOT TOUCH: anything outside OWNS.
