@@ -1,0 +1,27 @@
+[roster setup=B task=T23]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T23 · W5 · Forward harness: paired runs with blind grading
+GOAL: Run each backlog task through two setups in parallel worktrees, grade both blind, merge the winner, record the pair.
+READ: docs/DESIGN.md §"Forward run", §"Stop rule".
+OWNS: src/forward/index.ts, src/forward/blind.ts, src/cli/forward.ts, tests/forward.test.ts
+BUILD: `roster forward --backlog <file> --pair OLD,NEW --parallel 4`: for each task, two worktrees from the same main sha, each
+launched through scripts/run-setup.sh semantics (same tag format), wait, run the task's pre-committed acceptance tests + full
+suite + scope guard (src/grade), random X/Y labels for the blind diff-judge, choose the merge (pass beats fail; both pass → the blind
+judge's preference; judge tie → random choice with a logged seed), merge --no-ff, record ForwardPair. Stop rule: after ≥ 15 pairs, if NEW lost ≥ 3 more
+discordant pairs than it won, open a revert PR via src/act (stub if absent) and continue on OLD. Resumable.
+ACCEPTANCE: with a stub harness that succeeds/fails per a script, 6 pairs complete, labels are blind in the judge input, stop rule
+triggers on a scripted losing sequence.
+TEST: bun test tests/forward.test.ts
+DO NOT TOUCH: anything outside OWNS.
