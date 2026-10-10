@@ -1,0 +1,26 @@
+[roster setup=B task=T46]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T46 · W3 · Replay turn cap scales with the original session
+GOAL: A DeepSeek replay of task T12 stopped at the 40-turn cap (error max_turns, F5) although the original session took 59 turns.
+A fixed cap misjudges big tasks. The cap should come from the task itself.
+READ: src/replay/run.ts (DEFAULT_MAX_TURNS, maxTurns option), src/replay/tasks.ts (ReplayTask), src/types.ts (Session).
+OWNS: src/replay/run.ts, src/replay/tasks.ts, tests/replay-turns.test.ts, and any assertion in tests/replay-run*.test.ts that encodes
+the fixed default (you may modify those; say which)
+BUILD: ReplayTask gains originalTurns (from the session transcript's assistant turns when known, else null). The per-run turn cap is
+max(60, ceil(2 × originalTurns)) when known, else 80; an explicit opts.maxTurns still wins. The cap used is recorded on the Replay
+(field turn_cap).
+ACCEPTANCE: tests: a task with originalTurns 59 gets cap 118; unknown → 80; explicit maxTurns overrides; existing tests pass.
+TEST: bun test tests/replay-turns.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
