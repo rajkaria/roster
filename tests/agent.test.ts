@@ -16,6 +16,7 @@ import {
   type ToolContext,
   validateArgs,
 } from "../src/agent/tools.ts";
+import { parseRunArgs } from "../src/cli/run.ts";
 import { FailureCode, type Replay } from "../src/types.ts";
 
 // An in-memory stand-in for the replay, grade and gate modules (not built yet). The coordinator only sees what
@@ -443,6 +444,16 @@ describe("plan limits", () => {
     }
     const ok = checkPlan({ rationale: "r", candidates: ["E"], tasks: ["t1"], budget_usd: 50 }, ctx);
     expect(ok.ok && ok.revision.body.budget_usd).toBe(5);
+  });
+});
+
+describe("roster run arguments", () => {
+  test("requires a repo and a positive budget", () => {
+    expect(parseRunArgs(["repo", "--budget", "2.5", "--run-id=r1"])).toMatchObject({ repo: "repo", budgetUsd: 2.5, runId: "r1" });
+    expect(() => parseRunArgs(["repo"])).toThrow("--budget is required");
+    expect(() => parseRunArgs(["repo", "--budget", "0"])).toThrow("positive number");
+    expect(() => parseRunArgs(["--budget", "1"])).toThrow("missing <repo>");
+    expect(() => parseRunArgs(["repo", "--budget", "1", "--nope"])).toThrow("unknown flag");
   });
 });
 

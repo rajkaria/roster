@@ -156,7 +156,8 @@ function rebuild(events: StoredEvent[]) {
   return { messages, state, llmUsd, unpriced, turns, ended };
 }
 
-const newRunId = (now: Date) =>
+/** A fresh run id, e.g. "run-20261010143000-k3x9". */
+export const newRunId = (now: Date) =>
   `run-${now.toISOString().replace(/\D/g, "").slice(0, 14)}-${Math.random().toString(36).slice(2, 6)}`;
 
 /** Runs (or resumes) the coordinator until promotion, an honest give-up, the budget or MAX_TURNS. */
