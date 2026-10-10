@@ -5,7 +5,7 @@
 // A review goes through GraphQueue instead, which bounds and caches the spawns and records why it fell back.
 
 import { dirname, join, normalize } from "node:path";
-import type { GitRunner } from "../score/rework.ts";
+import { GIT_TIMEOUT_MS, type GitRunner } from "../score/rework.ts";
 
 export type ImpactMethod = "graph" | "fan-in";
 
@@ -29,7 +29,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
 export const DEFAULT_MAX_SYMBOLS = 8;
 
 function git(repo: string, args: string[]): { ok: boolean; out: string } {
-  const p = Bun.spawnSync(["git", ...args], { cwd: repo, stdout: "pipe", stderr: "pipe" });
+  const p = Bun.spawnSync(["git", ...args], { cwd: repo, stdout: "pipe", stderr: "pipe", timeout: GIT_TIMEOUT_MS, killSignal: "SIGKILL" });
   return { ok: p.exitCode === 0, out: p.stdout.toString() };
 }
 
