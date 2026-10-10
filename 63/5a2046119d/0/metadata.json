@@ -1,0 +1,45 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "635a2046119d",
+  "session_id": "3f3621e1-2ea0-4e19-803c-198da5f60061",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T18:28:58.53044Z",
+  "branch": "task/T41",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/ingest/parse.ts",
+    "tests/parse-prompts-rules.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "d3b7b6b58f3e",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 22,
+    "cache_creation_tokens": 31142,
+    "cache_read_tokens": 346417,
+    "output_tokens": 12221,
+    "api_call_count": 11
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T18:28:58.514248Z",
+    "agent_lines": 169,
+    "agent_removed": 5,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 169,
+    "total_lines_changed": 174,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

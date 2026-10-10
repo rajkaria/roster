@@ -1,0 +1,31 @@
+[roster setup=B task=T41]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T41 · W1 · Parser: count only real prompts, and hash every project rules file a session loaded
+GOAL: Two parser bugs make this repo's own review wrong. (1) n_user_prompts counts injected user-role messages (tool results,
+background-task notifications, system reminders): one session with a single prompt in prompt.txt shows 16. (2) rules_hash is the same
+for all 40 sessions, because only CLAUDE.md is hashed; sessions that also loaded a CLAUDE.local.md (type Local) must hash differently.
+READ: src/ingest/parse.ts, src/identity/index.ts (how identify prefers session.rules_hash), docs/DESIGN.md §"Recovering the model and
+the rules file from transcripts", tests/fixtures/samples/*.
+OWNS: src/ingest/parse.ts, tests/parse-prompts-rules.test.ts
+BUILD: n_user_prompts = number of distinct prompts in the session's prompt.txt files when present (split on "\n\n---\n\n", deduped
+across checkpoints); otherwise count transcript user messages whose content is plain user text (exclude tool_result blocks, messages
+that are only <task-notification>/<system-reminder> wrappers, and isMeta/isCompactSummary lines). rules_hash = sha256 over every
+instructions/nested_memory attachment of type Project or Local, sorted by path made relative to the session cwd, using recorded
+content; User-type files excluded.
+ACCEPTANCE: tests with transcript lines built from the sample shapes: injected notifications don't count; prompt.txt with 1 prompt →
+1; adding a Local CLAUDE.local.md attachment changes rules_hash; a User ~/.claude/CLAUDE.md doesn't; same files in two worktree
+paths → same hash.
+TEST: bun test tests/parse-prompts-rules.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
