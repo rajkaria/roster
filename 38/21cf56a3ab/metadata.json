@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "3821cf56a3ab",
+  "strategy": "manual-commit",
+  "branch": "task/T01",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/fixtures/make-fixture.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/38/21cf56a3ab/0/metadata.json",
+      "transcript": "/38/21cf56a3ab/0/full.jsonl",
+      "compact_transcript": "/38/21cf56a3ab/0/transcript.jsonl",
+      "content_hash": "/38/21cf56a3ab/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 20089,
+    "cache_read_tokens": 389024,
+    "output_tokens": 17971,
+    "api_call_count": 7
+  }
+}
