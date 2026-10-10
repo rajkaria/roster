@@ -1,0 +1,29 @@
+[roster setup=C task=T39]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T39 · W4 · Make neatlogs tracing real: install the SDK and wire it
+GOAL: Roster's runs are traced in neatlogs. Today src/obs loads the `neatlogs` package dynamically, but the package isn't installed,
+so every run silently skips tracing.
+READ: src/obs/index.ts, src/obs/attributes.ts, scripts/obs-smoke.ts, src/llm/client.ts; the neatlogs TypeScript SDK docs
+(docs.neatlogs.com: init, span/trace, wrapOpenAI, flush) and the installed package's own type definitions.
+OWNS: package.json and bun.lock (add `neatlogs`, pinned exact), src/obs/index.ts, src/obs/attributes.ts, src/llm/client.ts (only to wrap
+the OpenAI client with the SDK's OpenAI wrapper when observability is on), scripts/obs-smoke.ts, tests/obs-sdk.test.ts
+BUILD: `bun add neatlogs@<exact version>`. Align src/obs with the SDK's real API, read from its type definitions (not guessed): init
+with workflow name and API key from env, nested spans of kind WORKFLOW/AGENT/TOOL/GUARDRAIL with roster.* attributes, session id,
+flush. The OpenAI client in src/llm is wrapped so DeepSeek calls become LLM spans. With no NEATLOGS_API_KEY: one warning, no-op.
+obs-smoke prints the trace id and, if the SDK or its API exposes one, the trace URL.
+ACCEPTANCE: tests/obs-sdk.test.ts imports the real `neatlogs` module and asserts the functions src/obs calls exist with the expected
+arity/shape (no network); existing obs tests pass; `bun run typecheck` clean. (The operator runs the live smoke with the key.)
+TEST: bun test tests/obs-sdk.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS. Never read or print .env.
