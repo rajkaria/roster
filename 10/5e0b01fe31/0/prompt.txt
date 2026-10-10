@@ -1,0 +1,29 @@
+[roster setup=B task=T34]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T34 · W3 · Setup registry: definitions, candidates and provider env
+GOAL: One place that turns a setup id (A–F, or a review's hashed setup id plus tags) into everything a harness needs to run it.
+READ: setups/*.json, setups/candidates/*.json, src/harness/provider.ts (providerEnv), src/harness/types.ts, docs/DESIGN.md
+§"Setups", §"Candidate generation".
+OWNS: src/setups/registry.ts, tests/setups-registry.test.ts
+INTERFACE: export interface RunnableSetup { id: string; label: string; harness: 'claude-code' | 'codex'; model: string; rulesPath:
+string; extraRulesPath: string | null; env: Record<string, string>; candidate: boolean }; export function loadSetups(root: string,
+env: Record<string, string | undefined>): RunnableSetup[]
+BEHAVIOUR: Reads setups/*.json (candidate false) and setups/candidates/*.json (candidate true). `append_rules` → extraRulesPath. `env`
+resolved through providerEnv with the given env; a candidate whose variable is missing is still returned with env {} and label suffix
+" (unavailable: <VAR> not set)" — never throws, never includes a secret value in label or errors. Sorted by id.
+ACCEPTANCE: tests with a temp dir of setup files: A–D non-candidates, E/F candidates with env resolved from a fake env, missing var →
+unavailable label and empty env; D has extraRulesPath.
+TEST: bun test tests/setups-registry.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
