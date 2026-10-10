@@ -1,0 +1,25 @@
+[roster setup=A task=T16]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T16 · W5 · Task ledger for our own build
+GOAL: Record every build task's setup, prompt hash, branch, merge commit and Entire session, so our own repo is a labelled dataset.
+READ: docs/DESIGN.md §"Self-build protocol".
+OWNS: scripts/ledger.ts, reports/self/tasks.jsonl (append-only, created by the script), tests/ledger.test.ts
+BUILD: `bun scripts/ledger.ts record <Txx> <setup> <branch>` (called by run-setup.sh at start) and `... merged <Txx> <mergeSha>`;
+`... sync` reads the Entire-Checkpoint trailers on each task branch and fills session ids; `... check` verifies every merged task
+has ≥ 1 checkpoint and that its prompt tag matches its recorded setup. Lines: {task, setup, branch, started_at, prompt_sha256,
+merge_sha, checkpoint_ids[], user_prompts, human_commits}.
+ACCEPTANCE: tests on a temp git repo with fake trailers; `check` flags a tag/setup mismatch.
+TEST: bun test tests/ledger.test.ts
+DO NOT TOUCH: anything outside OWNS (run-setup.sh is ops; propose its one-line hook in your final message).
