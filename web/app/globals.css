@@ -31,3 +31,19 @@ td.num { font-family: var(--font-mono), monospace; }
 .skel { display: block; height: 14px; border-radius: 4px; background: linear-gradient(90deg, var(--line), #2c3038, var(--line)); background-size: 200% 100%; animation: sh 1.4s infinite; }
 @keyframes sh { to { background-position: -200% 0; } }
 @media (max-width: 600px) { main { padding: 20px 14px 48px; } }
+/* Landing page (T47) */
+.hero { padding: 16px 0 8px; }
+.land { margin-top: 40px; }
+.land-h2 { font-size: 1.15rem; margin: 0 0 12px; }
+table.compact { min-width: 0; }
+table.compact td:first-child { white-space: normal; }
+tr.total td { color: var(--dim); border-top: 1px solid var(--line); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 14px 16px; }
+.card p { color: var(--dim); margin: 8px 0 0; font-size: 0.92rem; }
+.tools { padding-left: 20px; margin: 0; }
+.tools li { margin: 6px 0; }
+@media (max-width: 600px) {
+  table.compact th, table.compact td { padding: 8px 6px; font-size: 0.8rem; }
+  table.compact .sub { display: none; }
+}
