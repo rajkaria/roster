@@ -1,0 +1,30 @@
+[roster setup=A task=T49]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T49 · W4 · Coordinator bootstrap: find the scorecard, price DeepSeek calls, flush traces reliably
+GOAL: The dry run's get_scorecard failed ("no review for ."), because the review lives under reports/<owner>__<repo>/; all 15
+DeepSeek LLM calls were unpriced; and neatlogs flush timed out at exit.
+READ: src/cli/run.ts, src/agent/tools.ts (get_scorecard), src/review/export.ts (slug), src/llm/client.ts, src/price/deepseek.ts,
+src/obs/index.ts.
+OWNS: src/cli/run.ts (bootstrap only; T48 also edits this file to build the backend, so keep your change to the bootstrap function and
+merge-friendly), src/llm/client.ts, src/obs/index.ts, tests/run-bootstrap.test.ts
+BUILD: (1) `roster run <repo>` resolves the repo slug the same way `roster review` does (origin remote, else basename) and, if
+reports/<slug>/review.json is missing or older than the repo's newest checkpoint, runs the observational review first; get_scorecard then
+reads it. (2) src/llm/client.ts prices each DeepSeek call with priceDeepSeek (model, prompt cache hit/miss and output tokens from the
+API usage, timestamp) so the run total includes LLM cost. (3) src/obs flush: a longer timeout (e.g. 30 s) and one retry; a failed flush
+logs one line and never changes the exit code.
+ACCEPTANCE: tests: bootstrap on the T01 fixture writes and finds the review under its slug; a fake DeepSeek usage object prices to the
+expected number; flush failure path doesn't throw. Whole suite green, typecheck clean.
+TEST: bun test tests/run-bootstrap.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
