@@ -1,0 +1,27 @@
+[roster setup=C task=T05]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T05 · W1 · Model price table and session cost
+GOAL: Price any session from its token counts, using a dated price table with a source for every row.
+READ: docs/DESIGN.md §"Score: cost".
+OWNS: src/price/prices.json, src/price/index.ts, tests/price.test.ts
+BUILD:
+- prices.json: rows {model_pattern, input, output, cache_read, cache_write (USD per 1M tokens), source_url, checked_on}
+  for every Claude 5.5 model id (Anthropic API and Bedrock global ids), the Codex default model, and an `unknown` row
+  that yields cost=null (never guess). Take prices only from the vendors' official pricing pages; put the URL in each row.
+  If a price can't be confirmed from an official page, leave it null and list it in your final message.
+- index.ts: priceSession(model, tokens) -> {usd: number|null, row_id}; model id normalisation (bedrock prefixes, dates).
+ACCEPTANCE: tests cover exact arithmetic for 3 models, cache tokens, unknown model → null, Bedrock id normalisation.
+TEST: bun test tests/price.test.ts
+DO NOT TOUCH: anything outside OWNS.
