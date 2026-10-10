@@ -190,7 +190,7 @@ describe("aggregateBySetup", () => {
     const zRows = rows.filter((o) => o.setup_id === setupOf.Z).map((o, i) => (i === 0 ? { ...o, cost_usd: null } : o));
     const [z] = aggregateBySetup(zRows);
     expect(z!.cost_unknown).toBe(1);
-    expect(z!.cost_usd).toBe(zRows[1]!.cost_usd);
+    expect(z!.cost_usd).toBeNull();
     expect(z!.cost_per_surviving_change).toBeNull();
   });
 
