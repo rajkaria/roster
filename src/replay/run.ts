@@ -44,6 +44,7 @@ export interface RunReplaysOptions {
   attempt?: number;
   /** Spend cap per harness run, also bounded by what is left of maxCostUsd. Default 2. */
   perRunUsd?: number;
+  /** Explicit turn cap for every run; wins over the per-task cap from `turnCap`. */
   maxTurns?: number;
   timeoutMs?: number;
   /** Test command for grading; default: detected from the sandbox. */
@@ -56,10 +57,17 @@ export interface RunReplaysOptions {
 
 const DEFAULT_PARALLEL = 3;
 const DEFAULT_PER_RUN_USD = 2;
-const DEFAULT_MAX_TURNS = 30;
+const MIN_TURN_CAP = 60;
+const UNKNOWN_TURN_CAP = 80;
 const DEFAULT_TIMEOUT_MS = 20 * 60_000;
 export const LOCAL_RULES_NAME = "CLAUDE.local.md";
 export const SETTING_SOURCES = "project,local";
+
+/** Turn cap for a task: twice the original session's turns (at least 60), or 80 when that is unknown. */
+export function turnCap(task: Pick<ReplayTask, "originalTurns">, explicit?: number): number {
+  if (explicit !== undefined) return explicit;
+  return task.originalTurns === null ? UNKNOWN_TURN_CAP : Math.max(MIN_TURN_CAP, Math.ceil(2 * task.originalTurns));
+}
 
 /** Default work root: the OS temp dir, never $HOME. */
 export function defaultWorkRoot(): string {
@@ -175,6 +183,7 @@ async function runOne(
     transcript_ref: null,
     trace_url: null,
     error: null,
+    turn_cap: turnCap(task, o.maxTurns),
   };
   const fail = (code: FailureCode, why: string): Replay => {
     row.failure_codes = [code];
@@ -219,7 +228,7 @@ async function runOne(
         prompt: task.prompt,
         model: setup.model,
         rulesFile: setup.rulesPath,
-        maxTurns: o.maxTurns ?? DEFAULT_MAX_TURNS,
+        maxTurns: row.turn_cap!,
         timeoutMs: o.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         budgetUsd,
         env: setup.env,
