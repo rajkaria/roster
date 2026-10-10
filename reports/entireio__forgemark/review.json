@@ -1,0 +1,14 @@
+{
+  "id": "entireio__forgemark-20261010220357",
+  "repo": "entireio/forgemark",
+  "created_at": "2026-10-10T22:03:57.020Z",
+  "generated_at": "2026-10-10T22:03:57.020Z",
+  "has_entire_data": true,
+  "setups": [],
+  "label": "insufficient_data",
+  "suspect": null,
+  "odds_ratio": null,
+  "ci95": null,
+  "p_value": null,
+  "evidence_level": "A"
+}
