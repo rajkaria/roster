@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "0eff79666a3c",
+  "session_id": "3fe82180-7148-42b1-8ac2-dbc12ff66411",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T13:32:25.445696Z",
+  "branch": "task/T05",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "tests/price.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-haiku-5-5",
+  "turn_id": "470ce22613c2",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 36,
+    "cache_creation_tokens": 56700,
+    "cache_read_tokens": 756663,
+    "output_tokens": 21072,
+    "api_call_count": 18
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T13:32:25.429082Z",
+    "agent_lines": 144,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 144,
+    "total_lines_changed": 144,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
