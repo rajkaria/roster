@@ -277,6 +277,31 @@ function parseCheckpoint(cp: RawCheckpoint): Slice[] {
   return slices;
 }
 
+const normPrompt = (s: string) => s.replace(/\s+/g, " ").trim();
+
+/**
+ * A session spanning several checkpoints repeats its prompts in each slice. Its prompts are the ordered union of
+ * distinct prompts: compare normalised text, keep first-occurrence order. A text seen k times within one slice is k
+ * distinct prompts, so the union keeps the largest per-slice multiplicity rather than collapsing repeats like "yes".
+ */
+export function unionPrompts(slices: string[][]): string[] {
+  const kept = new Map<string, number>();
+  const out: string[] = [];
+  for (const prompts of slices) {
+    const seen = new Map<string, number>();
+    for (const p of prompts) {
+      const k = normPrompt(p);
+      const n = (seen.get(k) ?? 0) + 1;
+      seen.set(k, n);
+      if (n > (kept.get(k) ?? 0)) {
+        kept.set(k, n);
+        out.push(p);
+      }
+    }
+  }
+  return out;
+}
+
 /** Parse every checkpoint in `repoPath` into one Session per agent session id. */
 export function parseCheckpoints(repoPath: string, backend: Backend = "auto", opts: ParseOptions = {}): ParsedSession[] {
   const warn = opts.warn ?? ((m: string) => console.warn(m));
@@ -311,6 +336,7 @@ export function parseCheckpoints(repoPath: string, backend: Backend = "auto", op
     const model = modelSlice?.model ?? "unknown";
     // commit: earliest-created checkpoint of this session that has a trailer-linked commit
     const commit = group.map((g) => commits.get(g.checkpoint_id)).find(Boolean) ?? null;
+    const prompts = unionPrompts(group.map((g) => g.prompts));
     sessions.push({
       id,
       repo: repoName,
@@ -324,8 +350,8 @@ export function parseCheckpoints(repoPath: string, backend: Backend = "auto", op
       cache_read: sum("cr"),
       cache_write: sum("cw"),
       cost_usd: null,
-      n_user_prompts: group.reduce((n, g) => n + g.prompts.length, 0),
-      first_prompt: group.find((g) => g.prompts.length)?.prompts[0] ?? "",
+      n_user_prompts: prompts.length,
+      first_prompt: prompts[0] ?? "",
       commit_sha: commit,
       started_at: group.map((g) => g.start).filter(Boolean).sort()[0] ?? "",
       ended_at: group.map((g) => g.end).filter(Boolean).sort().at(-1) ?? "",
