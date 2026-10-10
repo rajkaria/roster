@@ -1,0 +1,28 @@
+[roster setup=B task=T03]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T03 · W1 · Parse checkpoints into sessions
+GOAL: Turn every checkpoint into Session rows with harness, model, tokens, prompts, files and commit.
+READ: docs/DESIGN.md §"Entire checkpoint format", §"Ingest". Samples: tests/fixtures/samples/.
+OWNS: src/ingest/parse.ts, tests/ingest-parse.test.ts
+BUILD: parseCheckpoints(repoPath, backend) → Session[]. Walk the branch/refs with `git ls-tree -r` / `git show`; read metadata
+and transcripts per the documented layout; derive tokens and model from metadata or, if absent, from transcript usage entries
+(say which in a `source` field); map checkpoint → commit through `Entire-Checkpoint:` trailers on all branches; keep
+multi-session checkpoints as separate sessions; subagent tasks attach to their parent session; sessions without a commit kept
+with commit_sha=null. n_user_prompts excludes tool approvals. entire_url = https://entire.io/gh/<owner>/<repo>/session/<id>
+when the repo has a GitHub remote.
+ACCEPTANCE: fixture → exact expected rows (count, tokens, models, commit links, multi-session split). Malformed JSON in one
+checkpoint → that checkpoint skipped with a warning, others parsed.
+TEST: bun test tests/ingest-parse.test.ts
+DO NOT TOUCH: anything outside OWNS.
