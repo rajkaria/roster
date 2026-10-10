@@ -1,0 +1,34 @@
+[roster setup=B task=T27]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T27 · W4 · One review contract for the CLI export and the web app
+GOAL: `roster review` writes a review.json that the web app renders as-is: repo slug, per-setup rows, evidence levels.
+READ: docs/DESIGN.md §"Data model", §"Score", §"Difficulty and review". Current shapes: src/types.ts `Review`, web/lib/types.ts
+`Review`/`SetupRow`, src/score/index.ts `aggregateBySetup`, src/review/export.ts, src/cli/review.ts.
+OWNS: src/types.ts (add fields to Review / add SetupRow only; don't change other types), src/review/export.ts, src/cli/review.ts,
+web/lib/types.ts, web/lib/reviews.ts, tests/review-contract.test.ts
+BUILD:
+- Review gains: repo as "owner/name" (from `git remote get-url origin`, https or ssh forms; no remote → directory basename),
+  generated_at, has_entire_data, setups: SetupRow[] built from outcomes via aggregateBySetup (setup_id, label, harness, model,
+  rules_hash, sessions, mature_sessions, spend_usd, unattended, survival, reverted, rework_human, surviving_changes,
+  cost_per_surviving_change, evidence_level), plus a `tags` block when prompt tags exist: {setup tag → sessions, inferred setup ids,
+  tag_accuracy}. Keep the existing suspect fields.
+- web/lib/types.ts mirrors these exactly (copy, don't import ../src); web/lib/reviews.ts loads them; rows with mature_sessions 0
+  render "too young" instead of 0%.
+- review.md renders the same setup table.
+ACCEPTANCE: tests/review-contract.test.ts builds the T01 fixture, runs the review export, and asserts every SetupRow field and type,
+the slug parsing for https/ssh/none, and that scripts/sumcheck.ts passes on the output; `cd web && bun run build` succeeds with that
+output copied into ../reports/_contract/.
+TEST: bun test tests/review-contract.test.ts && (cd web && bun run build)
+DO NOT TOUCH: anything outside OWNS.
