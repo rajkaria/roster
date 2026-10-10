@@ -1,1 +1,600 @@
-[]
+[
+  {
+    "repo": "teslamint/entirecontext",
+    "url": "https://github.com/teslamint/entirecontext",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 127,
+    "distinct_setups": 8,
+    "harnesses": [
+      "Claude Code",
+      "Codex"
+    ],
+    "models": [
+      "claude-haiku-4-5-20251001",
+      "claude-opus-4-6",
+      "claude-opus-4-6[1m]",
+      "claude-opus-5",
+      "claude-opus-5-5",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-6-astra"
+    ],
+    "test_command": "pytest",
+    "score": 1016
+  },
+  {
+    "repo": "gkeyllorg/postgkyl",
+    "url": "https://github.com/gkeyllorg/postgkyl",
+    "stars": 24,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 154,
+    "distinct_setups": 4,
+    "harnesses": [
+      "Claude Code",
+      "Codex"
+    ],
+    "models": [
+      "claude-opus-5",
+      "claude-sonnet-5",
+      "gpt-5.6-sol",
+      "gpt-6-astra"
+    ],
+    "test_command": "pytest",
+    "score": 616
+  },
+  {
+    "repo": "yorrick/agent-skills",
+    "url": "https://github.com/yorrick/agent-skills",
+    "stars": 11,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 40,
+    "distinct_setups": 10,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-fable-5",
+      "claude-fable-5-1",
+      "claude-opus-4-6",
+      "claude-opus-4-6[1m]",
+      "claude-opus-5",
+      "claude-opus-5-5",
+      "claude-opus-5-5[1m]",
+      "claude-sonnet-4-6",
+      "claude-sonnet-5",
+      "unknown"
+    ],
+    "test_command": "pytest",
+    "score": 400
+  },
+  {
+    "repo": "crcorbett/taxkit",
+    "url": "https://github.com/crcorbett/taxkit",
+    "stars": 1,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 50,
+    "distinct_setups": 8,
+    "harnesses": [
+      "Claude Code",
+      "Codex"
+    ],
+    "models": [
+      "claude-opus-5",
+      "claude-opus-5-5",
+      "codex-auto-review",
+      "gpt-5.5",
+      "gpt-5.6-sol",
+      "gpt-6-luna",
+      "gpt-6-sol",
+      "gpt-6.1-sol"
+    ],
+    "test_command": "bun run test",
+    "score": 400
+  },
+  {
+    "repo": "BbrSofiane/sof-pi",
+    "url": "https://github.com/BbrSofiane/sof-pi",
+    "stars": 0,
+    "language": "TypeScript",
+    "license": "Apache-2.0",
+    "sessions": 51,
+    "distinct_setups": 7,
+    "harnesses": [
+      "Pi"
+    ],
+    "models": [
+      "glm-5.3-flash",
+      "openai/gpt-5.6-luna-pro",
+      "openai/gpt-5.6-sol",
+      "openai/gpt-6.1-sol",
+      "z-ai/glm-5.2",
+      "z-ai/glm-5.3-flash",
+      "~google/gemini-flash-latest"
+    ],
+    "test_command": "npm test",
+    "score": 357
+  },
+  {
+    "repo": "itsmeyaw/binden",
+    "url": "https://github.com/itsmeyaw/binden",
+    "stars": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 49,
+    "distinct_setups": 6,
+    "harnesses": [
+      "OpenCode"
+    ],
+    "models": [
+      "anthropic.claude-sonnet-5-5",
+      "openai.gpt-5.6-luna",
+      "openai.gpt-5.6-terra",
+      "openai.gpt-6-luna",
+      "openai.gpt-6.1-sol",
+      "unknown"
+    ],
+    "test_command": "npm test",
+    "score": 294
+  },
+  {
+    "repo": "amjadsaadeh/doorbell-detector",
+    "url": "https://github.com/amjadsaadeh/doorbell-detector",
+    "stars": 0,
+    "language": "Jupyter Notebook",
+    "license": "MIT",
+    "sessions": 31,
+    "distinct_setups": 7,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-fable-5",
+      "claude-opus-5",
+      "claude-opus-5-5",
+      "claude-opus-5-5[1m]",
+      "claude-sonnet-4-6",
+      "claude-sonnet-5",
+      "claude-sonnet-5-5"
+    ],
+    "test_command": "pytest",
+    "score": 217
+  },
+  {
+    "repo": "babamba2/superclaude-for-sap",
+    "url": "https://github.com/babamba2/superclaude-for-sap",
+    "stars": 65,
+    "language": "JavaScript",
+    "license": "MIT",
+    "sessions": 25,
+    "distinct_setups": 7,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "<synthetic>",
+      "claude-fable-5",
+      "claude-opus-4-7",
+      "claude-opus-4-7[1m]",
+      "claude-opus-4-8[1m]",
+      "claude-opus-5-5",
+      "claude-sonnet-4-6"
+    ],
+    "test_command": "npm test",
+    "score": 175
+  },
+  {
+    "repo": "entireio/forgemark",
+    "url": "https://github.com/entireio/forgemark",
+    "stars": 45,
+    "language": "Go",
+    "license": "MIT",
+    "sessions": 20,
+    "distinct_setups": 6,
+    "harnesses": [
+      "Claude Code",
+      "Codex"
+    ],
+    "models": [
+      "claude-fable-5",
+      "claude-fable-5-1",
+      "claude-opus-4-8",
+      "claude-opus-4-8[1m]",
+      "claude-opus-5-5",
+      "gpt-5.6-sol"
+    ],
+    "test_command": "go test ./...",
+    "score": 120
+  },
+  {
+    "repo": "rajkaria/roster",
+    "url": "https://github.com/rajkaria/roster",
+    "stars": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 36,
+    "distinct_setups": 3,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-haiku-5-5",
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "test_command": "bun run test",
+    "score": 108
+  },
+  {
+    "repo": "petercr/ultimate-html-penpot-ext",
+    "url": "https://github.com/petercr/ultimate-html-penpot-ext",
+    "stars": 4,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 15,
+    "distinct_setups": 7,
+    "harnesses": [
+      "Claude Code",
+      "Codex",
+      "OpenCode"
+    ],
+    "models": [
+      "claude-sonnet-5-5",
+      "gpt-5.6-luna",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-6.1-sol",
+      "muse-spark-1.3-contributor-free"
+    ],
+    "test_command": "npm test",
+    "score": 105
+  },
+  {
+    "repo": "usv240/niyam-rulebook",
+    "url": "https://github.com/usv240/niyam-rulebook",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 37,
+    "distinct_setups": 2,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-haiku-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "test_command": "pytest",
+    "score": 74
+  },
+  {
+    "repo": "stevenn/ctxlayer",
+    "url": "https://github.com/stevenn/ctxlayer",
+    "stars": 11,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 10,
+    "distinct_setups": 6,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-fable-5",
+      "claude-fable-5-1",
+      "claude-opus-4-6",
+      "claude-opus-5",
+      "claude-opus-5-5",
+      "claude-opus-5[1m]"
+    ],
+    "test_command": "bun run test",
+    "score": 60
+  },
+  {
+    "repo": "petercr/jev-orchestrator",
+    "url": "https://github.com/petercr/jev-orchestrator",
+    "stars": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 8,
+    "distinct_setups": 4,
+    "harnesses": [
+      "Codex"
+    ],
+    "models": [
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-6-luna",
+      "gpt-6.1-sol"
+    ],
+    "test_command": "npm test",
+    "score": 32
+  },
+  {
+    "repo": "tum-ai/ehl",
+    "url": "https://github.com/tum-ai/ehl",
+    "stars": 0,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 9,
+    "distinct_setups": 3,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-5",
+      "claude-opus-5-5",
+      "claude-sonnet-5"
+    ],
+    "test_command": "npm test",
+    "score": 27
+  },
+  {
+    "repo": "tedkulp/drops",
+    "url": "https://github.com/tedkulp/drops",
+    "stars": 0,
+    "language": "Go",
+    "license": "MIT",
+    "sessions": 10,
+    "distinct_setups": 2,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-5",
+      "claude-opus-5-5"
+    ],
+    "test_command": "go test ./...",
+    "score": 20
+  },
+  {
+    "repo": "entireio/cli",
+    "url": "https://github.com/entireio/cli",
+    "stars": 5171,
+    "language": "Go",
+    "license": "MIT",
+    "sessions": 9,
+    "distinct_setups": 2,
+    "harnesses": [
+      "Claude Code",
+      "Codex"
+    ],
+    "models": [
+      "claude-fable-5",
+      "gpt-6-astra"
+    ],
+    "test_command": "go test ./...",
+    "score": 18
+  },
+  {
+    "repo": "basher83/Zammad-MCP",
+    "url": "https://github.com/basher83/Zammad-MCP",
+    "stars": 44,
+    "language": "Python",
+    "license": "AGPL-3.0",
+    "sessions": 5,
+    "distinct_setups": 3,
+    "harnesses": [
+      "Claude Code",
+      "Codex"
+    ],
+    "models": [
+      "claude-opus-5-5",
+      "gpt-6-astra",
+      "gpt-6.1-sol"
+    ],
+    "test_command": "pytest",
+    "score": 15
+  },
+  {
+    "repo": "feniix/pi-extensions",
+    "url": "https://github.com/feniix/pi-extensions",
+    "stars": 25,
+    "language": "TypeScript",
+    "license": "MIT",
+    "sessions": 7,
+    "distinct_setups": 2,
+    "harnesses": [
+      "Claude Code",
+      "Pi"
+    ],
+    "models": [
+      "claude-fable-5-1",
+      "gpt-6.1-sol"
+    ],
+    "test_command": "npm test",
+    "score": 14
+  },
+  {
+    "repo": "partio-io/cli",
+    "url": "https://github.com/partio-io/cli",
+    "stars": 3,
+    "language": "Go",
+    "license": "MIT",
+    "sessions": 11,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-5-5"
+    ],
+    "test_command": "go test ./...",
+    "score": 11
+  },
+  {
+    "repo": "Stefan98167/slavs-and-a-ottman",
+    "url": "https://github.com/Stefan98167/slavs-and-a-ottman",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 4,
+    "distinct_setups": 2,
+    "harnesses": [
+      "Codex"
+    ],
+    "models": [
+      "gpt-5.6-terra",
+      "gpt-6-luna"
+    ],
+    "test_command": "pytest",
+    "score": 8
+  },
+  {
+    "repo": "femto/minion-code",
+    "url": "https://github.com/femto/minion-code",
+    "stars": 40,
+    "language": "Python",
+    "license": "AGPL-3.0",
+    "sessions": 2,
+    "distinct_setups": 2,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-4-5-20251101",
+      "gpt-5.6-sol"
+    ],
+    "test_command": "pytest",
+    "score": 4
+  },
+  {
+    "repo": "thorgas/Youmotion",
+    "url": "https://github.com/thorgas/Youmotion",
+    "stars": 1,
+    "language": "HTML",
+    "license": "MIT",
+    "sessions": 4,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Codex"
+    ],
+    "models": [
+      "gpt-6.1-sol"
+    ],
+    "test_command": "npm test",
+    "score": 4
+  },
+  {
+    "repo": "SahidGit/git-explore",
+    "url": "https://github.com/SahidGit/git-explore",
+    "stars": 2,
+    "language": "JavaScript",
+    "license": "MIT",
+    "sessions": 2,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Antigravity"
+    ],
+    "models": [
+      "unknown"
+    ],
+    "test_command": "npm test",
+    "score": 2
+  },
+  {
+    "repo": "jai-dewani/aiwritesblogs",
+    "url": "https://github.com/jai-dewani/aiwritesblogs",
+    "stars": 0,
+    "language": "Python",
+    "license": "0BSD",
+    "sessions": 2,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Antigravity"
+    ],
+    "models": [
+      "unknown"
+    ],
+    "test_command": "npm test",
+    "score": 2
+  },
+  {
+    "repo": "MuskanPaliwal/skill-picker",
+    "url": "https://github.com/MuskanPaliwal/skill-picker",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 2,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-5-5"
+    ],
+    "test_command": "pytest",
+    "score": 2
+  },
+  {
+    "repo": "hacker-git-code/underwrite-",
+    "url": "https://github.com/hacker-git-code/underwrite-",
+    "stars": 0,
+    "language": "HTML",
+    "license": "MIT",
+    "sessions": 1,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-5-5"
+    ],
+    "test_command": "pytest",
+    "score": 1
+  },
+  {
+    "repo": "heykatie/smolstuff",
+    "url": "https://github.com/heykatie/smolstuff",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 1,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Cursor"
+    ],
+    "models": [
+      "default"
+    ],
+    "test_command": "pytest",
+    "score": 1
+  },
+  {
+    "repo": "Pierce05/pocket-startup",
+    "url": "https://github.com/Pierce05/pocket-startup",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 1,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Antigravity"
+    ],
+    "models": [
+      "unknown"
+    ],
+    "test_command": "pytest",
+    "score": 1
+  },
+  {
+    "repo": "ROHITCRAFTSYT/pitstop",
+    "url": "https://github.com/ROHITCRAFTSYT/pitstop",
+    "stars": 0,
+    "language": "Python",
+    "license": "MIT",
+    "sessions": 1,
+    "distinct_setups": 1,
+    "harnesses": [
+      "Claude Code"
+    ],
+    "models": [
+      "claude-opus-5-5"
+    ],
+    "test_command": "pytest",
+    "score": 1
+  }
+]
