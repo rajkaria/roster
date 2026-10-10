@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "b66242bd6a1f",
+  "strategy": "manual-commit",
+  "branch": "task/T39",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/obs-sdk.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b6/6242bd6a1f/0/metadata.json",
+      "transcript": "/b6/6242bd6a1f/0/full.jsonl",
+      "compact_transcript": "/b6/6242bd6a1f/0/transcript.jsonl",
+      "content_hash": "/b6/6242bd6a1f/0/content_hash.txt",
+      "prompt": "/b6/6242bd6a1f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 80,
+    "cache_creation_tokens": 32050,
+    "cache_read_tokens": 3646783,
+    "output_tokens": 17183,
+    "api_call_count": 39
+  }
+}
