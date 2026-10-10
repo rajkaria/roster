@@ -3,19 +3,19 @@
   "created_at": 1791636136,
   "spec_path": "docs/DESIGN.md",
   "goal": "Build Roster per docs/DESIGN.md: an agent that reviews AI coding-agent setups, replays tasks, gates promotions, and books results into cfo.ai; built by 4 recorded setups",
-  "status": "running",
-  "current_sprint": 0,
+  "status": "blocked",
+  "current_sprint": 2,
   "sprints": [
     {
       "id": 1,
       "title": "Skeleton and launcher",
-      "status": "todo",
-      "commit": ""
+      "status": "done",
+      "commit": "2131e8d"
     },
     {
       "id": 2,
       "title": "Recorded agent sessions working",
-      "status": "todo",
+      "status": "in_progress",
       "commit": ""
     },
     {
@@ -70,8 +70,10 @@
   "verify_cmd": "bun test && bun run typecheck",
   "iteration": 0,
   "reopen_count": 0,
-  "last_checkpoint": 1791636165,
-  "heartbeat": 1791636165,
-  "blockers": [],
-  "notes": ""
+  "last_checkpoint": 1791636411,
+  "heartbeat": 1791636411,
+  "blockers": [
+    "SP2 needs operator logins (credentials): (1) claude update && claude auth login; (2) brew install --cask entireio/tap/entire, then in ~/Projects/roster: entire enable --agent claude-code --checkpoint-backend branch --telemetry=false; (3) optional Codex: npm i -g @openai/codex && codex login, then entire enable --agent codex. Then: ocean unblock"
+  ],
+  "notes": "SP2 blocked on operator logins. After 'ocean unblock': run scripts/probe-models.sh, record resolved ids in setups/*.json; ROSTER_TASKS=<internal>/AGENT-TASKS.md scripts/run-setup.sh A T00 (canary); confirm checkpoint on entire/checkpoints/v1 with model+token_usage; record setup-C decision as PREREGISTRATION amendment; then SP3 wave 1 (T01 T05 T09 T13 T15) in parallel."
 }
