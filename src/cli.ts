@@ -1,7 +1,10 @@
 #!/usr/bin/env bun
 // Roster's command line. Each command lives in src/cli/<cmd>.ts and exports a Command; register it in COMMANDS below.
 // See docs/DESIGN.md §"CLI".
+import { acceptanceCommand } from "./cli/acceptance.ts";
+import { forwardCommand } from "./cli/forward.ts";
 import { reviewCommand } from "./cli/review.ts";
+import { runCommand } from "./cli/run.ts";
 
 export interface Command {
   name: string;
@@ -11,7 +14,7 @@ export interface Command {
   run: (args: string[]) => Promise<number>;
 }
 
-export const COMMANDS: readonly Command[] = [reviewCommand];
+export const COMMANDS: readonly Command[] = [reviewCommand, runCommand, forwardCommand, acceptanceCommand];
 
 function printUsage(out: (s: string) => void): void {
   out("usage: roster <command> [args]\n");
