@@ -1,0 +1,60 @@
+[roster setup=D task=T26]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T26 · W1 · Corpus finder: public repos with Entire checkpoints and runnable tests
+GOAL: A ranked list of public repos suitable for the public review corpus.
+READ: docs/DESIGN.md §"Public corpus".
+OWNS: scripts/corpus-find.ts, reports/corpus/candidates.json, tests/corpus.test.ts
+BUILD: search GitHub (gh api) for commits with `Entire-Checkpoint`, group by repo; for each: stars, sessions on the checkpoint branch
+(via src/ingest), distinct harness/model count, language, test command detected, licence; score = sessions × distinct setups, filter
+licence OSI-approved and tests detected. No code from candidate repos is executed by this script.
+ACCEPTANCE: unit tests on a recorded gh api response (captured live, redacted); live run writes ≥ 15 candidates.
+TEST: bun test tests/corpus.test.ts
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bx4a6pmhk</task-id>
+<tool-use-id>toolu_01QvhgBzGMyz1oBW3prn6UKK</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T26/3a27526c-0032-42f0-8dd6-20a7e48aa6c7/tasks/bx4a6pmhk.output</output-file>
+<status>killed</status>
+<summary>Background command "bun scripts/corpus-find.ts --windows 10 --max-repos 150 2&gt;&amp;1 | tail -40" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bxywa9omi</task-id>
+<tool-use-id>toolu_01NdnSyWcfzp1b5nv2HzYK6n</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T26/3a27526c-0032-42f0-8dd6-20a7e48aa6c7/tasks/bxywa9omi.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for live corpus run output" stream ended</summary>
+<event>[killed]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bg0ql74we</task-id>
+<tool-use-id>toolu_017Vw5k7CepYxY7EhZRQgZRn</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T26/3a27526c-0032-42f0-8dd6-20a7e48aa6c7/tasks/bg0ql74we.output</output-file>
+<status>failed</status>
+<summary>Background command "Live corpus run, log to .roster" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+The background corpus run was stopped by the operator after 45 minutes: it was still on the second of 286 repos. Make scripts/corpus-find.ts bounded (a --max-repos option defaulting to 40, a per-repo timeout, and progress written to a log), run it with those bounds, then finish T26: write reports/corpus/candidates.json, run bun test and bun run typecheck, and commit with the T26: prefix. Don't start anything in the background this time.
