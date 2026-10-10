@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "4d23f73301e0",
+  "strategy": "manual-commit",
+  "branch": "task/T52",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/unattended-share.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4d/23f73301e0/0/metadata.json",
+      "transcript": "/4d/23f73301e0/0/full.jsonl",
+      "compact_transcript": "/4d/23f73301e0/0/transcript.jsonl",
+      "content_hash": "/4d/23f73301e0/0/content_hash.txt",
+      "prompt": "/4d/23f73301e0/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 47878,
+    "cache_read_tokens": 594277,
+    "output_tokens": 12118,
+    "api_call_count": 14
+  }
+}
