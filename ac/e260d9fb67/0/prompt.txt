@@ -1,0 +1,34 @@
+[roster setup=A task=T35]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T35 · W3 · Replay runner wired into the coordinator
+GOAL: `run_replays` actually replays: sandbox at parent → harness under the setup → grade in a separate copy → failure codes → a
+Replay row. The coordinator's tool stops saying "not available".
+READ: src/replay/tasks.ts (T33), src/setups/registry.ts (T34), src/sandbox/index.ts, src/harness/claude.ts, src/grade/index.ts,
+src/grade/taxonomy.ts, src/agent/tools.ts (the `runReplays` dependency and `missing(...)`), src/cli/run.ts, src/types.ts (Replay).
+OWNS: src/replay/run.ts, src/agent/tools.ts (only replace the runReplays `missing(...)` with the real implementation), src/cli/run.ts
+(only to pass the real deps), tests/replay-run.test.ts
+INTERFACE: export async function runReplays(opts: { repo: string; tasks: ReplayTask[]; setups: RunnableSetup[]; workRoot: string;
+parallel?: number; maxCostUsd: number; harness?: typeof runClaude }): Promise<Replay[]>
+BEHAVIOUR: For each (task, setup): createSandbox(repo, parentSha) under workRoot (never under $HOME), proveIsolation, write the setup's
+rules file as CLAUDE.md (and extraRulesPath as CLAUDE.local.md), run the harness with the setup's model and env and `--setting-sources
+project,local`, then grade in a fresh copy with the task's hidden tests, classify failures, and return a Replay with cost and
+isolation proof. Parallel default 3. Stops starting new runs when the summed cost reaches maxCostUsd (records the rest as skipped).
+A harness error becomes a Replay with verdict agent_error, never a thrown error. Candidate setups with empty env are skipped with
+reason "unavailable".
+ACCEPTANCE: tests use the T01 fixture repo and a stub harness (inject `harness`) that writes a correct or a broken patch: correct →
+hidden_pass true; broken → hidden_pass false with a failure code; budget stop works; an unavailable candidate is skipped. In
+src/agent/tools.ts the runReplays dependency no longer throws NotAvailableError.
+TEST: bun test tests/replay-run.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
