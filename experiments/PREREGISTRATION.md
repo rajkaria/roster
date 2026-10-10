@@ -103,3 +103,7 @@ Under amendment 3, D's rules were written to `CLAUDE.local.md`. Sessions ran wit
 - **Frozen:** the forward backlog and its 40 acceptance tests are committed. Hashes are in `experiments/FREEZE.txt`.
 - **Backlog sha256:** `ac682b239225a99f45ffb347e1e73aa6fe1aec3159abb0ea928ffa6ffc3c63c7`
 - **Acceptance tests:** 40 task test files are pre-registered, one for each of F01–F40.
+
+### Amendment 6: 2026-10-11 00:05 IST, integration task assignments T43 and up
+The amendment 3 block (T27–T42) is used up. Integration tasks T43 and up take setups from a third seeded shuffle (seed `20261012`, a balanced pool of 24), in order:
+`T43=D T44=B T45=D T46=B T47=A T48=C T49=A T50=D T51=D T52=C T53=A T54=D T55=C T56=A T57=C T58=D T59=C T60=A T61=B T62=B T63=C T64=B T65=A T66=B`.
