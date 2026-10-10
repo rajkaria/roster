@@ -1,0 +1,35 @@
+[roster setup=D task=T42]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T42 · W2 · "Unattended" is known for every session, mature or not
+GOAL: The unattended metric (the session needed exactly one prompt) doesn't depend on how old a commit is, but it is null for every
+session that is too young to score, so the review's unattended column is empty.
+READ: src/score/index.ts (scoreSessions, aggregateBySetup), src/types.ts (Outcome), src/review/export.ts (how the column is read).
+OWNS: src/score/index.ts, tests/unattended.test.ts
+BUILD: Outcome.unattended is set for every session with a known prompt count (true when n_user_prompts === 1), including too_young
+sessions; survival/revert/rework stay null when too young. aggregateBySetup's unattended share uses all sessions with a known value.
+ACCEPTANCE: a too_young session with one prompt has unattended true and survival null; setup unattended share counts it; existing tests
+pass.
+TEST: bun test tests/unattended.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bne3s7dtr</task-id>
+<tool-use-id>toolu_019PpJoVx2BzzhBG6ehGokSo</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T42/e33201b1-8004-449d-933d-f570acddd215/tasks/bne3s7dtr.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/unattended.test.ts 2&gt;&amp;1 | tail -4; bun test 2&gt;&amp;1 | grep -E "^\(fail|^ *[0-9]+ (pass|fail)"; bun run typecheck 2&gt;&amp;1 | tail -3" completed (exit code 0)</summary>
+</task-notification>
