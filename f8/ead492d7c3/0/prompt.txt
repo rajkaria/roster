@@ -1,0 +1,31 @@
+[roster setup=D task=T58]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T58 · W2 · Scoring hangs on some repos: bound every step and say where time goes
+GOAL: `roster review https://github.com/crcorbett/taxkit --observational` (50 sessions) gets through identify, then sits in scoring
+for more than 400 s until killed. postgkyl, agent-skills and binden do the same. A review must never hang; it should finish with what
+it could score and mark the rest.
+READ: src/cli/review.ts (stage flow, T53's timings), src/score/survival.ts, src/score/revert.ts, src/score/rework.ts,
+src/difficulty/index.ts, src/difficulty/graph.ts.
+OWNS: src/score/survival.ts, src/score/revert.ts, src/score/rework.ts, src/difficulty/graph.ts, src/cli/review.ts (progress output
+only), tests/score-bounds.test.ts
+BUILD: Progress lines inside scoring (every 10 sessions, with elapsed time). Every git subprocess gets a timeout (30 s default). Skip
+blame for binary files, files over 5,000 lines, lockfiles, generated or vendored paths (dist/, build/, vendor/, node_modules/,
+*.min.*, *.lock), notebooks (.ipynb) and data files (.csv, .json over 1 MB); skipped files count as "not scored" with a reason. A
+whole-review scoring budget (default 120 s): sessions not scored when it runs out are marked `not_scored: time budget` instead of
+blocking the review.
+ACCEPTANCE: tests with an injectable runner: a git call that never returns is killed at the timeout and the session is marked not
+scored; a 6,000-line file is skipped with a reason; the review still writes its outputs. Whole suite green.
+TEST: bun test tests/score-bounds.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
