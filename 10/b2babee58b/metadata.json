@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "10b2babee58b",
+  "strategy": "manual-commit",
+  "branch": "task/T14",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/obs-smoke.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/10/b2babee58b/0/metadata.json",
+      "transcript": "/10/b2babee58b/0/full.jsonl",
+      "compact_transcript": "/10/b2babee58b/0/transcript.jsonl",
+      "content_hash": "/10/b2babee58b/0/content_hash.txt",
+      "prompt": "/10/b2babee58b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 37137,
+    "cache_read_tokens": 671859,
+    "output_tokens": 20264,
+    "api_call_count": 19
+  }
+}
