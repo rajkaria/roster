@@ -116,7 +116,57 @@ export async function recordAttempt(spanAttrs: SpanAttrs, attempt: number, outco
   await withSpan("TOOL", `replay attempt ${attempt}`, { ...spanAttrs, ...outcome, attempt }, async () => undefined);
 }
 
-/** Sends buffered spans. Call once before the process exits. A no-op when tracing is off. */
-export async function flushObs(): Promise<void> {
-  if (sdk) await sdk.flush();
+/** How long one flush attempt may take before it counts as failed. */
+export const FLUSH_TIMEOUT_MS = 30_000;
+
+export interface FlushOptions {
+  /** Per attempt. Default FLUSH_TIMEOUT_MS. */
+  timeoutMs?: number;
+  /** Extra attempts after the first. Default 1. */
+  retries?: number;
+  /** Where the one failure line goes. Default console.warn. */
+  log?: (msg: string) => void;
+}
+
+/**
+ * Runs `flush` until it succeeds, each attempt bounded by a timeout. A throw, a timeout or a `false` result is a
+ * failed attempt. When every attempt fails it logs one line and resolves to false; it never throws.
+ */
+export async function flushWithRetry(flush: () => Promise<unknown>, opts: FlushOptions = {}): Promise<boolean> {
+  const timeoutMs = opts.timeoutMs ?? FLUSH_TIMEOUT_MS;
+  const attempts = 1 + (opts.retries ?? 1);
+  let reason = "";
+  for (let i = 0; i < attempts; i++) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<"timeout">((res) => {
+      timer = setTimeout(() => res("timeout"), timeoutMs);
+    });
+    try {
+      const r = await Promise.race([Promise.resolve().then(flush), timeout]);
+      if (r === "timeout") reason = `timed out after ${timeoutMs / 1000} s`;
+      else if (r === false) reason = "the SDK reported a failed export";
+      else return true;
+    } catch (err) {
+      reason = err instanceof Error ? err.message : String(err);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  (opts.log ?? console.warn)(`[roster] neatlogs flush failed after ${attempts} attempts (${reason}); traces may be incomplete`);
+  return false;
+}
+
+/**
+ * Sends buffered spans. Call once before the process exits. A no-op when tracing is off.
+ * Never throws: a failed flush logs one line, so it cannot change the exit code.
+ */
+export async function flushObs(opts: FlushOptions = {}): Promise<boolean> {
+  if (!sdk) return true;
+  const client = sdk;
+  const timeoutMs = opts.timeoutMs ?? FLUSH_TIMEOUT_MS;
+  // flushAll takes our timeout; SDK builds (and test stand-ins) without it fall back to flush().
+  return flushWithRetry(
+    () => (typeof client.flushAll === "function" ? client.flushAll(timeoutMs) : client.flush()),
+    { ...opts, timeoutMs },
+  );
 }
