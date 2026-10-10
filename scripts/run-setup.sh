@@ -6,7 +6,7 @@
 # env  ROSTER_TASKS  path to the task-block file (required). A block is the text
 #                    between "<!-- Txx -->" and "<!-- /Txx -->"; its first line must be
 #                    the tag "[roster setup=<setup> task=<Txx>]".
-#      ROSTER_WT     worktree root (default: <repo>/../roster-wt)
+#      ROSTER_WT     worktree root (default: <repo>/.worktrees, gitignored, so workspace trust covers it)
 #      ROSTER_DRY=1  print what would run, run nothing
 #
 # The tag goes first in the prompt so every recorded session carries its ground-truth
@@ -21,7 +21,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 CFG="$ROOT/setups/$SETUP.json"
 [ -f "$CFG" ] || { echo "run-setup: no setup '$SETUP' ($CFG)" >&2; exit 2; }
 TASKS="${ROSTER_TASKS:?run-setup: set ROSTER_TASKS to the task-block file}"
-WT_ROOT="${ROSTER_WT:-$ROOT/../roster-wt}"
+WT_ROOT="${ROSTER_WT:-$ROOT/.worktrees}"
 WT="$WT_ROOT/$TASK"
 BRANCH="task/$TASK"
 LOGDIR="$ROOT/.roster/runs"
@@ -52,8 +52,13 @@ SCRUB=(-u CLAUDECODE -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_ENTRYPOINT
 
 case "$harness" in
   claude-code)
+    # The allowlist is passed on the command line too: Claude Code ignores a project's
+    # permissions.allow until the workspace is trusted, and a headless run can't accept the dialog.
+    allowed="$(jq -r '.permissions.allow | join(",")' "$ROOT/.claude/settings.json")"
+    denied="$(jq -r '.permissions.deny | join(",")' "$ROOT/.claude/settings.json")"
     args=(-p "$PROMPT" --model "$model" --output-format stream-json --verbose
           --max-turns 150 --permission-mode acceptEdits
+          --allowedTools "$allowed" --disallowedTools "$denied"
           --setting-sources project --strict-mcp-config)
     if [ -n "$append" ]; then args+=(--append-system-prompt "$(cat "$ROOT/$append")"); fi
     cmd=(claude "${args[@]}")
