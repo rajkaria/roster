@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "faeef015cbcf",
+  "strategy": "manual-commit",
+  "branch": "task/T00",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/build-notes/canary.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/fa/eef015cbcf/0/metadata.json",
+      "transcript": "/fa/eef015cbcf/0/full.jsonl",
+      "compact_transcript": "/fa/eef015cbcf/0/transcript.jsonl",
+      "content_hash": "/fa/eef015cbcf/0/content_hash.txt",
+      "prompt": "/fa/eef015cbcf/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 5866,
+    "cache_read_tokens": 33558,
+    "output_tokens": 438,
+    "api_call_count": 2
+  }
+}
