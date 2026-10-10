@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "4ba7d1b23e87",
+  "strategy": "manual-commit",
+  "branch": "task/T45",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/cli/review.ts",
+    "src/review/export.ts",
+    "tests/review-unattended-labels.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4b/a7d1b23e87/0/metadata.json",
+      "transcript": "/4b/a7d1b23e87/0/full.jsonl",
+      "compact_transcript": "/4b/a7d1b23e87/0/transcript.jsonl",
+      "content_hash": "/4b/a7d1b23e87/0/content_hash.txt",
+      "prompt": "/4b/a7d1b23e87/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 37810,
+    "cache_read_tokens": 673135,
+    "output_tokens": 8204,
+    "api_call_count": 16
+  }
+}

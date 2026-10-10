@@ -1,0 +1,29 @@
+[roster setup=D task=T45]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T45 · W4 · Review CLI: unattended for young sessions, and setup labels that tell setups apart
+GOAL: Two issues in this repo's own review. (1) Every outcome has unattended null: src/cli/review.ts builds too_young outcomes with
+unattended: null (around line 94), so T42's rule never reaches the review. (2) Two setups are both labelled "Claude Code ·
+claude-sonnet-5-5"; a reader can't tell them apart.
+READ: src/cli/review.ts (outcome builder for mature and too_young sessions), src/review/export.ts (labels, setup rows),
+src/score/index.ts (T42's unattended rule), src/types.ts (Session.rules files if recorded).
+OWNS: src/cli/review.ts, src/review/export.ts, tests/review-unattended-labels.test.ts, and any assertion in tests/cli-review.test.ts or
+tests/review-contract.test.ts that encodes "unattended is null when too young" or the old label format (you may modify those; say which)
+BUILD: (1) too_young outcomes carry unattended = (n_user_prompts === 1) when the prompt count is known. (2) When two or more setups share
+harness and model, each label gets a short suffix naming its rules: the rules files it loaded when known (e.g. "+ CLAUDE.local.md"),
+else the first 6 chars of rules_hash ("rules a1b2c3"). Labels stay unchanged when harness+model is unique.
+ACCEPTANCE: tests: a too_young one-prompt session has unattended true in review.json; two setups with the same model get distinct labels;
+a unique setup keeps its plain label. Whole suite green, typecheck clean, web build ok.
+TEST: bun test tests/review-unattended-labels.test.ts && bun test && bun run typecheck && (cd web && bun run build)
+DO NOT TOUCH: anything outside OWNS.
