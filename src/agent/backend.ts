@@ -8,7 +8,8 @@
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { identify } from "../identity/index.ts";
+import { createHash } from "node:crypto";
+import { identify, setupIdOf } from "../identity/index.ts";
 import { fetchCheckpoints } from "../ingest/fetch.ts";
 import { parseCheckpoints } from "../ingest/parse.ts";
 import { discordant, gate as decideGate, MAX_ATTEMPTS } from "../gate/index.ts";
@@ -17,7 +18,7 @@ import { type Classified, classify, parseTranscript, type Transcript } from "../
 import { reviewSlug, summarizeSetups } from "../review/export.ts";
 import { defaultWorkRoot, replayRunner, runReplays, type ReplayRunnerDeps, type SkippedRun } from "../replay/run.ts";
 import { buildReplayTasks, type ReplayTask } from "../replay/tasks.ts";
-import { loadSetups } from "../setups/registry.ts";
+import { loadSetups, type RunnableSetup } from "../setups/registry.ts";
 import { runGit } from "../sandbox/index.ts";
 import { FailureCode, type Outcome, type Replay, type Review, type Session } from "../types.ts";
 import { NotAvailableError, type ReplayBatch, type TaskSummary, type ToolBackend, ToolError } from "./tools.ts";
@@ -131,6 +132,35 @@ export function simpleSample(tasks: TaskSummary[], max: number, exclude: readonl
   return picked;
 }
 
+const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
+
+/** The setup id Roster infers for a definition's sessions: same harness, model and rules hash. Null when the rules file is unreadable. */
+function inferredId(s: RunnableSetup): string | null {
+  try {
+    const texts = [s.rulesPath, ...(s.extraRulesPath ? [s.extraRulesPath] : [])].map((p) => readFileSync(p, "utf8").replace(/\r\n?/g, "\n").trim());
+    return setupIdOf(s.harness, s.model, sha256(texts.join("\n")));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Maps a coordinator-facing setup id to a runnable definition. Accepts a definition id (A–F) or a review setup id.
+ * A review id goes to the definition whose tag carries it in the review's tags block (most sessions wins); without
+ * a tag match, to the definition with the same harness, model and rules hash. Otherwise throws, listing the valid ids.
+ */
+export function resolveSetup(id: string, setups: RunnableSetup[], review: Review | null): RunnableSetup {
+  const direct = setups.find((s) => s.id === id);
+  if (direct) return direct;
+  const tagged = Object.entries(review?.tags?.by_tag ?? {})
+    .filter(([tag, v]) => v.setup_ids.includes(id) && setups.some((s) => s.id === tag))
+    .sort(([, a], [, b]) => b.sessions - a.sessions);
+  if (tagged.length > 0) return setups.find((s) => s.id === tagged[0]![0])!;
+  const same = setups.find((s) => inferredId(s) === id);
+  if (same) return same;
+  throw new ToolError(`unknown setup ${id}; valid ids: ${setups.map((s) => s.id).join(", ")} (or a setup id from the review's scorecard)`);
+}
+
 /** Replay rows: memory for the run, plus the `replays` table when a database is given. */
 class ReplayStore {
   private readonly rows = new Map<string, Replay>();
@@ -233,6 +263,11 @@ export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
     return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")) as T) : null;
   };
 
+  const setupsNow = () => loadSetups(replay.setupsRoot ?? process.cwd(), replay.env ?? process.env);
+  const reviewNow = () => (replay.repo ? readJson<Review>(replay.repo, "review.json") : null);
+  /** Replay rows are stored under the definition id; any id form the coordinator uses maps to it. */
+  const defId = (id: string) => resolveSetup(id, setupsNow(), reviewNow()).id;
+
   const listTasks = async (repo: string, setup?: string): Promise<TaskSummary[]> => {
     const view = await loadRepo(repo, cacheDir, readJson<Outcome[]>(repo, "outcomes.json") ?? []);
     const turns = turnCounter(view.repoPath);
@@ -270,7 +305,10 @@ export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
       if (!review) throw new ToolError(`no review for ${repo}; run \`roster review ${repo} --observational\` first`);
       const sessions = readJson<Session[]>(repo, "sessions.json") ?? [];
       const outcomes = readJson<Outcome[]>(repo, "outcomes.json") ?? [];
-      return { review, setups: summarizeSetups(sessions, outcomes) };
+      const candidates = setupsNow()
+        .filter((s) => s.candidate)
+        .map(({ id, label, harness, model }) => ({ id, label, harness, model }));
+      return { review, setups: summarizeSetups(sessions, outcomes), candidates };
     },
 
     listTasks: ({ repo, setup }) => listTasks(repo, setup),
@@ -287,24 +325,24 @@ export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
     },
 
     async runReplays(a) {
-      const batch = await runner(a);
+      const batch = await runner({ ...a, setups: [...new Set(a.setups.map(defId))] });
       store.put(batch.replays);
       return batch;
     },
 
     async getReplayResults({ plan_id, setup }) {
-      return store.list(plan_id, setup);
+      return store.list(plan_id, setup === undefined ? undefined : defId(setup));
     },
 
-    async rerun({ plan_id, task, setup, max_cost_usd }) {
+    async rerun({ plan_id, task, setup: asked, max_cost_usd }) {
+      const known = resolveSetup(asked, setupsNow(), reviewNow());
+      const setup = known.id;
       const attempt = Math.max(0, ...store.list(plan_id, setup).filter((r) => r.task_session_id === task).map((r) => r.attempt)) + 1;
       if (attempt > MAX_ATTEMPTS) throw new ToolError(`${task} under ${setup} has ${MAX_ATTEMPTS} attempts already (k = ${MAX_ATTEMPTS})`);
       if (!replay.repo) throw new Error("no repo configured for replays");
       const view = await loadRepo(replay.repo, cacheDir, []);
       const planned = view.tasks.find((t) => t.id === task);
       if (!planned) throw new ToolError(`no replayable task for session ${task}`);
-      const known = loadSetups(replay.setupsRoot ?? process.cwd(), replay.env ?? process.env).find((s) => s.id === setup);
-      if (!known) throw new ToolError(`unknown setup ${setup}`);
 
       const skipped: SkippedRun[] = [];
       const replays = await runReplays({
@@ -326,7 +364,7 @@ export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
     },
 
     async classifyFailures({ plan_id, setup }) {
-      const rows = store.list(plan_id, setup);
+      const rows = store.list(plan_id, defId(setup));
       const failed = rows.filter((r) => r.verdict !== "pass");
       const replays = failed.map((r) => ({
         id: r.id,
@@ -342,8 +380,8 @@ export function defaultBackend(opts: DefaultBackendOptions = {}): ToolBackend {
 
     async gate({ plan_id, candidate, incumbent, budget_usd }) {
       if (incumbent === null) throw new ToolError("the plan names no incumbent (suspect), so there is nothing to gate against");
-      const inc = store.list(plan_id, incumbent);
-      const cand = store.list(plan_id, candidate);
+      const inc = store.list(plan_id, defId(incumbent));
+      const cand = store.list(plan_id, defId(candidate));
       // Only tasks both sides ran can split; a candidate that never ran a task is left to the gate's own reasons.
       const candTasks = new Set(cand.map((r) => r.task_session_id));
       const both = new Set(inc.map((r) => r.task_session_id).filter((t) => candTasks.has(t)));

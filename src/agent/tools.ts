@@ -154,7 +154,7 @@ const TOOLS: ToolDef[] = [
   {
     spec: {
       name: "get_scorecard",
-      description: "The observational (level A) scorecard per setup, and the review's suspect label.",
+      description: "The observational (level A) scorecard per setup, and the review's suspect label. Also lists the candidate setups (E and F: Claude Code on DeepSeek); candidates come only from setups/candidates, so name no others. Scorecard setup ids are hashes; run_replays accepts them or A–F.",
       parameters: obj({}),
     },
     run: (_a, _s, ctx, b) => b.getScorecard({ repo: ctx.repo }),
@@ -176,7 +176,7 @@ const TOOLS: ToolDef[] = [
     spec: {
       name: "plan_replays",
       description:
-        "Write or revise plan.json. Give a one-paragraph rationale, the suspect setup, ≤ 3 candidate setup ids and ≤ 12 task session ids (omit tasks for a stratified sample). Call again to replan after a gate rejection or F6.",
+        "Write or revise plan.json. Give a one-paragraph rationale, the suspect setup, ≤ 3 candidate setup ids (the candidates are E and F, from setups/candidates only; a scorecard id is never a candidate) and ≤ 12 task session ids (omit tasks for a stratified sample). Call again to replan after a gate rejection or F6.",
       parameters: obj(
         {
           rationale: str("One paragraph: why these tasks and candidates."),
@@ -212,7 +212,7 @@ const TOOLS: ToolDef[] = [
   {
     spec: {
       name: "run_replays",
-      description: "Replay the plan's tasks at their parent commits under the given setups (include the incumbent as control).",
+      description: "Replay the plan's tasks at their parent commits under the given setups (include the incumbent as control). A setup is a definition id (A–F) or a setup id from the review.",
       parameters: obj({ setups: strs("Setup ids to replay."), tasks: strs("Subset of the plan's tasks; default all.") }, ["setups"]),
     },
     async run(a, state, ctx, b, span) {
