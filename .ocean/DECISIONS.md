@@ -44,3 +44,4 @@ doors get the full block.
 - **Carried over:** the web/CLI review shapes diverged, because they were built in parallel. The public-repo review is also outstanding.
 - **Where they went:** both moved to SP5, through integration task T27 and corpus task T26.
 - **Plan change:** acceptance moved; scope did not.
+- 2026-10-10 21:15 IST · Reviews of any repo go to `reports/<owner>__<repo>/`, including this one (`reports/rajkaria__roster/`). `reports/self/` holds only the experiment's own files: the task ledger, the forward run and the pre-registration hash. Two-way door.
