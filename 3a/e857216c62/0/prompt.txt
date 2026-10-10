@@ -1,0 +1,26 @@
+[roster setup=C task=T04]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T04 · W1 · Setup identity
+GOAL: Assign every session a setup = harness + model + rules-file hash, plus ground truth from prompt tags when present.
+READ: docs/DESIGN.md §"Setups".
+OWNS: src/identity/index.ts, tests/identity.test.ts
+BUILD: identify(session, repoPath) → {setupId, harness, model, rulesHash|null, rulesPath|null, tag|null}. rulesHash = sha256 of the
+normalised (LF, trimmed) rules file in effect at the session's parent commit (CLAUDE.md for claude-code, AGENTS.md for codex,
+.cursor/rules/* or .cursorrules for cursor) plus any appended system prompt the checkpoint records. Unknown → null, never a guess.
+setupId = short hash of (harness, model, rulesHash). Parse `[roster setup=X task=Txx]` from the first prompt into tag.
+inferenceAccuracy(sessions) → share where the inferred setup cluster maps 1:1 to tags.
+ACCEPTANCE: fixture with 3 setups → 3 setup ids; a rules change mid-history → a new setup id after that commit; tag parsing.
+TEST: bun test tests/identity.test.ts
+DO NOT TOUCH: anything outside OWNS.
