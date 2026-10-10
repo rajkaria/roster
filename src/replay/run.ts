@@ -174,9 +174,11 @@ async function runOne(
     verdict: "agent_error",
     transcript_ref: null,
     trace_url: null,
+    error: null,
   };
   const fail = (code: FailureCode, why: string): Replay => {
     row.failure_codes = [code];
+    row.error = why;
     if (!row.isolation_proof) row.isolation_proof = JSON.stringify({ ok: false, checks: [], error: why });
     return row;
   };
@@ -197,7 +199,16 @@ async function runOne(
       ruleFiles.push(LOCAL_RULES_NAME);
     }
     runGit(sb.path, ["add", "-f", "--", ...ruleFiles]);
-    runGit(sb.path, ["-c", "commit.gpgsign=false", "commit", "-q", "-m", `setup: ${ruleFiles.join(" + ")} for ${setup.id}`]);
+    // --allow-empty: the repo's own CLAUDE.md may already equal the setup's rules (replaying this repo's own tasks).
+    runGit(sb.path, [
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "-q",
+      "--allow-empty",
+      "-m",
+      `setup: ${ruleFiles.join(" + ")} for ${setup.id}`,
+    ]);
     const rulesSha = runGit(sb.path, ["rev-parse", "HEAD"]);
 
     let res: HarnessResult | null = null;
@@ -226,6 +237,7 @@ async function runOne(
     const { t, hasCalls } = loadTranscript(res.transcriptPath);
 
     if (res.isError) {
+      row.error = res.errorKind ?? "agent_error";
       const codes = new Set(classify({ verdict: "agent_error" }, null, t).map((c) => c.code));
       const forced = res.errorKind ? ERROR_CODE[res.errorKind] : undefined;
       if (forced === FailureCode.F6) codes.clear();
