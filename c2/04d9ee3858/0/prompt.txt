@@ -1,0 +1,27 @@
+[roster setup=A task=T38]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T38 · W3 · Replays fail silently when the setup's rules equal the repo's own CLAUDE.md
+GOAL: Every replay of this repo's own tasks ends as agent_error/F6 before the harness is ever called, and the reason is lost.
+Make the runner work when the rules file is unchanged, and never drop a failure reason.
+READ: src/replay/run.ts (runOne: the `setup:` commit and the `fail` helper), src/types.ts (Replay), tests/replay-run.test.ts.
+OWNS: src/replay/run.ts, src/types.ts (add one optional field to Replay only), tests/replay-run-rules.test.ts
+BUILD: (1) The `setup:` commit must succeed when the rules files are already identical to what the sandbox has (commit with
+--allow-empty, or skip the commit and use the current HEAD as the rules sha). (2) Add `error?: string | null` to Replay; `fail()` always
+records its reason there (never only inside isolation_proof). (3) A harness that throws or returns isError keeps its error kind in
+`error`.
+ACCEPTANCE: tests: a fixture repo whose CLAUDE.md already equals the setup's rules → the harness stub IS called and the replay grades;
+a forced failure before the harness → Replay.error contains the reason; existing replay-run tests pass.
+TEST: bun test tests/replay-run-rules.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
