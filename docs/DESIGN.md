@@ -189,7 +189,7 @@ Only *mature* sessions are scored: the commit is ≥ 5 first-parent commits **an
       --permission-mode acceptEdits --permission-prompts none --allowedTools "<allowlist>"
       --setting-sources project --strict-mcp-config --disable-slash-commands --max-budget-usd <cap>
     ```
-    The child env is scrubbed of host-session variables.
+    The child env is scrubbed of host-session variables. A setup file may carry provider env (`env`, with `${VAR}` filled from `.env`). DeepSeek candidates set `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`, `ANTHROPIC_AUTH_TOKEN` and the `ANTHROPIC_DEFAULT_*_MODEL` names. That endpoint ignores `cache_control`.
     JSON fields: `session_id, num_turns, duration_ms, total_cost_usd, usage, modelUsage, is_error, stop_reason`.
   - **Codex:**
     ```
@@ -235,8 +235,11 @@ ties → cheaper wins; still tied → keep incumbent
 - **If no candidate passes,** the result is "no better setup found". That is a valid outcome.
 
 ### Candidate generation
+- **Every candidate runs the Claude Code harness against DeepSeek's Anthropic-compatible endpoint.** Pre-registration amendment 2 fixes this.
+  - `setups/candidates/E.json`: `deepseek-flash`
+  - `setups/candidates/F.json`: `deepseek-v4-pro`
 - **The candidates are:**
-  - the other existing setups
+  - E and F with the default rules
   - rules mutations: X's harness and model with the rules file patched from X's top failure codes, using `src/candidates/rules-lib.md`. For example:
     - F2 → "run the full test suite before you finish"
     - F1 → "never modify existing tests unless asked"
@@ -277,10 +280,21 @@ ties → cheaper wins; still tied → keep incumbent
 - **Stop rule:** after ≥ 15 pairs, if the promoted setup has lost at least 3 more discordant pairs than it has won, open a revert PR and continue on the old setup.
 - **Invalidated tasks** are excluded for both setups, with a reason.
 
+## Models Roster itself uses
+
+Roster's own reasoning runs on DeepSeek and never calls a Claude API. That covers the coordinator, the blind diff-judge and the acceptance-test writer.
+
+- **API:** OpenAI-compatible chat completions with tool calling, at `https://api.deepseek.com`. The key comes from `DEEPSEEK_API_KEY`, set in `.env` and never in a prompt.
+- **Models:** `deepseek-flash` by default (`ROSTER_LLM_MODEL`). The acceptance writer uses `deepseek-v4-pro` (`ROSTER_ACCEPTANCE_MODEL`).
+- **Tracing:** every call is a neatlogs LLM span (OpenAI client wrapper).
+- **Pricing:** DeepSeek bills peak and off-peak rates, with peak at 01:00–04:00 and 06:00–10:00 UTC on weekdays. Off-peak is half. Each call is priced for its own timestamp.
+
+Replays are different. A replay reruns a coding-agent setup *as it is*, so replaying a Claude Code + Claude-model setup uses that setup's own model. That's the control.
+
 ## Architecture
 
 - **Agent and CLI:** TypeScript on Bun (`bun:sqlite`, `bun test`).
-- **Coordinator:** the Claude Agent SDK with in-process tools. Model via env; Bedrock when `CLAUDE_CODE_USE_BEDROCK=1`.
+- **Coordinator:** a tool-calling loop on DeepSeek's OpenAI-compatible API (`src/llm`). See §"Models Roster itself uses".
 - **Web:** Next.js in `web/`, with its own `package.json`. The prebuild step copies `reports/` into `web/public/data`.
 - **Sandboxes:** local temp dirs for this repo; microVMs for public repos.
 
