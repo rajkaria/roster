@@ -79,3 +79,11 @@ This was decided before any review ran.
 - **H2 (cost) uses time-of-day pricing.** DeepSeek publishes peak and off-peak rates, so each run is priced at the rate for its own timestamp.
 - **Roster's own reasoning uses DeepSeek** through its OpenAI-compatible API. That covers the coordinator, the blind diff-judge and the acceptance-test writer. No Claude API is used by the product itself.
 - **T25** was pinned to C and never randomised. It now builds DeepSeek provider support for the harness and the price table instead of a Codex adapter.
+
+### Amendment 3: 2026-10-10 20:25 IST, how setup D's rules are delivered, and integration tasks
+This was decided before any review ran.
+- **Setup D's strict rules move.** Until now they were appended to the system prompt. From T17 on they're written to a gitignored `CLAUDE.local.md` in D's worktree. The rules text is unchanged.
+- **Why:** Roster's first observational run couldn't tell B and D apart. The appended prompt isn't recorded in the session transcript, so it inferred 3 setups for our 4. In the sessions it scored, that made setup inference match the prompt tags in 82.4% of them, all at that point.
+- **The earlier D sessions:** T06, T09 and T11 keep their prompt tags as ground truth.
+- **Integration tasks** found during the build are numbered T27 and up. Their setups come from a second seeded shuffle (seed `20261011`, a balanced pool of 16), taken in order:
+  `T27=B T28=D T29=D T30=C T31=C T32=A T33=B T34=B T35=A T36=C T37=A T38=A T39=C T40=D T41=B T42=D`.

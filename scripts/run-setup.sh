@@ -85,7 +85,6 @@ case "$harness" in
           --max-turns 150 --permission-mode acceptEdits
           --allowedTools "$allowed" --disallowedTools "$denied"
           --setting-sources project --strict-mcp-config)
-    if [ -n "$append" ]; then args+=(--append-system-prompt "$(cat "$ROOT/$append")"); fi
     cmd=(claude "${args[@]}")
     ;;
   codex)
@@ -104,6 +103,14 @@ fi
 
 if [ ! -d "$WT" ]; then
   git -C "$ROOT" worktree add -q "$WT" -b "$BRANCH" main
+fi
+# Extra rules (setup D) go in CLAUDE.local.md: Claude Code loads it as project memory and the
+# session transcript records it, so the setup is identifiable from the recording alone.
+# (Pre-registration amendment 3. CLAUDE.local.md is gitignored, so it never lands in a commit.)
+if [ -n "$append" ]; then
+  { cat "$ROOT/$append"; } > "$WT/CLAUDE.local.md"
+else
+  rm -f "$WT/CLAUDE.local.md"
 fi
 (cd "$WT" && bun install --frozen-lockfile >/dev/null 2>&1 || true)
 if [ -f "$ROOT/scripts/ledger.ts" ]; then
