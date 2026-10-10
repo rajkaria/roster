@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "a11ca31d0421",
+  "strategy": "manual-commit",
+  "branch": "task/T13",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/app/globals.css",
+    "web/app/layout.tsx",
+    "web/app/page.tsx",
+    "web/app/r/[owner]/[repo]/loading.tsx",
+    "web/app/r/[owner]/[repo]/page.tsx",
+    "web/lib/reviews.ts",
+    "web/lib/types.ts",
+    "web/next.config.ts",
+    "web/package.json",
+    "web/scripts/copy-reports.ts",
+    "web/scripts/make-sample.ts",
+    "web/tsconfig.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a1/1ca31d0421/0/metadata.json",
+      "transcript": "/a1/1ca31d0421/0/full.jsonl",
+      "compact_transcript": "/a1/1ca31d0421/0/transcript.jsonl",
+      "content_hash": "/a1/1ca31d0421/0/content_hash.txt",
+      "prompt": "/a1/1ca31d0421/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 21913,
+    "cache_read_tokens": 315513,
+    "output_tokens": 8918,
+    "api_call_count": 12
+  }
+}

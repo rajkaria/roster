@@ -1,0 +1,28 @@
+[roster setup=B task=T13]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T13 · W4 · Web skeleton that renders a review from JSON
+GOAL: A deployable Next.js app in web/ that renders a repo's review from reports/<slug>/review.json.
+READ: docs/DESIGN.md §"Surfaces", §"Data model" (Review).
+OWNS: web/** (its own package.json, App Router, TypeScript), web/scripts/copy-reports.ts
+BUILD:
+- prebuild copies ../reports into web/public/data. Pages: `/` (hero placeholder text from DESIGN.md one-liner + link to our
+  own review), `/r/[owner]/[repo]` (setups table: setup, sessions, spend, $/session, unattended %, survival %, revert %,
+  human-rework %, cost per surviving change, evidence-level badge; empty and loading states; "no Entire data" state).
+- A sample reports/_sample/review.json generated from the fixture shape in src/types.ts (copy the types; do not import from
+  ../src to keep the Vercel build self-contained). Clean, dark, Inter + JetBrains Mono, mobile-safe. No marketing numbers.
+ACCEPTANCE: `cd web && bun install && bun run build` succeeds; `/r/_sample/_sample` renders the table; lighthouse-free sanity:
+no console errors.
+TEST: cd web && bun run build
+DO NOT TOUCH: anything outside web/.
