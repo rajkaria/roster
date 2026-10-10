@@ -1,0 +1,24 @@
+[roster setup=A task=T17]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T17 · W2 · Difficulty score and terciles
+GOAL: A per-session difficulty score so comparisons between setups are like for like.
+READ: docs/DESIGN.md §"Difficulty".
+OWNS: src/difficulty/index.ts, src/difficulty/graph.ts, tests/difficulty.test.ts
+BUILD: difficulty(session, repo) = mean z-score of log(1+lines changed), files touched, graph impact size, first-prompt length;
+graph impact via `entire graph impact --symbol <s> --json` over symbols in touched hunks (spawned, with timeout); fallback = import
+fan-in count when entire graph is unavailable (record which was used). terciles(sessions).
+ACCEPTANCE: fixture confound scenario: X's sessions land in the top tercile; graph unavailable → fallback used and recorded.
+TEST: bun test tests/difficulty.test.ts
+DO NOT TOUCH: anything outside OWNS.
