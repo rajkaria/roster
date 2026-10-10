@@ -1,0 +1,24 @@
+[roster setup=D task=T06]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T06 · W2 · Survival via git blame
+GOAL: For each session, the share of lines it added that are still attributed to its commit(s) at HEAD.
+READ: docs/DESIGN.md §"Score: survival", §"Maturity".
+OWNS: src/score/survival.ts, tests/score-survival.test.ts
+BUILD: survival(repoPath, commitShas[], headSha) → {added, surviving, ratio}. Use `git blame -w -M -C --line-porcelain HEAD -- <file>`
+for files the commits touched; count added lines from `git show --numstat`/diff hunks; ignore whitespace-only and generated files
+(lockfiles, dist/, *.min.*). Cache blame per file per HEAD.
+ACCEPTANCE: fixture: a commit whose lines are later half-rewritten → ratio 0.5 (±1 line); a reverted commit → 0; untouched → 1.
+TEST: bun test tests/score-survival.test.ts
+DO NOT TOUCH: anything outside OWNS.
