@@ -6,6 +6,8 @@ import { COMMANDS, main } from "../src/cli.ts";
 import { parseReviewArgs, UsageError } from "../src/cli/review.ts";
 import { type Outcome, type Review, type Session } from "../src/types.ts";
 import {
+  buildSetupRows,
+  OPTIONAL_REVIEW_KEYS,
   REVIEW_KEYS,
   renderReviewMarkdown,
   repoLabel,
@@ -131,6 +133,9 @@ describe("export", () => {
       id: "r-1",
       repo: "acme/widgets",
       created_at: "2026-10-10T00:00:00.000Z",
+      generated_at: "2026-10-10T00:00:00.000Z",
+      has_entire_data: true,
+      setups: [],
       label: "insufficient_data",
       suspect: null,
       odds_ratio: null,
@@ -144,6 +149,10 @@ describe("export", () => {
       id: true,
       repo: true,
       created_at: true,
+      generated_at: true,
+      has_entire_data: true,
+      setups: true,
+      tags: true,
       label: true,
       suspect: true,
       odds_ratio: true,
@@ -152,7 +161,9 @@ describe("export", () => {
       evidence_level: true,
     };
     const runtimeKeys: string[] = [...REVIEW_KEYS];
-    expect(runtimeKeys.sort()).toEqual(Object.keys(everyKey).sort());
+    // `tags` is optional: written only when sessions carry prompt tags.
+    const allKeys: string[] = [...REVIEW_KEYS, ...OPTIONAL_REVIEW_KEYS];
+    expect(allKeys.sort()).toEqual(Object.keys(everyKey).sort());
     expect(runtimeKeys.sort()).toEqual(Object.keys(review).sort());
   });
 
@@ -161,6 +172,9 @@ describe("export", () => {
       id: "r",
       repo: "x",
       created_at: "2026-10-10T00:00:00.000Z",
+      generated_at: "2026-10-10T00:00:00.000Z",
+      has_entire_data: true,
+      setups: [],
       label: "insufficient_data",
       suspect: null,
       odds_ratio: null,
@@ -181,6 +195,11 @@ describe("export", () => {
     expect(problems({ ci95: [2, 1] })).toContain("ci95 must be null or [low, high] with low <= high");
     expect(problems({ p_value: 1.5 })).toContain("p_value must be null or a number in [0, 1]");
     expect(problems({ created_at: "soon" })).toContain("created_at is not a date");
+    expect(problems({ generated_at: "soon" })).toContain("generated_at is not a date");
+    expect(problems({ has_entire_data: "yes" })).toContain("has_entire_data must be a boolean");
+    expect(problems({ setups: {} })).toContain("setups must be an array");
+    expect(problems({}, ["setups"])).toContain("missing setups");
+    expect(problems({ tags: [] })).toContain("tags must be { by_tag, tag_accuracy }");
     expect(validateReview("review")).toEqual(["review must be an object"]);
   });
 
@@ -224,11 +243,13 @@ describe("export", () => {
       [o("a", "mature", true), o("b", "too_young", null), o("c", "mature", false)],
     );
     expect(row).toMatchObject({ setup_id: "S1", sessions: 3, mature: 2, spend_usd: 3.25, unpriced: 1, reverted: 0.5, unattended: 1 });
+    const mdSessions = [s("a", "S1", 1.25)];
+    const mdOutcomes = [o("a", "mature", true)];
     const md = renderReviewMarkdown({
-      review: { id: "r", repo: "x", created_at: "t", label: "insufficient_data", suspect: null, odds_ratio: null, ci95: null, p_value: null, evidence_level: "A" },
+      review: { id: "r", repo: "x", created_at: "t", generated_at: "t", has_entire_data: true, setups: buildSetupRows(mdSessions, mdOutcomes), label: "insufficient_data", suspect: null, odds_ratio: null, ci95: null, p_value: null, evidence_level: "A" },
       note: "n",
-      sessions: [s("a", "S1", 1.25)],
-      outcomes: [o("a", "mature", true)],
+      sessions: mdSessions,
+      outcomes: mdOutcomes,
       notes: ["none"],
     });
     expect(md).toContain("| `S1` |");
@@ -253,7 +274,10 @@ describe("roster review on the fixture", () => {
   test("review.json validates against the Review type", () => {
     const review = JSON.parse(readFileSync(join(outDir, "review.json"), "utf8"));
     expect(validateReview(review)).toEqual([]);
-    expect(Object.keys(review).sort()).toEqual([...REVIEW_KEYS].sort());
+    // The fixture's prompts carry setup tags, so the optional `tags` block is written.
+    expect(Object.keys(review).sort()).toEqual([...REVIEW_KEYS, ...OPTIONAL_REVIEW_KEYS].sort());
+    expect(review.has_entire_data).toBe(true);
+    expect(review.setups).toHaveLength(3);
     expect(review).toMatchObject({ repo: "fixture", label: "insufficient_data", suspect: null, evidence_level: "A" });
   });
 
