@@ -33,6 +33,12 @@ export type TokenCounts = {
    * Sum the per-request results for a session.
    */
   prompt_tokens?: number;
+  /**
+   * Upper bound on any one request's prompt size, for when per-request sizes are not stored (a session's
+   * total input is at least as large as any single request in it). Used only when it selects one tier;
+   * otherwise the tier is ambiguous and the price is null.
+   */
+  prompt_tokens_bound?: number;
 };
 
 export type PriceResult = {
@@ -72,11 +78,20 @@ export function normaliseModelId(model: string): { base: string; regional: boole
   return { base: id, regional };
 }
 
-function pickRow(base: string, promptTokens: number | undefined): PriceRow | "ambiguous" | undefined {
+function pickRow(
+  base: string,
+  promptTokens: number | undefined,
+  bound: number | undefined,
+): PriceRow | "ambiguous" | undefined {
   const candidates = ROWS.filter((r) => r.model_pattern === base);
   if (candidates.length === 0) return undefined;
   if (candidates.length === 1) return candidates[0];
-  if (promptTokens === undefined) return "ambiguous";
+  if (promptTokens === undefined) {
+    if (bound === undefined) return "ambiguous";
+    // A row is reachable when its range starts at or below the bound. Only one reachable row is certain.
+    const reachable = candidates.filter((r) => r.min_prompt_tokens === undefined || r.min_prompt_tokens <= bound);
+    return reachable.length === 1 ? reachable[0] : "ambiguous";
+  }
   return candidates.find(
     (r) =>
       (r.max_prompt_tokens === undefined || promptTokens <= r.max_prompt_tokens) &&
@@ -87,7 +102,7 @@ function pickRow(base: string, promptTokens: number | undefined): PriceRow | "am
 /** Prices one token-count record for a model. Returns usd: null when the model or price is unknown. */
 export function priceSession(model: string, tokens: TokenCounts): PriceResult {
   const { base, regional } = normaliseModelId(model);
-  const row = pickRow(base, tokens.prompt_tokens);
+  const row = pickRow(base, tokens.prompt_tokens, tokens.prompt_tokens_bound);
   if (row === undefined) return { usd: null, row_id: "unknown" };
   if (row === "ambiguous") return { usd: null, row_id: "unknown" };
 
