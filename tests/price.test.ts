@@ -77,9 +77,11 @@ describe("Haiku 5.5 long-prompt tier", () => {
     expect(long.usd).toBeCloseTo(0.5, 10);
   });
 
-  test("a tiered model without prompt_tokens is null, never a guessed tier", () => {
+  test("a tiered model without prompt_tokens is priced at the short tier and flagged as a lower bound", () => {
     const r = priceSession("claude-haiku-5-5", { input: M, output: 0 });
-    expect(r.usd).toBeNull();
+    expect(r.usd).toBeCloseTo(0.1, 10);
+    expect(r.tier).toBe("assumed-short");
+    expect(r.lower_bound).toBe(true);
   });
 });
 
