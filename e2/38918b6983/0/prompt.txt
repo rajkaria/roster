@@ -1,0 +1,25 @@
+[roster setup=B task=T02]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T02 · W1 · Fetch Entire checkpoints from any repo
+GOAL: Given a git URL or local path, get its Entire checkpoint data locally, whichever storage the repo uses.
+READ: docs/DESIGN.md §"Ingest".
+OWNS: src/ingest/fetch.ts, tests/ingest-fetch.test.ts
+BUILD: fetchCheckpoints(source, {cacheDir}) → {repoPath, backend: 'branch'|'refs'|'none', headSha}. Partial clone
+(`--filter=blob:none`), fetch `entire/checkpoints/v1`; if absent, fetch `refs/entire/checkpoints/*:refs/entire/checkpoints/*`;
+if neither, backend 'none'. Retries: 2 with backoff on network failure, each attempt logged with attempt number.
+Cache by URL + remote HEAD.
+ACCEPTANCE: works on the T01 fixture (local path) for the branch backend; a fixture variant using refs; a repo with neither → 'none'.
+TEST: bun test tests/ingest-fetch.test.ts
+DO NOT TOUCH: anything outside OWNS.
