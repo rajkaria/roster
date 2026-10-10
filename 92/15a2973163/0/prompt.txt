@@ -1,0 +1,28 @@
+[roster setup=A task=T37]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T37 · W1 · Count a session's user prompts once, not once per checkpoint
+GOAL: A session that spans several checkpoints repeats its prompts in each checkpoint's prompt.txt. Roster sums them, so a one-prompt
+session that made 3 commits counts as 3 prompts. That breaks the "unattended" metric and replay eligibility (4 of 23 sessions in this
+repo's own review).
+READ: src/ingest/parse.ts (how sessions are grouped across checkpoints and n_user_prompts computed), src/types.ts (Session),
+tests/fixtures/samples/prompt.txt, tests/ingest-parse.test.ts.
+OWNS: src/ingest/parse.ts, tests/ingest-prompts.test.ts
+BUILD: When a session_id appears in several checkpoints, its prompts are the ordered union of distinct prompts (compare normalised
+text; keep the first occurrence order); n_user_prompts counts that union. Token usage keeps summing per checkpoint slice (that part is
+correct). If transcripts give per-prompt ids or timestamps, prefer them over text comparison.
+ACCEPTANCE: tests: one session across 3 checkpoints with the same single prompt → n_user_prompts 1; a session whose second checkpoint
+adds a new prompt → 2; tokens still summed. Existing parse tests pass.
+TEST: bun test tests/ingest-prompts.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
