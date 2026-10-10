@@ -1,6 +1,6 @@
 // Outcomes table (DESIGN.md §"Score"). One row per session. Only mature sessions get metrics: the
 // commit must be ≥ 5 first-parent commits and ≥ 6 h older than HEAD. Everything else is censored
-// as `too_young` with null metrics, and `censored` says why.
+// as `too_young` with null metrics (except `unattended`, which needs no commit age), and `censored` says why.
 
 import { priceSession } from "../price/index.ts";
 import type { Outcome, Session } from "../types.ts";
@@ -68,7 +68,8 @@ export function scoreSessions(repo: string, sessions: Session[]): ScoredOutcome[
       reverted: null,
       rework_human: null,
       rework_agent: null,
-      unattended: null,
+      // Needs only the prompt count, not commit age, so censored sessions keep it.
+      unattended: Number.isFinite(s.n_user_prompts) ? s.n_user_prompts === 1 : null,
       tests_at_commit: null,
       difficulty: null,
       tercile: null,
@@ -89,7 +90,6 @@ export function scoreSessions(repo: string, sessions: Session[]): ScoredOutcome[
       reverted: reverted(repo, s.commit_sha),
       rework_human: r.human,
       rework_agent: r.agent,
-      unattended: s.n_user_prompts === 1,
     };
   });
 }
@@ -102,6 +102,7 @@ export interface SetupAggregate {
   too_young: number;
   /** Mature sessions only. */
   reverted: number;
+  /** Sessions with a known prompt count that needed exactly one prompt, mature or not. */
   unattended: number;
   survival_sum: number;
   survival_mean: number | null;
@@ -137,7 +138,7 @@ export function aggregateBySetup(outcomes: ScoredOutcome[]): SetupAggregate[] {
         mature: mature.length,
         too_young: rows.length - mature.length,
         reverted: mature.filter((o) => o.reverted).length,
-        unattended: mature.filter((o) => o.unattended).length,
+        unattended: rows.filter((o) => o.unattended).length,
         survival_sum: survivalSum,
         survival_mean: mature.length ? survivalSum / mature.length : null,
         cost_usd: known.length === rows.length ? known.reduce((a, o) => a + (o.cost_usd ?? 0), 0) : null,
