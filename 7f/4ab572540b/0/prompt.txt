@@ -1,0 +1,29 @@
+[roster setup=A task=T56]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T56 · W4 · neatlogs flushes still time out on real reviews
+GOAL: Every real `roster review` and `roster run` ends with "[neatlogs] Error flushing spans: Error: Request timed out", while the 3-span
+smoke trace flushes fine. The SDK posts each trace as one JSON document to /v1/trace. Large traces likely exceed the default flush
+timeout or payload size.
+READ: src/obs/index.ts (flushObs, initObs, span creation), the installed SDK's type definitions in node_modules/neatlogs/dist (init
+options: endpoint, batchSize; flushAll/flushAllDetailed(timeoutMs); shutdown(reason, timeoutMs)), src/cli/review.ts and src/cli/run.ts
+(how many spans a run creates: one per session is too many).
+OWNS: src/obs/index.ts, src/obs/attributes.ts, src/cli/review.ts (span structure only), tests/obs-flush.test.ts
+BUILD: Keep a review's trace small: spans per stage and per replay attempt, never one per session; session-level detail goes into one
+summary attribute (counts only). Flush with flushAllDetailed(60000) and report what the SDK says was exported and dropped. Set a
+batchSize if the SDK supports it. Print the trace id of every run at the end, so it can be found in the dashboard.
+ACCEPTANCE: tests with the SDK mocked: a review of the T01 fixture creates at most 20 spans; flush is called with a 60 s timeout; the
+trace id is printed. Whole suite green.
+TEST: bun test tests/obs-flush.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
