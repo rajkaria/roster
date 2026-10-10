@@ -25,6 +25,20 @@
   - **Rules swap:** a permissive rules file led the agent to edit an existing test. A strict one didn't, and the grader flagged the difference.
   - **Headless CLI:** couldn't authenticate yet, so no cost was measured.
 - **2026-10-10 ~18:10 IST:** repo created; skeleton, setup definitions, design contract and pre-registration committed.
+- **2026-10-10 18:48 IST:** Entire enabled (branch backend, email and phone redaction on).
+  - A one-line canary session (T00) confirmed that each checkpoint records the agent, the model, the token usage, the files and the setup tag.
+- **2026-10-10 18:50–19:00 IST:** two privacy fixes before any session data went public.
+  - **Isolated config:** setup sessions now run with their own Claude Code config directory.
+  - **Worktrees moved out of `$HOME`:** Claude Code loads `<ancestor>/.claude/CLAUDE.md` for every ancestor directory, so the operator's personal rules file had been entering session transcripts.
+  - Both canary checkpoints that contained it were deleted before being pushed.
+- **2026-10-10 19:00 IST:** setup C switched to Claude Code + Haiku 5.5. Codex wasn't available, so the pre-registered fallback applied (`experiments/PREREGISTRATION.md`, amendment 1).
+- **2026-10-10 19:00–19:10 IST:** wave 1 ran as 5 parallel recorded sessions:
+  - T01 shared types and fixture builder (A)
+  - T05 price table (C)
+  - T09 replay sandbox (D)
+  - T13 web skeleton (B)
+  - T15 sumcheck and facts (B)
+  - All merged with `--no-ff`. The suite passes and the typecheck is clean.
 
 ## Demo
 - Pending.
