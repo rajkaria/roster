@@ -115,6 +115,26 @@ function jsonl(text: string | null): Json[] {
 }
 
 const cleanModel = (m: string) => m.replace(/\[[^\]]*\]$/, "");
+const WRAPPER_RE = /<(task-notification|system-reminder)\b[^>]*>[\s\S]*?<\/\1>/g;
+/** A user row's text minus injected wrappers (background-task notifications, system reminders). */
+const stripInjected = (s: string) => s.replace(WRAPPER_RE, "").trim();
+
+/** Project/Local rules files in an instructions or nested_memory attachment. */
+function attachedRules(a: Json): { path: string; content: string }[] {
+  const cands: Json[] = Array.isArray(a.files) ? [...a.files] : [];
+  if (a.content && typeof a.content === "object") cands.push(a.content);
+  if (typeof a.path === "string" && typeof a.content === "string") cands.push(a);
+  return cands
+    .filter((f) => (f.type === "Project" || f.type === "Local") && typeof f.path === "string" && typeof f.content === "string")
+    .map((f) => ({ path: f.path as string, content: f.content as string }));
+}
+
+function relToCwd(path: string, cwd: string | null): string {
+  const root = cwd?.replace(/\/+$/, "");
+  if (root && path.startsWith(`${root}/`)) return path.slice(root.length + 1);
+  return path.replace(/^<repo>\//, "");
+}
+
 const hashRules = (s: string) => createHash("sha256").update(s.replace(/\r\n/g, "\n").trim()).digest("hex");
 
 interface TranscriptInfo {
@@ -130,6 +150,8 @@ function readTranscript(rows: Json[]): TranscriptInfo {
   let model: string | null = null;
   let attachedModel: string | null = null;
   let rules: string | null = null;
+  let cwd: string | null = null;
+  const files = new Map<string, string>();
   const sum = { in: 0, out: 0, cr: 0, cw: 0 };
   let sawClaudeUsage = false;
   let codexTotal: Json | null = null;
@@ -138,12 +160,13 @@ function readTranscript(rows: Json[]): TranscriptInfo {
 
   for (const r of rows) {
     if (typeof r.timestamp === "string") ts.push(r.timestamp);
+    if (cwd === null && typeof r.cwd === "string" && r.cwd) cwd = r.cwd;
     if (r.type === "attachment") {
       const a = r.attachment ?? {};
       if (a.type === "model" && a.identity?.modelId) attachedModel ??= cleanModel(String(a.identity.modelId));
-      if (a.type === "instructions" && rules === null) {
-        const proj = (a.files ?? []).filter((f: Json) => f.type === "Project" && typeof f.content === "string");
-        if (proj.length) rules = hashRules(proj.map((f: Json) => f.content).join("\n"));
+      if (a.type === "instructions" || a.type === "nested_memory") {
+        // paths are made cwd-relative after the whole transcript is read, once cwd is known
+        for (const f of attachedRules(a)) files.set(f.path, f.content);
       }
     } else if (r.type === "assistant" && r.message) {
       if (typeof r.message.model === "string" && r.message.model && r.message.model !== "<synthetic>") model ??= r.message.model;
@@ -155,7 +178,7 @@ function readTranscript(rows: Json[]): TranscriptInfo {
         sum.cr += u.cache_read_input_tokens ?? 0;
         sum.cw += u.cache_creation_input_tokens ?? 0;
       }
-    } else if (r.type === "user" && r.message && !r.isMeta && !r.isSidechain) {
+    } else if (r.type === "user" && r.message && !r.isMeta && !r.isCompactSummary && !r.isSidechain) {
       // tool results and approvals arrive as user rows holding tool_result blocks; they are not prompts
       const c = r.message.content;
       const text =
@@ -164,7 +187,8 @@ function readTranscript(rows: Json[]): TranscriptInfo {
           : Array.isArray(c) && !c.some((b: Json) => b.type === "tool_result")
             ? c.filter((b: Json) => b.type === "text").map((b: Json) => b.text).join("\n")
             : "";
-      if (text.trim()) prompts.push(text.trim());
+      const real = stripInjected(text);
+      if (real) prompts.push(real);
     } else if (r.type === "turn_context") {
       if (typeof r.payload?.model === "string" && r.payload.model) model ??= r.payload.model;
     } else if (r.type === "world_state") {
@@ -175,6 +199,14 @@ function readTranscript(rows: Json[]): TranscriptInfo {
       if (p.type === "token_count" && p.info?.total_token_usage) codexTotal = p.info.total_token_usage;
       if (p.type === "user_message" && typeof p.message === "string" && p.message.trim()) prompts.push(p.message.trim());
     }
+  }
+
+  if (files.size) {
+    const rel = new Map<string, string>();
+    for (const [path, content] of files) rel.set(relToCwd(path, cwd), content.replace(/\r\n/g, "\n").trim());
+    // paths only fix the order, so a lone CLAUDE.md keeps its content-only hash
+    const body = [...rel].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, c]) => c);
+    rules = hashRules(body.join("\n"));
   }
 
   let tokens: TranscriptInfo["tokens"] = null;
