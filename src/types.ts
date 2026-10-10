@@ -161,11 +161,44 @@ export interface ForwardPair {
 
 export type ReviewLabel = "suspect" | "no_suspect" | "insufficient_data";
 
+/** One setup's row in a review. Rates are fractions in [0, 1] over mature sessions, null when there are none. */
+export interface SetupRow {
+  setup_id: string;
+  label: string;
+  harness: string;
+  model: string;
+  rules_hash: string | null;
+  sessions: number;
+  mature_sessions: number;
+  /** Σ known session cost; 0 when no session is priced. */
+  spend_usd: number;
+  unattended: number | null;
+  survival: number | null;
+  reverted: number | null;
+  rework_human: number | null;
+  /** Σ survival over mature sessions. */
+  surviving_changes: number;
+  cost_per_surviving_change: number | null;
+  evidence_level: EvidenceLevel;
+}
+
+/** Ground-truth prompt tags (`[roster setup=<tag> ...]`) against the setup ids Roster inferred. */
+export interface ReviewTags {
+  by_tag: Record<string, { sessions: number; setup_ids: string[] }>;
+  tag_accuracy: number | null;
+}
+
 /** Difficulty-matched scorecard result (DESIGN.md §"Difficulty and review"). */
 export interface Review {
   id: string;
+  /** "owner/name" */
   repo: string;
   created_at: string;
+  generated_at: string;
+  has_entire_data: boolean;
+  setups: SetupRow[];
+  /** Present only when sessions carry prompt tags. */
+  tags?: ReviewTags;
   label: ReviewLabel;
   /** Setup id when label is "suspect". */
   suspect: string | null;

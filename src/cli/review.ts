@@ -10,7 +10,7 @@ import { type Identity, identify, inferenceAccuracy } from "../identity/index.ts
 import { survival } from "../score/survival.ts";
 import { reverted } from "../score/revert.ts";
 import { rework } from "../score/rework.ts";
-import { repoLabel, reviewSlug, type ReviewReport, writeReview } from "../review/export.ts";
+import { buildSetupRows, buildTags, repoSlug, type ReviewReport, slugDir, writeReview } from "../review/export.ts";
 import type { Outcome, Review, Session } from "../types.ts";
 
 export const DEFAULT_CACHE = ".roster/cache";
@@ -136,10 +136,10 @@ async function stage<T>(n: number, name: Stage, repo: string, work: () => Promis
 
 /** Runs the whole review. Resolves to the exit code; writes reports only when every stage succeeds. */
 export async function runReview(args: ReviewArgs): Promise<number> {
-  const label = repoLabel(args.repo);
-  const outDir = resolve(args.out ?? join("reports", reviewSlug(args.repo)));
+  const label = repoSlug(args.repo);
+  const outDir = resolve(args.out ?? join("reports", slugDir(label)));
   const createdAt = new Date().toISOString();
-  const reviewId = `${reviewSlug(args.repo)}-${createdAt.replace(/\D/g, "").slice(0, 14)}`;
+  const reviewId = `${slugDir(label)}-${createdAt.replace(/\D/g, "").slice(0, 14)}`;
 
   await initObs({ workflowName: "roster-review" });
   setSession(reviewId);
@@ -206,10 +206,15 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         `${scored.out.filter((s) => s.cost_usd === null).length} sessions have no price (unknown model, or a price that depends on prompt size)`,
         `${scored.out.filter((s) => s.setup_id === null).length} sessions have no setup because their rules hash is unknown`,
       ];
+      const tags = buildTags(scored.out);
       const review: Review = {
         id: reviewId,
         repo: label,
         created_at: createdAt,
+        generated_at: createdAt,
+        has_entire_data: true,
+        setups: buildSetupRows(scored.out, scored.outcomes),
+        ...(tags ? { tags } : {}),
         label: "insufficient_data",
         suspect: null,
         odds_ratio: null,
