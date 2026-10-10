@@ -1,14 +1,19 @@
 // Writes one observational review to reports/<slug>/: review.json (the Review type, validated before
 // it is written), sessions.json, outcomes.json and review.md. See docs/DESIGN.md §"Data model" and §"Review".
 import { mkdirSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
-import type { EvidenceLevel, Outcome, Review, ReviewLabel, Session } from "../types.ts";
+import { basename, join, resolve } from "node:path";
+import { inferenceAccuracy, parseTag } from "../identity/index.ts";
+import { aggregateBySetup, type ScoredOutcome, UNKNOWN_SETUP } from "../score/index.ts";
+import type { EvidenceLevel, Outcome, Review, ReviewLabel, ReviewTags, Session, SetupRow } from "../types.ts";
 
 /** Keys of the Review type in src/types.ts. Kept in step by the `satisfies Review` check in tests. */
 export const REVIEW_KEYS = [
   "id",
   "repo",
   "created_at",
+  "generated_at",
+  "has_entire_data",
+  "setups",
   "label",
   "suspect",
   "odds_ratio",
@@ -16,6 +21,27 @@ export const REVIEW_KEYS = [
   "p_value",
   "evidence_level",
 ] as const;
+
+/** Keys that may be absent: `tags` is written only when sessions carry prompt tags. */
+export const OPTIONAL_REVIEW_KEYS = ["tags"] as const;
+
+export const SETUP_ROW_KEYS = [
+  "setup_id",
+  "label",
+  "harness",
+  "model",
+  "rules_hash",
+  "sessions",
+  "mature_sessions",
+  "spend_usd",
+  "unattended",
+  "survival",
+  "reverted",
+  "rework_human",
+  "surviving_changes",
+  "cost_per_surviving_change",
+  "evidence_level",
+] as const satisfies readonly (keyof SetupRow)[];
 
 const LABELS: readonly ReviewLabel[] = ["suspect", "no_suspect", "insufficient_data"];
 const EVIDENCE: readonly EvidenceLevel[] = ["A", "B", "C"];
@@ -31,9 +57,77 @@ export function repoLabel(repo: string): string {
   return basename(trimmed.replace(/\/+$/, "").replace(/\.git$/, ""));
 }
 
+const URL_FORM = /^[a-z][a-z0-9+.-]*:\/\/|^[^/@\s]+@[^/:\s]+:/i;
+
+/** "owner/name" from an https, ssh:// or scp-style (git@host:owner/name) remote URL; null for anything else. */
+export function parseRemote(url: string): string | null {
+  const u = url.trim();
+  if (!URL_FORM.test(u)) return null;
+  const m = /[/:]([^/:\s]+)\/([^/\s]+?)(?:\.git)?\/?$/.exec(u);
+  return m ? `${m[1]}/${m[2]}` : null;
+}
+
+/**
+ * The review's repo slug "owner/name". A URL is parsed directly. A local path uses its `origin` remote, and with
+ * no remote (or one that does not parse) falls back to the directory's basename.
+ */
+export function repoSlug(repo: string): string {
+  const direct = parseRemote(repo);
+  if (direct !== null) return direct;
+  const dir = resolve(repo);
+  const p = Bun.spawnSync(["git", "remote", "get-url", "origin"], { cwd: dir, stdout: "pipe", stderr: "pipe" });
+  const remote = p.exitCode === 0 ? parseRemote(p.stdout.toString()) : null;
+  return remote ?? basename(dir);
+}
+
+/** Directory name under reports/ for a repo slug: "owner__name", or the bare name. */
+export function slugDir(slug: string): string {
+  return slug.replace("/", "__").replace(/[^A-Za-z0-9._-]+/g, "-");
+}
+
 /** Directory name under reports/: "owner__name" for GitHub repos (the web app's lookup form), else the basename. */
 export function reviewSlug(repo: string): string {
   return repoLabel(repo).replace("/", "__").replace(/[^A-Za-z0-9._-]+/g, "-");
+}
+
+const RATE_KEYS = ["unattended", "survival", "reverted", "rework_human"] as const;
+
+function validateSetupRow(row: unknown, at: string): string[] {
+  if (!isRecord(row)) return [`${at} must be an object`];
+  const errs: string[] = [];
+  for (const k of SETUP_ROW_KEYS) if (!(k in row)) errs.push(`${at} missing ${k}`);
+  for (const k of Object.keys(row)) if (!(SETUP_ROW_KEYS as readonly string[]).includes(k)) errs.push(`${at} unexpected key ${k}`);
+  for (const k of ["setup_id", "label", "harness", "model"] as const) {
+    if (typeof row[k] !== "string" || row[k] === "") errs.push(`${at}.${k} must be a non-empty string`);
+  }
+  if (row.rules_hash !== null && typeof row.rules_hash !== "string") errs.push(`${at}.rules_hash must be a string or null`);
+  for (const k of ["sessions", "mature_sessions"] as const) {
+    if (!Number.isInteger(row[k]) || (row[k] as number) < 0) errs.push(`${at}.${k} must be a non-negative integer`);
+  }
+  if (isFiniteNum(row.sessions) && isFiniteNum(row.mature_sessions) && row.mature_sessions > row.sessions) {
+    errs.push(`${at}.mature_sessions exceeds sessions`);
+  }
+  for (const k of ["spend_usd", "surviving_changes"] as const) {
+    if (!isFiniteNum(row[k]) || row[k] < 0) errs.push(`${at}.${k} must be a number >= 0`);
+  }
+  if (row.cost_per_surviving_change !== null && !(isFiniteNum(row.cost_per_surviving_change) && row.cost_per_surviving_change >= 0)) {
+    errs.push(`${at}.cost_per_surviving_change must be null or a number >= 0`);
+  }
+  for (const k of RATE_KEYS) {
+    const v = row[k];
+    if (v !== null && !(isFiniteNum(v) && v >= 0 && v <= 1)) errs.push(`${at}.${k} must be null or a number in [0, 1]`);
+    if (row.mature_sessions === 0 && v !== null) errs.push(`${at}.${k} must be null when mature_sessions is 0`);
+  }
+  if (!(EVIDENCE as readonly unknown[]).includes(row.evidence_level)) errs.push(`${at}.evidence_level must be A, B or C`);
+  return errs;
+}
+
+function validTags(t: unknown): boolean {
+  if (!isRecord(t) || !isRecord(t.by_tag)) return false;
+  if (t.tag_accuracy !== null && !(isFiniteNum(t.tag_accuracy) && t.tag_accuracy >= 0 && t.tag_accuracy <= 1)) return false;
+  return Object.values(t.by_tag).every(
+    (v) => isRecord(v) && Number.isInteger(v.sessions) && Array.isArray(v.setup_ids) && v.setup_ids.every((x) => typeof x === "string"),
+  );
 }
 
 /** Lists every way `value` fails the Review type. An empty list means it validates. */
@@ -41,12 +135,19 @@ export function validateReview(value: unknown): string[] {
   if (!isRecord(value)) return ["review must be an object"];
   const errs: string[] = [];
   for (const k of REVIEW_KEYS) if (!(k in value)) errs.push(`missing ${k}`);
-  for (const k of Object.keys(value)) if (!(REVIEW_KEYS as readonly string[]).includes(k)) errs.push(`unexpected key ${k}`);
+  const allowed: readonly string[] = [...REVIEW_KEYS, ...OPTIONAL_REVIEW_KEYS];
+  for (const k of Object.keys(value)) if (!allowed.includes(k)) errs.push(`unexpected key ${k}`);
 
-  for (const k of ["id", "repo", "created_at"] as const) {
+  for (const k of ["id", "repo", "created_at", "generated_at"] as const) {
     if (typeof value[k] !== "string" || value[k] === "") errs.push(`${k} must be a non-empty string`);
   }
-  if (typeof value.created_at === "string" && Number.isNaN(Date.parse(value.created_at))) errs.push("created_at is not a date");
+  for (const k of ["created_at", "generated_at"] as const) {
+    if (typeof value[k] === "string" && Number.isNaN(Date.parse(value[k]))) errs.push(`${k} is not a date`);
+  }
+  if (typeof value.has_entire_data !== "boolean") errs.push("has_entire_data must be a boolean");
+  if (!Array.isArray(value.setups)) errs.push("setups must be an array");
+  else value.setups.forEach((row, i) => errs.push(...validateSetupRow(row, `setups[${i}]`)));
+  if ("tags" in value && !validTags(value.tags)) errs.push("tags must be { by_tag, tag_accuracy }");
 
   const label = value.label;
   if (!(LABELS as readonly unknown[]).includes(label)) errs.push(`label must be one of ${LABELS.join(", ")}`);
@@ -128,6 +229,72 @@ export function summarizeSetups(sessions: Session[], outcomes: Outcome[]): Setup
     });
 }
 
+/**
+ * One row per known setup, built with aggregateBySetup. Sessions with no setup are left out (the review notes
+ * count them). Rates are fractions of mature sessions; rework_human is the mean over mature sessions that have it.
+ */
+export function buildSetupRows(sessions: Session[], outcomes: Outcome[]): SetupRow[] {
+  const byId = new Map<string, Outcome>(outcomes.map((o) => [o.session_id, o]));
+  const scored: ScoredOutcome[] = [];
+  for (const s of sessions) {
+    const o = byId.get(s.id);
+    if (!o || s.setup_id === null) continue;
+    scored.push({
+      ...o,
+      setup_id: s.setup_id,
+      commit_sha: s.commit_sha,
+      cost_usd: s.cost_usd,
+      censored: o.status === "mature" ? null : s.commit_sha === null ? "no_commit" : "too_young",
+    });
+  }
+  const first = new Map<string, Session>();
+  for (const s of sessions) if (s.setup_id !== null && !first.has(s.setup_id)) first.set(s.setup_id, s);
+
+  return aggregateBySetup(scored)
+    .filter((a) => a.setup_id !== UNKNOWN_SETUP)
+    .map((a) => {
+      const s = first.get(a.setup_id)!;
+      const human = scored
+        .filter((o) => o.setup_id === a.setup_id && o.status === "mature" && o.rework_human !== null)
+        .map((o) => o.rework_human as number);
+      const rate = (n: number) => (a.mature === 0 ? null : n / a.mature);
+      return {
+        setup_id: a.setup_id,
+        label: `${s.harness} · ${s.model}`,
+        harness: s.harness,
+        model: s.model,
+        rules_hash: s.rules_hash,
+        sessions: a.sessions,
+        mature_sessions: a.mature,
+        spend_usd: a.cost_usd ?? 0,
+        unattended: rate(a.unattended),
+        survival: a.survival_mean,
+        reverted: rate(a.reverted),
+        rework_human: mean(human),
+        surviving_changes: a.survival_sum,
+        cost_per_surviving_change: a.cost_per_surviving_change,
+        evidence_level: "A",
+      };
+    });
+}
+
+/** The `tags` block, or undefined when no session's first prompt carries a `[roster setup=…]` tag. */
+export function buildTags(sessions: Session[]): ReviewTags | undefined {
+  const tagged = sessions.map((s) => ({ setupId: s.setup_id, tag: parseTag(s.first_prompt) }));
+  if (tagged.every((t) => t.tag === null)) return undefined;
+  const ids = new Map<string, { sessions: number; ids: Set<string> }>();
+  for (const { setupId, tag } of tagged) {
+    if (tag === null) continue;
+    const e = ids.get(tag.setup) ?? ids.set(tag.setup, { sessions: 0, ids: new Set() }).get(tag.setup)!;
+    e.sessions++;
+    if (setupId !== null) e.ids.add(setupId);
+  }
+  const by_tag = Object.fromEntries(
+    [...ids].sort(([a], [b]) => a.localeCompare(b)).map(([tag, e]) => [tag, { sessions: e.sessions, setup_ids: [...e.ids].sort() }]),
+  );
+  return { by_tag, tag_accuracy: inferenceAccuracy(tagged) };
+}
+
 export interface ReviewReport {
   review: Review;
   /** Why the label is what it is, printed under the summary. */
@@ -144,12 +311,13 @@ const usd = (x: number) => `$${x.toFixed(2)}`;
 
 export function renderReviewMarkdown(report: ReviewReport): string {
   const { review, note, notes } = report;
-  const rows = summarizeSetups(report.sessions, report.outcomes);
+  const young = (r: SetupRow, v: string) => (r.mature_sessions === 0 ? "too young" : v);
   const lines = [
     `# Review: ${review.repo}`,
     "",
     `- Review id: \`${review.id}\``,
     `- Created: ${review.created_at}`,
+    `- Entire data: ${review.has_entire_data ? "yes" : "no"}`,
     `- Evidence level: ${review.evidence_level} (observational)`,
     `- Label: \`${review.label}\``,
     `- Suspect: ${review.suspect ?? "none"}`,
@@ -158,12 +326,24 @@ export function renderReviewMarkdown(report: ReviewReport): string {
     "",
     "## Setups",
     "",
-    "| Setup | Harness · model | Sessions | Mature | Spend | Survival | Reverted | Rework (human) | Unattended |",
-    "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
-    ...rows.map(
+    "| Setup | Harness · model | Sessions | Mature | Spend | Survival | Reverted | Rework (human) | Unattended | $/surviving change | Evidence |",
+    "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :---: |",
+    ...(review.setups ?? buildSetupRows(report.sessions, report.outcomes)).map(
       (r) =>
-        `| \`${r.setup_id}\` | ${r.label} | ${r.sessions} | ${r.mature} | ${usd(r.spend_usd)}${r.unpriced ? ` (${r.unpriced} unpriced)` : ""} | ${pct(r.survival)} | ${pct(r.reverted)} | ${pct(r.rework_human)} | ${pct(r.unattended)} |`,
+        `| \`${r.setup_id}\` | ${r.label} | ${r.sessions} | ${r.mature_sessions} | ${usd(r.spend_usd)} | ${young(r, pct(r.survival))} | ${young(r, pct(r.reverted))} | ${young(r, pct(r.rework_human))} | ${young(r, pct(r.unattended))} | ${r.cost_per_surviving_change === null ? "—" : usd(r.cost_per_surviving_change)} | ${r.evidence_level} |`,
     ),
+    ...(review.tags
+      ? [
+          "",
+          "## Prompt tags",
+          "",
+          `Tag accuracy: ${pct(review.tags.tag_accuracy)}`,
+          "",
+          "| Tag | Sessions | Inferred setups |",
+          "| --- | ---: | --- |",
+          ...Object.entries(review.tags.by_tag).map(([t, v]) => `| \`${t}\` | ${v.sessions} | ${v.setup_ids.map((i) => `\`${i}\``).join(", ") || "—"} |`),
+        ]
+      : []),
     "",
     "## Notes",
     "",
