@@ -40,6 +40,23 @@
   - T15 sumcheck and facts (B)
   - All merged with `--no-ff`. The suite passes and the typecheck is clean.
 
+- **2026-10-10 19:10 → 2026-10-11 01:30 IST:** waves 2–4 and B2, plus integration tasks T27–T51.
+  - Everything is merged with `--no-ff`, about 50 recorded agent sessions in all. The suite has 478 tests and passes.
+  - The web app is live at https://roster-five-chi.vercel.app with this repo's own review.
+- **Roster's review of its own repo caught its own silent mistakes.** Each was a green run with a wrong number, and each was fixed by a recorded task:
+  - it saw 3 setups where there are 4 (T29, T41)
+  - Haiku sessions were priced at $0 (T30, T40)
+  - 16 of 23 tasks lost their hidden tests (T36, T44)
+  - prompts were counted once per checkpoint (T37, T41)
+  - replays failed silently when the rules file was unchanged (T38)
+  - DeepSeek runs were priced with Claude prices (T43)
+- **Protocol deviation:** sessions T18 and T28 ran without setup D's rules. Pre-registration amendment 4 records it and how they're analysed.
+- **2026-10-10 22:40 IST:** the forward backlog (40 tasks) and its 40 acceptance tests were frozen before any review. The hashes are in `experiments/FREEZE.txt`.
+- **First end-to-end replay (G4):** a past task (T12) was replayed at its parent commit under setup C and DeepSeek candidate E.
+  - C passed the suite but failed the original task's hidden tests.
+  - E ran out of turns at the 40-turn cap. The original session took 59, so the cap now scales with the original (T46).
+  - E's cost is now priced from tokens: $0.045, against Claude Code's $2.01 estimate.
+
 ## Demo
 - Pending.
 
