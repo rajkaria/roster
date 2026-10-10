@@ -47,3 +47,12 @@ tr.total td { color: var(--dim); border-top: 1px solid var(--line); }
   table.compact th, table.compact td { padding: 8px 6px; font-size: 0.8rem; }
   table.compact .sub { display: none; }
 }
+/* Top nav (T55) */
+.nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; }
+.nav-links { display: flex; flex-wrap: wrap; gap: 4px 18px; list-style: none; margin: 0; padding: 0; font-size: 0.92rem; }
+.nav-links a { color: var(--dim); text-decoration: none; }
+.nav-links a:hover { color: var(--fg); }
+@media (max-width: 600px) {
+  .top { padding: 12px 14px; }
+  .nav-links { gap: 4px 14px; }
+}
