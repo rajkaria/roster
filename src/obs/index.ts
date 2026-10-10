@@ -29,6 +29,8 @@ let initPromise: Promise<boolean> | null = null;
 let pendingSpans = 0;
 let sentSpans = 0;
 let failedSpans = 0;
+/** Trace ids of the WORKFLOW roots opened since the last flush, printed when it ends. */
+let rootTraces: string[] = [];
 
 /** Test hook: runs on `mod` as if initObs had started it (bun's mock.module cannot swap an SDK another file already loaded). */
 export function _useSdkForTests(mod: unknown): void {
@@ -44,6 +46,7 @@ export function _resetObsForTests(): void {
   warned = false;
   initPromise = null;
   pendingSpans = sentSpans = failedSpans = 0;
+  rootTraces = [];
 }
 
 function warnOnce(msg: string): void {
@@ -124,7 +127,9 @@ export async function withSpan<T>(
   return client.trace(options, async (span) => {
     for (const [key, value] of Object.entries(toAttributes(attrs))) span.setAttribute(key, value);
     if (sessionId !== undefined) span.setAttribute("session.id", sessionId);
-    return fn(toObsSpan(span));
+    const obsSpan = toObsSpan(span);
+    if (kind === "WORKFLOW" && obsSpan.traceId && !rootTraces.includes(obsSpan.traceId)) rootTraces.push(obsSpan.traceId);
+    return fn(obsSpan);
   });
 }
 
@@ -150,8 +155,10 @@ export async function recordAttempt(spanAttrs: SpanAttrs, attempt: number, outco
   await withSpan("TOOL", `replay attempt ${attempt}`, { ...spanAttrs, ...outcome, attempt }, async () => undefined);
 }
 
-/** How long one flush attempt may take before it counts as failed. */
-export const FLUSH_TIMEOUT_MS = 30_000;
+/** How long the SDK may take to export on one flush attempt (flushAllDetailed's timeout). */
+export const FLUSH_TIMEOUT_MS = 60_000;
+/** Extra wait on top of the SDK's own timeout, so the SDK reports its outcome before ours fires. */
+export const FLUSH_GRACE_MS = 5_000;
 
 export interface FlushOptions {
   /** Per attempt. Default FLUSH_TIMEOUT_MS. */
@@ -160,6 +167,24 @@ export interface FlushOptions {
   retries?: number;
   /** Where the one failure line goes. Default console.warn. */
   log?: (msg: string) => void;
+  /** Where flushObs's export report and trace ids go. Default console.log. */
+  print?: (msg: string) => void;
+}
+
+/** What flushAllDetailed resolves to (neatlogs FlushAllResult). */
+interface DetailedFlush {
+  success: boolean;
+  outcomes: Array<{ pipeline: string; success: boolean; timedOut: boolean; error?: string }>;
+}
+
+const isDetailed = (r: unknown): r is DetailedFlush =>
+  typeof r === "object" && r !== null && typeof (r as DetailedFlush).success === "boolean" && Array.isArray((r as DetailedFlush).outcomes);
+
+/** Why a detailed flush failed, from the SDK's per-pipeline outcomes. */
+function detailedReason(r: DetailedFlush): string {
+  const bad = r.outcomes.filter((o) => !o.success);
+  if (bad.length === 0) return "the SDK reported a failed export";
+  return bad.map((o) => `${o.pipeline}: ${o.timedOut ? "timed out" : (o.error ?? "failed")}`).join("; ");
 }
 
 /**
@@ -183,6 +208,7 @@ async function flushCounted(flush: () => Promise<unknown>, opts: FlushOptions, b
       const r = await Promise.race([Promise.resolve().then(flush), timeout]);
       if (r === "timeout") reason = `timed out after ${timeoutMs / 1000} s`;
       else if (r === false) reason = "the SDK reported a failed export";
+      else if (isDetailed(r) && !r.success) reason = detailedReason(r);
       else {
         sentSpans += batch;
         pendingSpans -= batch;
@@ -202,19 +228,48 @@ async function flushCounted(flush: () => Promise<unknown>, opts: FlushOptions, b
   return false;
 }
 
+/** Spans the SDK says it has lost so far (queue drops, failed exports, masked drops), or null when it cannot say. */
+function sdkDrops(client: NeatlogsModule): number | null {
+  if (typeof client.getDeliveryDiagnostics !== "function") return null;
+  try {
+    const d = client.getDeliveryDiagnostics();
+    return d.spanQueueDrops + d.spanExportFailures + d.maskedSpanDrops;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Sends buffered spans. Call once before the process exits. A no-op when tracing is off.
+ * Prints what the SDK exported and dropped, then the trace id of every WORKFLOW root opened since the last flush.
  * Never throws: a failed flush logs one line, so it cannot change the exit code.
  */
 export async function flushObs(opts: FlushOptions = {}): Promise<boolean> {
   if (!sdk) return true;
   const client = sdk;
   const timeoutMs = opts.timeoutMs ?? FLUSH_TIMEOUT_MS;
-  // flushAll takes our timeout; SDK builds (and test stand-ins) without it fall back to flush().
-  // The SDK batches internally and reports no per-span result, so counts are spans opened since the last flush.
-  return flushCounted(
-    () => (typeof client.flushAll === "function" ? client.flushAll(timeoutMs) : client.flush()),
-    { ...opts, timeoutMs },
-    pendingSpans,
+  const print = opts.print ?? ((m: string) => console.log(m));
+  const batch = pendingSpans;
+  const traces = rootTraces;
+  rootTraces = [];
+  const dropsBefore = sdkDrops(client);
+  // flushAllDetailed takes the SDK timeout and names the pipeline that failed; SDK builds (and test stand-ins)
+  // without it fall back to flushAll, then flush(). Our own timeout waits a little longer so the SDK answers first.
+  // The SDK reports no per-span result, so "exported" is the spans opened since the last flush, less the SDK's drops.
+  const ok = await flushCounted(
+    () =>
+      typeof client.flushAllDetailed === "function"
+        ? client.flushAllDetailed(timeoutMs)
+        : typeof client.flushAll === "function"
+          ? client.flushAll(timeoutMs)
+          : client.flush(),
+    { ...opts, timeoutMs: timeoutMs + FLUSH_GRACE_MS },
+    batch,
   );
+  const dropsAfter = sdkDrops(client);
+  const dropped = dropsBefore !== null && dropsAfter !== null ? Math.max(0, dropsAfter - dropsBefore) : null;
+  const exported = ok ? Math.max(0, batch - (dropped ?? 0)) : 0;
+  print(`[roster] neatlogs: ${exported} spans exported, ${dropped ?? "unknown"} dropped${ok ? "" : " (flush failed)"}`);
+  for (const id of traces) print(`[roster] neatlogs trace ${id}`);
+  return ok;
 }

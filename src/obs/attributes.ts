@@ -10,7 +10,16 @@ export const ATTR = {
   evidenceLevel: "roster.evidence_level",
   repo: "roster.repo",
   costUsd: "roster.cost_usd",
+  /** Session-level detail of a review, as counts only (see summaryAttr). Sessions never get spans of their own. */
+  summary: "roster.summary",
 } as const;
+
+/** One `roster.summary` value: `name=count` pairs in the given order, e.g. `sessions=12 mature=8`. */
+export function summaryAttr(counts: Record<string, number>): string {
+  return Object.entries(counts)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(" ");
+}
 
 /** The span kinds the design names: WORKFLOW root, AGENT coordinator, TOOL steps, GUARDRAIL gate. A subset of the SDK's kinds. */
 export type SpanKind = Extract<NeatlogsSpanKind, "WORKFLOW" | "AGENT" | "TOOL" | "GUARDRAIL">;
