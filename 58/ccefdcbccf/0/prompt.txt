@@ -1,0 +1,26 @@
+[roster setup=B task=T15]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T15 · W5 · Sum check and generated FACTS
+GOAL: Every public number comes from reports/ and every table's totals are checked.
+READ: docs/DESIGN.md §"Statistics", §"Claims".
+OWNS: scripts/sumcheck.ts, scripts/facts.ts, docs/FACTS.md (generated header only), tests/facts.test.ts
+BUILD:
+- sumcheck.ts: loads every reports/**/*.json, recomputes totals (sessions per setup sum to total, pass+fail+excluded = n,
+  costs sum, percentages recompute from counts within 0.1 pt). Exits 1 with a readable diff on any mismatch.
+- facts.ts: writes docs/FACTS.md: one line per fact `KEY = value  (source: reports/<file>#<jsonpath>, generated <ts>)`;
+  facts whose source is missing print `PENDING`, never a number.
+ACCEPTANCE: tests with a good and a deliberately wrong report (wrong total) → pass / fail.
+TEST: bun test tests/facts.test.ts
+DO NOT TOUCH: anything outside OWNS.
