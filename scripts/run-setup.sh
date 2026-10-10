@@ -6,7 +6,9 @@
 # env  ROSTER_TASKS  path to the task-block file (required). A block is the text
 #                    between "<!-- Txx -->" and "<!-- /Txx -->"; its first line must be
 #                    the tag "[roster setup=<setup> task=<Txx>]".
-#      ROSTER_WT     worktree root (default: <repo>/.worktrees, gitignored, so workspace trust covers it)
+#      ROSTER_WT     worktree root (default: /Users/Shared/roster-wt). It must not sit under $HOME:
+#                    Claude Code loads <ancestor>/.claude/CLAUDE.md for every ancestor directory, so a
+#                    worktree under $HOME would pull the operator's global rules into the session.
 #      ROSTER_DRY=1  print what would run, run nothing
 #      ROSTER_CLAUDE_CONFIG  isolated Claude Code config dir (default: ~/.roster-claude). Keeps the
 #                    operator's global CLAUDE.md, plugins and hooks out of every setup and out of the
@@ -24,7 +26,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 CFG="$ROOT/setups/$SETUP.json"
 [ -f "$CFG" ] || { echo "run-setup: no setup '$SETUP' ($CFG)" >&2; exit 2; }
 TASKS="${ROSTER_TASKS:?run-setup: set ROSTER_TASKS to the task-block file}"
-WT_ROOT="${ROSTER_WT:-$ROOT/.worktrees}"
+WT_ROOT="${ROSTER_WT:-/Users/Shared/roster-wt}"
 WT="$WT_ROOT/$TASK"
 BRANCH="task/$TASK"
 LOGDIR="$ROOT/.roster/runs"
