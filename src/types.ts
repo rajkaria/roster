@@ -129,6 +129,8 @@ export interface Replay {
   verdict: ReplayVerdict;
   transcript_ref: string | null;
   trace_url: string | null;
+  /** Why the run failed before or inside the harness (environment error or harness error kind); null when it did not. */
+  error?: string | null;
 }
 
 export type GateVerdict = "promote" | "reject";
