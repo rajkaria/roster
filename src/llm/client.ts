@@ -2,6 +2,7 @@
 // (DESIGN.md §"Models Roster itself uses"). Retries 429/5xx twice with backoff (§"Recovery").
 import OpenAI from "openai";
 import { traceOpenAI, withSpan } from "../obs/index.ts";
+import { priceDeepSeek } from "../price/deepseek.ts";
 import { priceSession } from "../price/index.ts";
 import {
   type ChatMessage,
@@ -32,8 +33,9 @@ export interface RawCompletion {
     prompt_tokens: number;
     completion_tokens: number;
     prompt_tokens_details?: { cached_tokens?: number } | null;
-    /** DeepSeek's own cache counter. */
+    /** DeepSeek's own cache counters. */
     prompt_cache_hit_tokens?: number;
+    prompt_cache_miss_tokens?: number;
   };
 }
 
@@ -53,6 +55,8 @@ export interface DeepSeekOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Replaces the network call. Tests use it; production leaves it unset. */
   transport?: Transport;
+  /** The clock DeepSeek's time-of-day price is read from. Default: the time each response arrives. */
+  now?: () => Date;
 }
 
 /** The model a call uses when the request names none. */
@@ -84,8 +88,12 @@ function toWire(m: ChatMessage): Record<string, unknown> {
   };
 }
 
-/** Maps a raw completion to a ChatResult, priced for its model via src/price. */
-export function toResult(raw: RawCompletion): ChatResult {
+/**
+ * Maps a raw completion to a ChatResult, priced for its model. Given `at` (when the call was answered), a DeepSeek
+ * model is priced by priceDeepSeek's time-of-day rows, trying the answering model and then `requestedModel`.
+ * Anything else goes through src/price, which holds no DeepSeek row, so DeepSeek without `at` stays unpriced.
+ */
+export function toResult(raw: RawCompletion, at?: Date, requestedModel?: string): ChatResult {
   const msg = raw.choices[0]?.message ?? { content: null };
   const toolCalls: ToolCall[] = (msg.tool_calls ?? []).map((c) =>
     c.type === "function"
@@ -99,14 +107,19 @@ export function toResult(raw: RawCompletion): ChatResult {
     cachedPromptTokens: cached,
     completionTokens: u?.completion_tokens ?? 0,
   };
-  const costUsd = u
-    ? priceSession(raw.model, {
-        input: usage.promptTokens - cached,
-        output: usage.completionTokens,
-        cache_read: cached,
-        prompt_tokens: usage.promptTokens,
-      }).usd
-    : null;
+  let costUsd: number | null = null;
+  if (u) {
+    const tokens = {
+      input: u.prompt_cache_miss_tokens ?? usage.promptTokens - cached,
+      output: usage.completionTokens,
+      cache_read: cached,
+      prompt_tokens: usage.promptTokens,
+    };
+    const deepseek = at
+      ? (priceDeepSeek(raw.model, tokens, at) ?? (requestedModel ? priceDeepSeek(requestedModel, tokens, at) : null))
+      : null;
+    costUsd = deepseek ? deepseek.usd : priceSession(raw.model, tokens).usd;
+  }
   return {
     message: { role: "assistant", content: msg.content, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) },
     toolCalls,
@@ -121,6 +134,7 @@ export function deepseekClient(opts: DeepSeekOptions = {}): LlmClient {
   const maxRetries = opts.maxRetries ?? 2;
   const baseMs = opts.retryBaseMs ?? 1000;
   const sleep = opts.sleep ?? ((ms: number) => Bun.sleep(ms));
+  const now = opts.now ?? (() => new Date());
   let transport = opts.transport;
   if (!transport) {
     const apiKey = opts.apiKey ?? process.env.DEEPSEEK_API_KEY;
@@ -147,9 +161,10 @@ export function deepseekClient(opts: DeepSeekOptions = {}): LlmClient {
       }
       for (let attempt = 1; ; attempt++) {
         try {
-          if (attempt === 1) return toResult(await send(body));
+          const model = body.model as string;
+          if (attempt === 1) return toResult(await send(body), now(), model);
           // Retries are a recovery path, so each one is a TOOL span carrying roster.attempt.
-          return await withSpan("TOOL", "llm retry", { attempt }, async () => toResult(await send(body)));
+          return await withSpan("TOOL", "llm retry", { attempt }, async () => toResult(await send(body), now(), model));
         } catch (err) {
           if (!isRetryable(err) || attempt > maxRetries) throw err;
           await sleep(baseMs * 2 ** (attempt - 1));
