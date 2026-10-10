@@ -1,5 +1,6 @@
 // `roster review <repo> --observational`: fetch → parse → identify → score, then reports/<slug>/.
-// Every stage is a TOOL span inside one WORKFLOW review span (DESIGN.md §"Observability (neatlogs)").
+// Every stage is a TOOL span inside one WORKFLOW review span (DESIGN.md §"Observability (neatlogs)"). The
+// review ends with one line of wall time per stage.
 import { join, resolve } from "node:path";
 import type { Command } from "../cli.ts";
 import { priceSession } from "../price/index.ts";
@@ -7,9 +8,9 @@ import { flushObs, initObs, setSession, withSpan } from "../obs/index.ts";
 import { fetchCheckpoints } from "../ingest/fetch.ts";
 import { type ParsedSession, parseCheckpoints } from "../ingest/parse.ts";
 import { type Identity, identify, inferenceAccuracy } from "../identity/index.ts";
-import { survival } from "../score/survival.ts";
-import { reverted } from "../score/revert.ts";
-import { rework } from "../score/rework.ts";
+import { survival, survivalMany } from "../score/survival.ts";
+import { isReverted, reverted } from "../score/revert.ts";
+import { gitPool, type GitRunner, rework, reworkShares, trackMany } from "../score/rework.ts";
 import { buildSetupRows, buildTags, repoSlug, type ReviewReport, slugDir, writeReview } from "../review/export.ts";
 import type { Outcome, Review, Session } from "../types.ts";
 
@@ -127,14 +128,107 @@ export function scoreSession(session: ParsedSession, ctx: ScoreContext): Outcome
   };
 }
 
+/**
+ * scoreSession for every session at once, with the same outcomes. Git work goes through `run` (a pool
+ * of GIT_PARALLEL processes by default): blame runs once per (file, HEAD) and rework and reverts share
+ * one history pass. Each entry is the session's Outcome, or the Error that stopped it.
+ */
+export async function scoreAll(sessions: ParsedSession[], ctx: ScoreContext, run: GitRunner = gitPool()): Promise<(Outcome | Error)[]> {
+  const out = async (args: string[]) => {
+    const r = await run(ctx.repo, ["-c", "core.quotepath=off", ...args]);
+    if (!r.ok) throw new Error(`git ${args[0]} failed: ${r.err.trim()}`);
+    return r.out;
+  };
+  const asError = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
+
+  // Maturity: the same two questions scoreSession asks, all sessions in parallel.
+  const maturity = await Promise.all(
+    sessions.map(async (s): Promise<string | null | Outcome | Error> => {
+      const sha = s.commit_sha;
+      if (sha === null) return tooYoung(s.id, isUnattended(s));
+      const [depthR, showR] = await Promise.allSettled([
+        out(["rev-list", "--count", "--first-parent", `${sha}..${ctx.head}`]),
+        out(["show", "-s", "--format=%H %ct", sha]),
+      ]);
+      if (depthR.status === "rejected") return asError(depthR.reason);
+      if (showR.status === "rejected") return asError(showR.reason);
+      const [full = "", time = ""] = showR.value.trim().split(" ");
+      const depth = Number(depthR.value.trim());
+      if (depth < MIN_DEPTH || ctx.headTime - Number(time) < MIN_AGE_S) return tooYoung(s.id, isUnattended(s));
+      return full;
+    }),
+  );
+
+  const mature = [...new Set(maturity.filter((m): m is string => typeof m === "string"))];
+  let head: string | Error;
+  try {
+    head = (await out(["rev-parse", "--verify", `${ctx.head}^{commit}`])).trim();
+  } catch {
+    head = new Error(`cannot resolve ${ctx.head} in ${ctx.repo}`);
+  }
+  const [surv, tracked] = await Promise.all([
+    typeof head === "string" ? survivalMany(ctx.repo, mature.map((sha) => [sha]), head, run) : mature.map(() => head as Error),
+    trackMany(ctx.repo, mature, run),
+  ]);
+  const survOf = new Map(mature.map((sha, i) => [sha, surv[i]!]));
+
+  return sessions.map((s, i) => {
+    const m = maturity[i]!;
+    if (typeof m !== "string") return m;
+    const sv = survOf.get(m)!;
+    if (sv instanceof Error) return sv;
+    const t = tracked.get(m) ?? new Error(`no history for ${m}`);
+    if (t instanceof Error) return t;
+    const rw = reworkShares(t);
+    return {
+      session_id: s.id,
+      status: "mature",
+      survival: sv.ratio,
+      reverted: isReverted(t),
+      rework_human: rw.human,
+      rework_agent: rw.agent,
+      unattended: isUnattended(s),
+      tests_at_commit: null,
+      difficulty: null,
+      tercile: null,
+    };
+  });
+}
+
 const pct = (x: number) => `${(100 * x).toFixed(1)}%`;
 
-async function stage<T>(n: number, name: Stage, repo: string, work: () => Promise<[T, string]>): Promise<T> {
-  return withSpan("TOOL", name, { repo }, async () => {
-    const [value, detail] = await work();
-    console.log(`[${n}/${STAGES.length}] ${name}: ${detail}`);
-    return value;
+/** Wall time per stage, in ms. */
+type Timings = Map<string, number>;
+
+/** Timed stages in print order. `difficulty` is not part of this command yet, so it prints as not run. */
+const TIMED = ["fetch", "parse", "identify", "score", "difficulty", "export"] as const;
+
+export function formatTimings(times: Timings, totalMs: number): string {
+  const s = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
+  const parts = TIMED.map((name) => {
+    const ms = times.get(name);
+    return `${name} ${ms === undefined ? "not run" : s(ms)}`;
   });
+  return `time: ${parts.join(" · ")} · total ${s(totalMs)}`;
+}
+
+async function timed<T>(times: Timings, name: string, work: () => Promise<T>): Promise<T> {
+  const t0 = performance.now();
+  try {
+    return await work();
+  } finally {
+    times.set(name, performance.now() - t0);
+  }
+}
+
+async function stage<T>(times: Timings, n: number, name: Stage, repo: string, work: () => Promise<[T, string]>): Promise<T> {
+  return timed(times, name, () =>
+    withSpan("TOOL", name, { repo }, async () => {
+      const [value, detail] = await work();
+      console.log(`[${n}/${STAGES.length}] ${name}: ${detail}`);
+      return value;
+    }),
+  );
 }
 
 /** Runs the whole review. Resolves to the exit code; writes reports only when every stage succeeds. */
@@ -147,9 +241,11 @@ export async function runReview(args: ReviewArgs): Promise<number> {
   await initObs({ workflowName: "roster-review" });
   setSession(reviewId);
   console.log(`roster review ${label} (${reviewId}) → ${outDir}`);
+  const times: Timings = new Map();
+  const t0 = performance.now();
   try {
     return await withSpan("WORKFLOW", "review", { repo: label }, async () => {
-      const fetched = await stage(1, "fetch", label, async () => {
+      const fetched = await stage(times, 1, "fetch", label, async () => {
         const f = await fetchCheckpoints(args.repo, { cacheDir: resolve(args.cache) });
         return [f, `backend=${f.backend} head=${f.headSha.slice(0, 12) || "none"}`];
       });
@@ -162,12 +258,12 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         return 1;
       }
 
-      const sessions = await stage(2, "parse", label, async () => {
+      const sessions = await stage(times, 2, "parse", label, async () => {
         const parsed = parseCheckpoints(fetched.repoPath, fetched.backend === "refs" ? "git-refs" : "branch");
         return [parsed, `${parsed.length} sessions`];
       });
 
-      const identities: Identity[] = await stage(3, "identify", label, async () => {
+      const identities: Identity[] = await stage(times, 3, "identify", label, async () => {
         const ids = sessions.map((s) => identify(s, fetched.repoPath));
         const setups = new Set(ids.map((i) => i.setupId).filter((x): x is string => x !== null)).size;
         const acc = inferenceAccuracy(ids);
@@ -176,10 +272,11 @@ export async function runReview(args: ReviewArgs): Promise<number> {
 
       const headTime = Number(git(fetched.repoPath, ["show", "-s", "--format=%ct", fetched.headSha]).trim());
       const ctx: ScoreContext = { repo: fetched.repoPath, head: fetched.headSha, headTime };
-      const scored = await stage(4, "score", label, async () => {
+      const scored = await stage(times, 4, "score", label, async () => {
         const out: Session[] = [];
         const outcomes: Outcome[] = [];
         const failed: string[] = [];
+        const scoredAll = await scoreAll(sessions, ctx);
         sessions.forEach((s, i) => {
           const id = identities[i]!;
           const cost = priceSession(s.model, {
@@ -189,12 +286,11 @@ export async function runReview(args: ReviewArgs): Promise<number> {
             cache_write: s.cache_write,
           }).usd;
           out.push({ ...stripParsed(s), setup_id: id.setupId, cost_usd: cost });
-          try {
-            outcomes.push(scoreSession(s, ctx));
-          } catch (err) {
-            failed.push(`${s.id}: ${err instanceof Error ? err.message : String(err)}`);
+          const o = scoredAll[i]!;
+          if (o instanceof Error) {
+            failed.push(`${s.id}: ${o.message}`);
             outcomes.push(tooYoung(s.id, isUnattended(s)));
-          }
+          } else outcomes.push(o);
         });
         const mature = outcomes.filter((o) => o.status === "mature").length;
         return [
@@ -233,12 +329,13 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         outcomes: scored.outcomes,
         notes,
       };
-      const written = writeReview(outDir, report);
+      const written = await timed(times, "export", async () => writeReview(outDir, report));
       console.log(`wrote ${written.join(", ")}`);
       console.log(`label ${review.label} · evidence level ${review.evidence_level}`);
       return 0;
     });
   } finally {
+    if (times.size > 0) console.log(formatTimings(times, performance.now() - t0));
     await flushObs();
   }
 }

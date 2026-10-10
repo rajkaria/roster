@@ -1,6 +1,8 @@
 // Score: survival (DESIGN.md §"Score: survival"). Share of the lines a session's commit(s) added that
 // `git blame -w -M -C HEAD` still attributes to those commits.
 
+import { gitPool, type GitRunner } from "./rework.ts";
+
 export interface Survival {
   added: number;
   surviving: number;
@@ -28,14 +30,21 @@ function git(repo: string, args: string[]): { ok: boolean; out: string } {
   return { ok: r.exitCode === 0, out: r.stdout.toString() };
 }
 
+const SHOW = ["show", "-w", "--ignore-blank-lines", "-U0", "--no-renames", "--format="];
+const BLAME = ["blame", "-w", "-M", "-C", "--line-porcelain"];
+
 /** Added (non-blank, whitespace-insensitive) line count per non-generated file for one commit. */
 function addedByFile(repo: string, sha: string): Map<string, number> {
-  const res = git(repo, ["show", "-w", "--ignore-blank-lines", "-U0", "--no-renames", "--format=", sha]);
+  const res = git(repo, [...SHOW, sha]);
   if (!res.ok) throw new Error(`git show ${sha} failed in ${repo}`);
+  return parseAdded(res.out);
+}
+
+function parseAdded(out: string): Map<string, number> {
   const counts = new Map<string, number>();
   let file: string | null = null;
   let inHunk = false;
-  for (const line of res.out.split("\n")) {
+  for (const line of out.split("\n")) {
     if (line.startsWith("diff --git ")) {
       file = null;
       inHunk = false;
@@ -57,8 +66,15 @@ function blameCounts(repo: string, head: string, file: string): Map<string, numb
   const key = `${repo}\0${head}\0${file}`;
   const hit = blameCache.get(key);
   if (hit) return hit;
+  const res = git(repo, [...BLAME, head, "--", file]);
+  const counts = parseBlame(res);
+  blameCache.set(key, counts);
+  return counts;
+}
+
+/** A failed blame (the file is gone at HEAD) attributes nothing. */
+function parseBlame(res: { ok: boolean; out: string }): Map<string, number> {
   const counts = new Map<string, number>();
-  const res = git(repo, ["blame", "-w", "-M", "-C", "--line-porcelain", head, "--", file]);
   if (res.ok) {
     // Each blamed line starts with "<40-hex sha> <orig> <final> [<group size>]"; content lines start with a tab.
     for (const line of res.out.split("\n")) {
@@ -68,7 +84,6 @@ function blameCounts(repo: string, head: string, file: string): Map<string, numb
       }
     }
   }
-  blameCache.set(key, counts);
   return counts;
 }
 
@@ -87,14 +102,76 @@ export function survival(repoPath: string, commitShas: string[], headSha: string
     for (const [file, n] of addedByFile(repoPath, sha)) added.set(file, (added.get(file) ?? 0) + n);
   }
 
+  return tally(added, shas, (file) => blameCounts(repoPath, head, file));
+}
+
+function tally(added: Map<string, number>, shas: Set<string>, blamed: (file: string) => Map<string, number>): Survival {
   let total = 0;
   let surviving = 0;
   for (const [file, n] of added) {
     total += n;
-    const blamed = blameCounts(repoPath, head, file);
+    const counts = blamed(file);
     let mine = 0;
-    for (const sha of shas) mine += blamed.get(sha) ?? 0;
+    for (const sha of shas) mine += counts.get(sha) ?? 0;
     surviving += Math.min(mine, n);
   }
   return { added: total, surviving, ratio: total === 0 ? 1 : surviving / total };
+}
+
+// ---------- batch: one blame per (file, HEAD) for a whole review ----------
+
+/** Blame line counts per `repo + HEAD + file`, shared by every session of one review. */
+export type BlameCache = Map<string, Promise<Map<string, number>>>;
+
+/**
+ * `survival` for many commit sets at once, with the same results. `head` and every sha must be full
+ * commit ids. Each commit's diff is read once; `git blame` runs at most once per (file, head) across
+ * all sets, and through `cache` across calls. A set that cannot be scored maps to its Error.
+ */
+export async function survivalMany(
+  repoPath: string,
+  sets: string[][],
+  head: string,
+  run: GitRunner = gitPool(),
+  cache: BlameCache = new Map(),
+): Promise<(Survival | Error)[]> {
+  const quoted = (args: string[]) => ["-c", "core.quotepath=off", ...args];
+  const shows = new Map<string, Promise<Map<string, number>>>();
+  const addedOf = (sha: string) => {
+    let p = shows.get(sha);
+    if (!p) {
+      p = run(repoPath, quoted([...SHOW, sha])).then((res) => {
+        if (!res.ok) throw new Error(`git show ${sha} failed in ${repoPath}`);
+        return parseAdded(res.out);
+      });
+      shows.set(sha, p);
+    }
+    return p;
+  };
+  const blameOf = (file: string) => {
+    const key = `${repoPath}\0${head}\0${file}`;
+    let p = cache.get(key);
+    if (!p) {
+      p = run(repoPath, quoted([...BLAME, head, "--", file])).then(parseBlame);
+      cache.set(key, p);
+    }
+    return p;
+  };
+
+  return Promise.all(
+    sets.map(async (set) => {
+      try {
+        const shas = new Set(set);
+        const added = new Map<string, number>();
+        for (const perFile of await Promise.all([...shas].map(addedOf))) {
+          for (const [file, n] of perFile) added.set(file, (added.get(file) ?? 0) + n);
+        }
+        const files = [...added.keys()];
+        const blamed = new Map((await Promise.all(files.map(blameOf))).map((c, i) => [files[i]!, c]));
+        return tally(added, shas, (file) => blamed.get(file)!);
+      } catch (err) {
+        return err instanceof Error ? err : new Error(String(err));
+      }
+    }),
+  );
 }
