@@ -62,6 +62,39 @@ export function harnessId(agent: string): string {
 const normalise = (text: string) => text.replace(/\r\n?/g, "\n").trim();
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
+interface RulesFile {
+  path?: unknown;
+  type?: unknown;
+  content?: unknown;
+}
+
+/**
+ * Rules hash of a Claude Code transcript: every `instructions` / `nested_memory` file of type
+ * Project or Local, deduplicated and sorted by repo-relative path (the session's recorded cwd,
+ * or a `<repo>` placeholder, is stripped). User-level files and paths outside the repo are
+ * excluded. Null when the transcript records no such file.
+ */
+export function claudeRulesHash(rows: ReadonlyArray<Record<string, any>>): string | null {
+  const cwd = rows.find((r) => typeof r.cwd === "string" && r.cwd)?.cwd?.replace(/\/+$/, "") as string | undefined;
+  const files = new Map<string, string>();
+  for (const r of rows) {
+    const a = r.type === "attachment" ? r.attachment : null;
+    if (!a || (a.type !== "instructions" && a.type !== "nested_memory")) continue;
+    const list: RulesFile[] = Array.isArray(a.files) ? a.files : [a];
+    for (const f of list) {
+      if ((f.type !== "Project" && f.type !== "Local") || typeof f.path !== "string" || typeof f.content !== "string") continue;
+      let rel = f.path;
+      if (rel.startsWith("<repo>/")) rel = rel.slice(7);
+      else if (cwd && rel.startsWith(cwd + "/")) rel = rel.slice(cwd.length + 1);
+      else if (rel.startsWith("/") || rel.startsWith("~")) continue; // outside the repo/worktree
+      files.set(rel, normalise(f.content));
+    }
+  }
+  if (files.size === 0) return null;
+  const texts = [...files.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, t]) => t);
+  return sha256(texts.join("\n"));
+}
+
 /** Short setup id, or null when the rules hash is unknown (never a guess). */
 export function setupIdOf(harness: string, model: string, rulesHash: string | null): string | null {
   if (rulesHash === null) return null;
