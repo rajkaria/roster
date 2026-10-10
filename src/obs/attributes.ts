@@ -1,4 +1,5 @@
 // roster.* span attribute names (DESIGN.md §"Observability (neatlogs)"). Names are a contract; do not rename.
+import type { SpanKind as NeatlogsSpanKind } from "neatlogs";
 import { EvidenceLevel, FailureCode } from "../types.ts";
 
 export const ATTR = {
@@ -11,8 +12,8 @@ export const ATTR = {
   costUsd: "roster.cost_usd",
 } as const;
 
-/** The span kinds the design names: WORKFLOW root, AGENT coordinator, TOOL steps, GUARDRAIL gate. */
-export type SpanKind = "WORKFLOW" | "AGENT" | "TOOL" | "GUARDRAIL";
+/** The span kinds the design names: WORKFLOW root, AGENT coordinator, TOOL steps, GUARDRAIL gate. A subset of the SDK's kinds. */
+export type SpanKind = Extract<NeatlogsSpanKind, "WORKFLOW" | "AGENT" | "TOOL" | "GUARDRAIL">;
 
 /** Attributes a Roster span can carry. Every field is optional; unset fields are not written. */
 export interface SpanAttrs {

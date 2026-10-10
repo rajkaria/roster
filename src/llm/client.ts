@@ -1,7 +1,7 @@
 // Roster's own model calls, on DeepSeek's OpenAI-compatible API. Never a Claude API
 // (DESIGN.md §"Models Roster itself uses"). Retries 429/5xx twice with backoff (§"Recovery").
 import OpenAI from "openai";
-import { withSpan } from "../obs/index.ts";
+import { traceOpenAI, withSpan } from "../obs/index.ts";
 import { priceSession } from "../price/index.ts";
 import {
   type ChatMessage,
@@ -127,7 +127,8 @@ export function deepseekClient(opts: DeepSeekOptions = {}): LlmClient {
     if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not set; Roster's own model calls go to DeepSeek");
     // The SDK's own retries are off: ours are numbered and traced.
     const sdk = new OpenAI({ apiKey, baseURL: opts.baseURL ?? DEEPSEEK_BASE_URL, maxRetries: 0 });
-    transport = (body) => sdk.chat.completions.create(body as never) as Promise<RawCompletion>;
+    // Wrapped per call: the CLI builds this client before initObs runs, and traceOpenAI is a no-op until tracing is on.
+    transport = (body) => traceOpenAI(sdk).chat.completions.create(body as never) as Promise<RawCompletion>;
   }
   const send = transport;
 
