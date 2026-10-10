@@ -1,0 +1,31 @@
+[roster setup=B task=T33]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T33 · W3 · Replay tasks from recorded sessions
+GOAL: Turn a repo's scored sessions into replayable tasks: what was asked, the commit to start from, the tests the team kept.
+READ: src/types.ts (Session, Outcome), src/grade/hidden.ts (hiddenTests), src/difficulty/index.ts, docs/DESIGN.md §"Plan
+(coordinator)", §"Replay at the parent commit".
+OWNS: src/replay/tasks.ts, tests/replay-tasks.test.ts
+INTERFACE: export interface ReplayTask { id: string; sessionId: string; setupId: string | null; tag: string | null; prompt: string;
+parentSha: string; originalSha: string; hiddenTests: { path: string; content: string }[]; userPrompts: number; tercile: 1 | 2 | 3 |
+null; track: 'tests' | 'judge-only' | 'none'; reason: string }; export function buildReplayTasks(repo: string, sessions: Session[],
+outcomes: Outcome[]): ReplayTask[]
+BEHAVIOUR: prompt = the session's first user prompt with a leading `[roster setup=… task=…]` tag line removed (tag kept in `tag`).
+parentSha = parent of the session's earliest linked commit (first parent); originalSha = its latest linked commit. hiddenTests from
+hiddenTests(repo, originalSha). track: 'none' when strategy is import, userPrompts > 2, or no linked commit; 'judge-only' when there
+are no hidden tests; else 'tests'. Sessions with no commit are skipped with a reason. Deterministic order by originalSha date.
+ACCEPTANCE: tests on the T01 fixture repo: a tagged session's prompt has no tag line; parent/original shas correct for a two-commit
+session; a session with no tests → judge-only; > 2 prompts → none.
+TEST: bun test tests/replay-tasks.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
