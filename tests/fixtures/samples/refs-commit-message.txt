@@ -1,0 +1,5 @@
+Checkpoint: 719f11fc9dfd
+
+Entire-Session: 4f3348ab-0000-0000-0000-525113466cf9
+Entire-Strategy: import
+Entire-Agent: Claude Code

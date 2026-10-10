@@ -1,0 +1,2 @@
+{"type": "turn_context", "ordinal": 7, "payload": {"turn_id": "redacted", "model": "gpt-6-astra", "approval_policy": "on-request"}}
+{"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"input_tokens": 743941, "cached_input_tokens": 676480, "cache_write_input_tokens": 0, "output_tokens": 1899, "reasoning_output_tokens": 411, "total_tokens": 745840}, "model_context_window": 258400}}}

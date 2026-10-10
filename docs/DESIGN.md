@@ -59,15 +59,70 @@ This is what makes this repo a labelled dataset.
 
 ## Entire checkpoint format
 
-> The exact branch layout, file names and JSON keys come from the kickoff spike and are pasted here at repo creation. `tests/fixtures/samples/` holds redacted real samples. Build against those samples, never against invented payloads.
+This section was verified on 2026-10-10 against 6 public repos (2,421 session rows). Redacted real samples are in `tests/fixtures/samples/`. Build against them.
 
-What we rely on (from Entire's docs):
-- **Lifecycle:** each `git commit` in a session-enabled repo turns the session's work into a checkpoint and adds an `Entire-Checkpoint: <id>` trailer to the commit.
-- **Storage:**
-  - **branch backend:** the branch `entire/checkpoints/v1`
-  - **default since CLI 0.10:** hidden refs `refs/entire/checkpoints/<shard>/<id>`
-- **Contents:** each checkpoint holds `metadata.json`, per-session transcripts and `tasks/` (subagents).
-- **Web:** `https://entire.io/gh/<owner>/<repo>/session/<id>` and `/commit/<sha>` render without login for public repos.
+### Two storage backends (read both)
+
+| Backend | Where | Layout | Checkpoint id |
+|---|---|---|---|
+| `branch` (legacy, visible on GitHub) | `refs/heads/entire/checkpoints/v1`, one cumulative tree | `<id[0:2]>/<id[2:]>/…` | 12 hex chars, e.g. `02674b7ab946` → `02/674b7ab946/` |
+| `git-refs` (default since CLI 0.10) | One ref per checkpoint: `refs/entire/checkpoints/<id[-2:]>/<id>` | The ref commit's tree root is the checkpoint | 26-char ULID (12-hex ids also occur) |
+
+- An empty `entire/checkpoints/v1` branch means the repo migrated to refs, so always try both backends.
+- On refs, the ref commit's message carries the trailers `Checkpoint: <id>`, `Entire-Session: <uuid>`, `Entire-Strategy: manual-commit|import` and `Entire-Agent: <name>`.
+- Commits on code branches link to a checkpoint with the trailer `Entire-Checkpoint: <id>`.
+
+### The tree of one checkpoint
+
+```
+metadata.json                 checkpoint root: cli_version, checkpoint_id, strategy, branch, files_touched, sessions[], token_usage
+<n>/metadata.json             one per session in this checkpoint (n = 0, 1, …)
+<n>/full.jsonl                the agent's native transcript (best-effort redacted)
+<n>/transcript.jsonl          Entire's compact transcript (CLI ≥ 0.10)
+<n>/prompt.txt                user prompts joined by "\n\n---\n\n" (sometimes missing)
+<n>/content_hash.txt          "sha256:<hex>" of full.jsonl
+tasks/<tool_use_id>/          subagents: task.json, agent-<id>.jsonl
+```
+
+- Paths in the root `sessions[]` are repo-absolute on the branch backend (`/02/674b7ab946/0/metadata.json`). Normalise them.
+
+### Session `metadata.json`: the keys we use
+
+| Key | Notes |
+|---|---|
+| `session_id` | The agent's own id. **The same session recurs across checkpoints.** Aggregate per session over all its checkpoints |
+| `agent` | Display name: `Claude Code`, `Codex`, `Copilot CLI`, `Factory AI Droid`, `Pi`, … |
+| `model` | Often `""`. Fall back to the transcript (below) |
+| `created_at` | RFC3339; roughly the commit time |
+| `token_usage.{input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, api_call_count}` | Covers **this checkpoint's slice** of the transcript, not the whole session. `input_tokens` excludes cached input |
+| `files_touched[]` | Repo-relative paths |
+| `initial_attribution.{agent_lines, agent_removed, human_added, human_modified, human_removed, total_committed, agent_percentage}` | Entire's own agent-vs-human line attribution for the commit |
+| `prompt_attributions[]` | Per-prompt line attribution, when present |
+| `session_metrics.turn_count`, `strategy`, `branch`, `cli_version` | `strategy: "import"` marks history imported from before capture. Exclude it from any event-period analysis |
+
+- **Not recorded:** cost, a rules-file hash, the harness version (except inside transcripts), and the parent commit.
+
+### Recovering the model and the rules file from transcripts
+
+- **Claude Code `full.jsonl`:**
+  - `type:"assistant"` lines carry `.message.model` and `.message.usage{input_tokens, cache_creation_input_tokens, cache_read_input_tokens, output_tokens}`.
+  - `type:"attachment"` with `attachment.type:"model"` carries `identity.modelId`, e.g. `claude-opus-5-5[1m]`.
+  - `attachment.type:"instructions"` (`files[].{path,type,content}`) and `"nested_memory"` carry the **full text of the CLAUDE.md files loaded**. That's the rules file. Hash the `type: Project` entries.
+- **Codex `full.jsonl`:**
+  - `turn_context.payload.model`
+  - `world_state.payload.state.agents_md` (AGENTS.md)
+  - `event_msg` with `payload.type:"token_count"` gives `info.total_token_usage{input_tokens, cached_input_tokens, cache_write_input_tokens, output_tokens, reasoning_output_tokens}`
+- **Copilot CLI and Factory Droid:** they record neither model nor tokens, so `cost = null` and the model is `unknown`.
+- **Rules-file fallback:** hash `CLAUDE.md` / `AGENTS.md` at the parent of the session's first linked commit.
+
+### Mapping recipe
+1. List checkpoints from both backends.
+2. Map each checkpoint to its commit through the `Entire-Checkpoint:` trailers on all branches.
+3. For each `<n>/metadata.json`: `(session_id, checkpoint_id)` gives the token slice and the files.
+4. Group by `session_id` to get one Session. Its tokens are the sum of its slices, and its commits are the set of linked commits.
+5. Model: `metadata.model` if it isn't empty, otherwise the transcript.
+6. The rules hash comes from the transcript attachments, otherwise from the parent-commit fallback.
+7. The setup is `(agent, model, rules_hash)`.
 
 ## Features and acceptance
 
