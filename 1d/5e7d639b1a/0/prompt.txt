@@ -1,0 +1,28 @@
+[roster setup=D task=T29]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T29 · W1 · Setup identity counts every rules file the session loaded
+GOAL: Two setups that differ only in an extra rules file (for example a CLAUDE.local.md) must get different setup ids.
+READ: src/identity/index.ts, docs/DESIGN.md §"Recovering the model and the rules file from transcripts",
+tests/fixtures/samples/claude-code-full.jsonl.
+OWNS: src/identity/index.ts, tests/identity-rules.test.ts
+BUILD: The rules hash covers every `instructions` / `nested_memory` attachment whose type is Project or Local (any file name:
+CLAUDE.md, CLAUDE.local.md, nested CLAUDE.md), sorted by repo-relative path, using their recorded content; user-level files
+(type User, or paths outside the repo/worktree) are excluded and do not change the hash. Paths are made repo-relative by stripping
+the session's recorded cwd, so the same file in two worktrees hashes the same.
+ACCEPTANCE: new tests with transcript lines built from the sample shapes: same CLAUDE.md in two different worktree paths → same id;
+adding a CLAUDE.local.md attachment → different id; a User-type ~/.claude/CLAUDE.md attachment → id unchanged. Existing identity
+tests still pass.
+TEST: bun test tests/identity-rules.test.ts tests/identity.test.ts
+DO NOT TOUCH: anything outside OWNS.
