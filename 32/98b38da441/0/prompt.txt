@@ -1,0 +1,29 @@
+[roster setup=D task=T09]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T09 · W3 · Replay sandbox with no future history
+GOAL: Build an isolated workspace for any commit of any repo that contains that commit's tree and nothing after it.
+READ: docs/DESIGN.md §"Replay at the parent commit".
+OWNS: src/sandbox/index.ts, src/sandbox/isolation.ts, tests/sandbox.test.ts
+BUILD:
+- createSandbox(repoPath, commitSha, {root}): `git archive <sha> | tar -x` into a fresh dir, `git init`, one base commit
+  with fixed author/date; returns {path, baseSha}. Copies nothing from .git of the source.
+- proveIsolation(sandboxPath, sourceRepo, commitSha): asserts (a) `git log --all` has exactly 1 commit, (b) no object in the
+  sandbox store matches any blob that exists only in commits after commitSha (check a sample of ≥ 50 future blobs, or all if
+  fewer), (c) no remotes and no reflog beyond base. Returns {ok, checks[]}.
+- destroySandbox(path).
+ACCEPTANCE: on a fixture repo (build one in the test with plain git commands), a sandbox at commit 3 of 6 passes isolation;
+a deliberately leaky copy (cp -r of .git) fails it.
+TEST: bun test tests/sandbox.test.ts
+DO NOT TOUCH: anything outside OWNS.
