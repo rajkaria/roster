@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "d36382d37183",
+  "strategy": "manual-commit",
+  "branch": "task/T22",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "web/app/r/[owner]/[repo]/page.tsx",
+    "web/app/r/[owner]/[repo]/sidecar.ts",
+    "web/components/Sections.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d3/6382d37183/0/metadata.json",
+      "transcript": "/d3/6382d37183/0/full.jsonl",
+      "compact_transcript": "/d3/6382d37183/0/transcript.jsonl",
+      "content_hash": "/d3/6382d37183/0/content_hash.txt",
+      "prompt": "/d3/6382d37183/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 33220,
+    "cache_read_tokens": 462694,
+    "output_tokens": 11521,
+    "api_call_count": 14
+  }
+}
