@@ -5,5 +5,13 @@
     "primary": {
       "type": "git-branch"
     }
+  },
+  "redaction": {
+    "pii": {
+      "enabled": true,
+      "email": true,
+      "phone": true,
+      "address": false
+    }
   }
 }

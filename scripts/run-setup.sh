@@ -8,6 +8,9 @@
 #                    the tag "[roster setup=<setup> task=<Txx>]".
 #      ROSTER_WT     worktree root (default: <repo>/.worktrees, gitignored, so workspace trust covers it)
 #      ROSTER_DRY=1  print what would run, run nothing
+#      ROSTER_CLAUDE_CONFIG  isolated Claude Code config dir (default: ~/.roster-claude). Keeps the
+#                    operator's global CLAUDE.md, plugins and hooks out of every setup and out of the
+#                    public session transcripts. Log in once: CLAUDE_CONFIG_DIR=~/.roster-claude claude auth login
 #
 # The tag goes first in the prompt so every recorded session carries its ground-truth
 # setup label. Sessions run with project settings only (--setting-sources project), so a
@@ -87,7 +90,7 @@ fi
 
 started="$(date +%s)"
 set +e
-(cd "$WT" && env "${SCRUB[@]}" "${cmd[@]}") >"$LOG" 2>"$ERR"
+(cd "$WT" && env "${SCRUB[@]}" CLAUDE_CONFIG_DIR="${ROSTER_CLAUDE_CONFIG:-$HOME/.roster-claude}" "${cmd[@]}") </dev/null >"$LOG" 2>"$ERR"
 code=$?
 set -e
 secs=$(( $(date +%s) - started ))
