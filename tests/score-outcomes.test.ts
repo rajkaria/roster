@@ -92,8 +92,8 @@ describe("scoreSessions on the multisession fixture", () => {
       { commit: "add delta", setup: "Z", status: "mature", censored: null, survival: 1, reverted: false, rework_human: 0, rework_agent: 0, unattended: true },
       // gamma: reverted by a human commit, which also counts as human rework of every line.
       { commit: "add gamma", setup: "Z", status: "mature", censored: null, survival: 0, reverted: true, rework_human: 1, rework_agent: 0, unattended: true },
-      // The orphan checkpoint has no commit: kept, with no metrics.
-      { commit: null, setup: "Y", status: "too_young", censored: "no_commit", survival: null, reverted: null, rework_human: null, rework_agent: null, unattended: null },
+      // The orphan checkpoint has no commit: kept, with no commit-based metrics. Unattended needs only its prompt count.
+      { commit: null, setup: "Y", status: "too_young", censored: "no_commit", survival: null, reverted: null, rework_human: null, rework_agent: null, unattended: true },
     ]);
   });
 
@@ -125,7 +125,8 @@ describe("maturity censoring", () => {
     const d = copyAt("human: rework src/alpha.ts");
     const rows = scoreSessions(d, load(d));
     for (const o of byCommit(rows, "add delta")) {
-      expect(o).toMatchObject({ status: "too_young", censored: "too_young", survival: null, reverted: null, rework_human: null, rework_agent: null, unattended: null });
+      expect(o).toMatchObject({ status: "too_young", censored: "too_young", survival: null, reverted: null, rework_human: null, rework_agent: null });
+      expect(o.unattended).toBe(sessions.find((s) => s.id === o.session_id)!.n_user_prompts === 1);
       expect(o.cost_usd).toBe(rows.find((r) => r.session_id === o.session_id)!.cost_usd);
     }
     expect(byCommit(rows, "add alpha")[0]!.status).toBe("mature");
@@ -167,7 +168,7 @@ describe("aggregateBySetup", () => {
     const y = agg[setupOf.Y!]!;
     const z = agg[setupOf.Z!]!;
     expect([x.sessions, x.mature, x.too_young, x.reverted, x.unattended]).toEqual([1, 1, 0, 0, 0]);
-    expect([y.sessions, y.mature, y.too_young, y.reverted, y.unattended]).toEqual([3, 2, 1, 0, 1]);
+    expect([y.sessions, y.mature, y.too_young, y.reverted, y.unattended]).toEqual([3, 2, 1, 0, 2]);
     expect([z.sessions, z.mature, z.too_young, z.reverted, z.unattended]).toEqual([2, 2, 0, 1, 2]);
     expect(x.survival_sum).toBeCloseTo(20 / 30, 10);
     expect(y.survival_mean).toBe(1);
