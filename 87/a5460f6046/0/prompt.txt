@@ -1,0 +1,25 @@
+[roster setup=D task=T18]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T18 · W2 · Review: difficulty-matched suspect with Mantel–Haenszel
+GOAL: Name a suspect setup only when a difficulty-matched comparison supports it, labelled evidence level A.
+READ: docs/DESIGN.md §"Review", §"Statistics".
+OWNS: src/review/suspect.ts, src/review/stats.ts, tests/review.test.ts
+BUILD: mantelHaenszel(strata) → {or, ci95, p}; suspect(outcomes) → {setupId|null, or, ci95, p, n, reason}; bad = reverted ∨
+rework_human > 0.3; requires ≥ 8 mature sessions for the setup else 'insufficient data'. Wording fields only: 'suspect (level A,
+observational)' / 'no suspect' / 'insufficient data'.
+ACCEPTANCE: confound fixture: raw rates would flag X, matched does not; a true-effect fixture flags X with p < 0.05; stats unit-tested
+against hand-computed values.
+TEST: bun test tests/review.test.ts
+DO NOT TOUCH: anything outside OWNS.
