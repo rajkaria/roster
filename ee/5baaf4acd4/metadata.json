@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "ee5baaf4acd4",
+  "strategy": "manual-commit",
+  "branch": "task/T57",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "tests/identity-norules.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ee/5baaf4acd4/0/metadata.json",
+      "transcript": "/ee/5baaf4acd4/0/full.jsonl",
+      "compact_transcript": "/ee/5baaf4acd4/0/transcript.jsonl",
+      "content_hash": "/ee/5baaf4acd4/0/content_hash.txt",
+      "prompt": "/ee/5baaf4acd4/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 72,
+    "cache_creation_tokens": 53186,
+    "cache_read_tokens": 1666237,
+    "output_tokens": 20739,
+    "api_call_count": 34
+  }
+}
