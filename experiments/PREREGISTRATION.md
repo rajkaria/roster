@@ -98,3 +98,8 @@ Under amendment 3, D's rules were written to `CLAUDE.local.md`. Sessions ran wit
   - their tags stay as recorded
 - **The fix:** sessions now run with `--setting-sources project,local`. No other session is affected.
 - **Who found it:** Roster's own setup inference, which kept merging B and D into one setup.
+
+### Amendment 5: 2026-10-10 22:48 IST, forward backlog frozen
+- **Frozen:** the forward backlog and its 40 acceptance tests are committed. Hashes are in `experiments/FREEZE.txt`.
+- **Backlog sha256:** `ac682b239225a99f45ffb347e1e73aa6fe1aec3159abb0ea928ffa6ffc3c63c7`
+- **Acceptance tests:** 40 task test files are pre-registered, one for each of F01–F40.

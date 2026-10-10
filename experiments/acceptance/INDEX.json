@@ -1,0 +1,204 @@
+{
+  "tasks": {
+    "F01": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "4ca8090dbbf341e0af695f13cd1c97776cac4ec6765fbb9ab3219bd1d563757d"
+    },
+    "F02": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "72bc771f0227122119bf1348553a63bfbea59cbf18c71fe2774e05084e253adb"
+    },
+    "F03": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "0fbd896b712883cf8ca8810e3a5e2e1c7450f09d04c62e64d953b276300e3255"
+    },
+    "F04": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "54df8ecb75015c0a58ff6365b45aea6fbe24842b608274738c690df861e1fe14"
+    },
+    "F05": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "1d825022e976cefe7d27d8299db584253877f3ad8e824ea4f054cda6830876d3"
+    },
+    "F06": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "d344fc1b7d80204384c02b6b80a2a16f322b2ddd630e44c59d8210c6df6594f0"
+    },
+    "F11": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "f99fee5ca15b8008b13de083d90ccd508e4d48fd5bdfcbbd4ec0d758947e66db"
+    },
+    "F08": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "0cf51447f7f2e6eec0a980936900b108331840df1571a9d9e2222a47db1eeb17"
+    },
+    "F09": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "f7f9e8d40d9ef522dfa65871e50975cccb9ff97a5b5cf414db0a8966df2607b5"
+    },
+    "F10": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "7ca89a4163114241bc0096f872498616c218314acf80b4e0770b59cebdc0f358"
+    },
+    "F07": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "60e2a6a0ada58e105ba18f130f0371a32998594ec79cbd8e46b2de2cc661f2fd"
+    },
+    "F12": {
+      "model": "unknown",
+      "costUsd": null,
+      "sha256": "f728da7955bea495a80cc918183f20e9d4ced0ed7bfd05d1b1e99433ffea582b"
+    },
+    "F13": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "6dfa214f613b22981db70d13088a7848ba849a24d0ec6ef76559d617c3ef963f"
+    },
+    "F14": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "1721f10afe9866d63e78c4d5f5981137f311309004a20cd94a6880b68f2b4f48"
+    },
+    "F15": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "d45d963233baa9079dd483b9299f0a97618c7aee3c9ba045b3317e874df949dd"
+    },
+    "F16": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "4bd24833d6afaecfb891542a9d50ec90f65dafbc58885f7899f8443e9a3a6c62"
+    },
+    "F17": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "bb3ba6cec6632e00136feb9df36e1db647178ca9fefbfad520564534d2ef9c35"
+    },
+    "F18": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "50bf58227e36c1c6216c2bb3bc3ebaa22f5d8ca7c130f0041c6ce835eb3433d1"
+    },
+    "F19": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "233c1e42ad0a65050a2d2bc5d1f9a3d03bc2c2c611e49ca059a9c34bec177297"
+    },
+    "F20": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "5fba1e33b3736a0869e6ff9f27d7affce941c785425f1c5c59da2b643cbac548"
+    },
+    "F21": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "678cf80f9922a6496cd9b77c716712d3bfc3c250539f6b4d5979ee70a1c232e2"
+    },
+    "F22": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "6667a0b5fd91322e66e1d2c8f40ef68d26dc4350f702da7dab84232ffe22f43e"
+    },
+    "F23": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "5d0b152d17344ec3203431e3ca7d3af857371cbb3c1a23e561955ce0236f1b5f"
+    },
+    "F24": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "9980949892ecba939ac23fdf0e66e4cdc2590032fa636f06cad10c8b2e646996"
+    },
+    "F25": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "d510670abe86660bfbfc8bffaf8e8562cf3edb3add974c166c6286264669fc07"
+    },
+    "F26": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "d9ae7da9d560b520082a0235418a7d5d54b0824a833721b3c869912fece71388"
+    },
+    "F27": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "0600e2e2360ecc80b1faf78d11e314818041f617460cd1da4bea76795de422de"
+    },
+    "F28": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "9e82a580f952c3ad7ac69f93d0b2eb158c4e364518e604fa6e1bfb4d41f66a19"
+    },
+    "F29": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "9bdfd462d9f6ac4a258c4eebb9b8dff7074e47e783215a95d09449b5b681523d"
+    },
+    "F30": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "c93c3a1ea85dccfaa7c8ca8f4f068d0305621f020375075126c3ec0bcac97a66"
+    },
+    "F31": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "a15251c87d05311224fa42dec4483316ffb1b8813d10293677cfeec4469897fa"
+    },
+    "F32": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "d3f270630f54008c37d47973467f890b574026b2fa446db920715ee54692b80f"
+    },
+    "F33": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "4e50d5a54a52a6b74a630bd2c0c76cba7ad5a4f7194767e23fc7f08b218baaef"
+    },
+    "F34": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "775699b93950a87083c9deff523af6afbef11c07754c2e82661259c48e7bd552"
+    },
+    "F35": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "68ab897430e60670b8b46927ee7a0c708e0cfc7112f2ef53fff43b60e0a61743"
+    },
+    "F36": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "976447c81669337fbe4694cfccf49b6d482c67ebb87b3c3803295d715b7490c8"
+    },
+    "F37": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "c46c1ce89f1c47e25c29096a95a54d66b5b87874a73002fa35c8f2124b0f919f"
+    },
+    "F38": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "1f115b388208e5772dae7a13be6ea5e543675a5477db818a7463c555d0a88ab0"
+    },
+    "F39": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "c61d68ebafa5d41cf6003cc98c9335f2649f15f35f770ad3a3b8b90e89b0d5a5"
+    },
+    "F40": {
+      "model": "deepseek-v4-pro",
+      "costUsd": null,
+      "sha256": "66383d2c07387594ff288785bd0c9a004a10b93bb7d9a2f20cfd2d195f0cab72"
+    }
+  }
+}

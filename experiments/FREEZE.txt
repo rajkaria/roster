@@ -1,0 +1,10 @@
+Forward backlog frozen 2026-10-10T17:18Z (22:48 IST), before any review of this repo ran.
+
+forward-backlog.md                     sha256 ac682b239225a99f45ffb347e1e73aa6fe1aec3159abb0ea928ffa6ffc3c63c7
+acceptance tests (40 files, sorted)    sha256 cd45ef430ab01ad3d3b4a20b34ab69f7eccaecd71e8b402e9aff3861bbdcd9de
+
+The acceptance tests were written by DeepSeek (deepseek-v4-pro) from the task text alone (`roster acceptance`).
+For each task the raw output is in acceptance-raw/<Fxx>.test.ts. The forward harness mirrors these files into a task worktree,
+so each test was moved to <Fxx>/tests/acceptance/<Fxx>.test.ts and its relative imports were rewritten for that location
+(INDEX.json records both hashes). Recompute the second hash with:
+  find experiments/acceptance -type f -name "*.test.ts" | sort | xargs shasum -a 256 | shasum -a 256
