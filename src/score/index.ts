@@ -42,14 +42,20 @@ export function maturity(repo: string, sha: string): Censor | null {
   return newer >= MATURE_MIN_COMMITS && age >= MATURE_MIN_AGE_MS ? null : "too_young";
 }
 
-/** The session's own cost if ingest priced it, otherwise its summed tokens priced by src/price. */
+/**
+ * The session's own cost if ingest priced it, otherwise its summed tokens priced by src/price.
+ * Sessions store totals, not per-request prompt sizes, so the tier uses the session's total prompt as a bound:
+ * a session under 100k total is certainly short-tier, and one over it is null rather than a guessed tier.
+ */
 export function sessionCost(s: Session): number | null {
   if (s.cost_usd !== null) return s.cost_usd;
+  const promptTotal = s.tokens_in + s.cache_read + s.cache_write;
   return priceSession(s.model, {
     input: s.tokens_in,
     output: s.tokens_out,
     cache_read: s.cache_read,
     cache_write: s.cache_write,
+    prompt_tokens_bound: promptTotal,
   }).usd;
 }
 
@@ -99,8 +105,10 @@ export interface SetupAggregate {
   unattended: number;
   survival_sum: number;
   survival_mean: number | null;
-  /** Σ known cost over all sessions; null when no session's cost is known. */
+  /** Σ cost over all sessions; null when any session's cost is unknown (a partial sum would understate spend). */
   cost_usd: number | null;
+  /** Sessions with a known cost. Equals `sessions` exactly when cost_usd is non-null. */
+  priced_sessions: number;
   cost_unknown: number;
   /**
    * Σ cost ÷ Σ survival over mature sessions with a known cost. null when there are none, when
@@ -132,7 +140,8 @@ export function aggregateBySetup(outcomes: ScoredOutcome[]): SetupAggregate[] {
         unattended: mature.filter((o) => o.unattended).length,
         survival_sum: survivalSum,
         survival_mean: mature.length ? survivalSum / mature.length : null,
-        cost_usd: known.length ? known.reduce((a, o) => a + (o.cost_usd ?? 0), 0) : null,
+        cost_usd: known.length === rows.length ? known.reduce((a, o) => a + (o.cost_usd ?? 0), 0) : null,
+        priced_sessions: known.length,
         cost_unknown: rows.length - known.length,
         cost_per_surviving_change: matureCostKnown && survivalSum > 0 ? matureCost / survivalSum : null,
       };
