@@ -1,0 +1,7 @@
+{
+  "id": "C",
+  "label": "Codex CLI, default model, default rules (falls back to Claude Code + Haiku 5.5, see experiments/PREREGISTRATION.md)",
+  "harness": "codex",
+  "model": "default",
+  "rules": "setups/rules/default.md"
+}

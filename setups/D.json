@@ -1,0 +1,7 @@
+{
+  "id": "D",
+  "label": "Claude Code, Sonnet 5.5, default + strict rules",
+  "harness": "claude-code",
+  "model": "claude-sonnet-5-5",
+  "rules": "setups/rules/default.md", "append_rules": "setups/rules/strict.md"
+}

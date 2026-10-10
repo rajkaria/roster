@@ -1,0 +1,7 @@
+{
+  "id": "A",
+  "label": "Claude Code, Opus 5.5, default rules",
+  "harness": "claude-code",
+  "model": "claude-opus-5-5",
+  "rules": "setups/rules/default.md"
+}

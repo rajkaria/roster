@@ -1,0 +1,10 @@
+node_modules/
+.roster/
+.env
+.env.*
+*.log
+.DS_Store
+web/.next/
+web/node_modules/
+web/public/data/
+coverage/

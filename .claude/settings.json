@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit", "Write", "Read", "Glob", "Grep", "WebFetch", "WebSearch",
+      "Bash(bun:*)", "Bash(bunx:*)", "Bash(tsc:*)", "Bash(node:*)",
+      "Bash(git add:*)", "Bash(git commit:*)", "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)",
+      "Bash(git show:*)", "Bash(git ls-tree:*)", "Bash(git rev-parse:*)", "Bash(git rev-list:*)", "Bash(git blame:*)",
+      "Bash(git init:*)", "Bash(git archive:*)", "Bash(git cat-file:*)", "Bash(git -C:*)", "Bash(git config:*)",
+      "Bash(git branch:*)", "Bash(git checkout:*)", "Bash(git switch:*)", "Bash(git stash:*)", "Bash(git bundle:*)",
+      "Bash(git clone:*)", "Bash(git fetch:*)", "Bash(git for-each-ref:*)", "Bash(git update-ref:*)",
+      "Bash(tar:*)", "Bash(mkdir:*)", "Bash(ls:*)", "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)",
+      "Bash(grep:*)", "Bash(rg:*)", "Bash(find:*)", "Bash(jq:*)", "Bash(sort:*)", "Bash(diff:*)", "Bash(cp:*)",
+      "Bash(mv:*)", "Bash(touch:*)", "Bash(chmod:*)", "Bash(echo:*)", "Bash(pwd)", "Bash(which:*)",
+      "Bash(entire:*)", "Bash(gh api:*)", "Bash(gh search:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)", "Bash(git reset --hard:*)", "Bash(git rebase:*)", "Bash(git filter-branch:*)",
+      "Bash(curl:*)", "Bash(wget:*)", "Read(./.env)", "Read(./.env.*)"
+    ]
+  }
+}
