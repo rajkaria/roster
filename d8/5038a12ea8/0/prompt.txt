@@ -1,0 +1,39 @@
+[roster setup=C task=T25]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T25 · W3 · DeepSeek-backed candidate setups: harness env + time-of-day pricing
+GOAL: Let candidate setups run the Claude Code harness against DeepSeek's Anthropic-compatible endpoint, and price their runs
+correctly (DeepSeek bills peak and off-peak rates).
+READ: docs/DESIGN.md §"Candidate generation", §"Harness adapters"; setups/candidates/E.json, F.json; src/harness/claude.ts;
+src/price/index.ts. Pricing source: https://api-docs.deepseek.com/quick_start/pricing (read it; copy numbers only from it).
+OWNS: src/harness/provider.ts, src/price/deepseek.ts, tests/provider.test.ts, tests/price-deepseek.test.ts, and adding DeepSeek rows
+to src/price/prices.json (rows only; don't change existing rows)
+BUILD: providerEnv(setup, env) → Record<string,string> resolving `${VAR}` values from the given env (missing → throw with the variable
+name, never print values); the result is what src/harness/claude.ts passes to the child. priceDeepSeek(model, tokens, at: Date) using
+peak hours 01:00–04:00 and 06:00–10:00 UTC Mon–Fri (off-peak = half), cache-hit vs cache-miss input; rows carry source_url and
+checked_on. A live opt-in test (ROSTER_LIVE=1, needs DEEPSEEK_API_KEY) runs a trivial `claude -p` through setup E and asserts a
+result event.
+ACCEPTANCE: unit tests for env resolution (incl. missing var), peak/off-peak boundaries (UTC), weekend, and unknown model → null.
+TEST: bun test tests/provider.test.ts tests/price-deepseek.test.ts
+DO NOT TOUCH: existing price rows, src/harness/claude.ts (report the one-line integration point in your final message).
+
+---
+
+<task-notification>
+<task-id>b0r7uiao0</task-id>
+<tool-use-id>toolu_017r9QwG9gVEzmCneqpG1W1K</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T25/94f611d7-febf-46bf-bd42-5bcd9c7cca6f/tasks/b0r7uiao0.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the whole test suite" completed (exit code 0)</summary>
+</task-notification>
