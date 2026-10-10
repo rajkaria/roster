@@ -1,0 +1,152 @@
+[roster setup=C task=T36]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T36 · W3 · Hidden tests come from every commit of the session, not only the last
+GOAL: A replay task's hidden tests are the test files the session added or modified in any of its linked commits, taken at the
+maturity commit. Today only the last commit is read, so sessions that commit code and tests separately lose their tests and are
+wrongly marked judge-only (16 of 23 sessions in this repo's own review).
+READ: src/grade/hidden.ts (hiddenTests), src/replay/tasks.ts (where it is called with the latest sha), tests/replay-tasks.test.ts.
+OWNS: src/grade/hidden.ts (add a range/union variant; keep hiddenTests' behaviour for existing callers), src/replay/tasks.ts,
+tests/hidden-range.test.ts
+INTERFACE: export function hiddenTestsForCommits(repo: string, commitShas: string[]): HiddenTest[]
+BEHAVIOUR: Union of test files (isTestFile) added or modified (A/M) across the given commits, deduplicated by path, each read at the
+maturity commit after the latest of them (same rule as hiddenTests); a file deleted later is skipped. src/replay/tasks.ts uses it with
+all of the session's linked commits.
+ACCEPTANCE: tests build a repo where a session's first commit adds src/x.ts, its second adds tests/x.test.ts, its third edits src/x.ts:
+the task gets tests/x.test.ts and track 'tests'. Existing tests pass.
+TEST: bun test tests/hidden-range.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bb0iqtzms</task-id>
+<tool-use-id>toolu_01WiArid5jw7YiZzzVbkgeEc</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T36/d8c740ce-82bc-41a9-b77c-f3dd53c17af5/tasks/bb0iqtzms.output</output-file>
+<status>completed</status>
+<summary>Monitor "Notify when background test run completes" stream ended</summary>
+<event>waiting</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bwedjlbm7</task-id>
+<tool-use-id>toolu_01WCzSZw3CfRA7ZNsqWE5uch</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T36/d8c740ce-82bc-41a9-b77c-f3dd53c17af5/tasks/bwedjlbm7.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full test suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bkcmrt3sj</task-id>
+<tool-use-id>toolu_01Sz6ePszrRkW7pzDYJVf1Yx</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T36/d8c740ce-82bc-41a9-b77c-f3dd53c17af5/tasks/bkcmrt3sj.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for full test suite to finish" stream ended</summary>
+<event>tests/identity.test.ts:
+248 |   const r = Bun.spawnSync(["git", ...args], {
+249 |     cwd,
+250 |     env: { ...gitEnv(), ...opts.env },
+251 |     stdin: opts.input === undefined ? "ignore" : new TextEncoder().encode(opts.input),
+252 |   });
+253 |   if (r.exitCode !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr.toString()}`);
+^
+error: git rev-parse HEAD failed:
+at git (/Users/Shared/roster-wt/T36/tests/fixtures/make-fixture.ts:253:95)
+at makeFixture (/Users/Shared/roster-wt/T36/tests/fixtures/make-fixture.ts:595:11)
+at &lt;anonymous&gt; (/Users/Shared/roster-wt/T36/tests/identity.test.ts:57:13)
+(fail) identify on a fixture with three setups &gt; (unnamed) [5096.77ms]
+^ a beforeEach/afterEach hook timed out for this test.
+killed 1 dangling process
+tests/ingest-fetch.test.ts:
+(fail) (unnamed) [5000.79ms]
+^ a beforeEach/afterEach hook timed out for this test.
+363 pass
+2 skip
+2 fail
+1453 expect() calls
+Ran 367 tests across 34 files. [270.22s]
+[exited with code 0]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bqh5qkv6g</task-id>
+<tool-use-id>toolu_01Q3UYyD8YjBfwaYEaLuSmKR</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T36/d8c740ce-82bc-41a9-b77c-f3dd53c17af5/tasks/bqh5qkv6g.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for background suite completion marker" stream ended</summary>
+<event>tests/identity.test.ts:
+248 |   const r = Bun.spawnSync(["git", ...args], {
+249 |     cwd,
+250 |     env: { ...gitEnv(), ...opts.env },
+251 |     stdin: opts.input === undefined ? "ignore" : new TextEncoder().encode(opts.input),
+252 |   });
+253 |   if (r.exitCode !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr.toString()}`);
+^
+error: git rev-parse HEAD failed:
+at git (/Users/Shared/roster-wt/T36/tests/fixtures/make-fixture.ts:253:95)
+at makeFixture (/Users/Shared/roster-wt/T36/tests/fixtures/make-fixture.ts:595:11)
+at &lt;anonymous&gt; (/Users/Shared/roster-wt/T36/tests/identity.test.ts:57:13)
+(fail) identify on a fixture with three setups &gt; (unnamed) [5096.77ms]
+^ a beforeEach/afterEach hook timed out for this test.
+killed 1 dangling process
+tests/ingest-fetch.test.ts:
+(fail) (unnamed) [5000.79ms]
+^ a beforeEach/afterEach hook timed out for this test.
+363 pass
+2 skip
+2 fail
+1453 expect() calls
+Ran 367 tests across 34 files. [270.22s]
+[exited with code 0]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bosxqy4nf</task-id>
+<tool-use-id>toolu_01K6kzPA29KhCGZYgokQrUZe</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T36/d8c740ce-82bc-41a9-b77c-f3dd53c17af5/tasks/bosxqy4nf.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for full test suite result" stream ended</summary>
+<event>tests/identity.test.ts:
+248 |   const r = Bun.spawnSync(["git", ...args], {
+249 |     cwd,
+250 |     env: { ...gitEnv(), ...opts.env },
+251 |     stdin: opts.input === undefined ? "ignore" : new TextEncoder().encode(opts.input),
+252 |   });
+253 |   if (r.exitCode !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr.toString()}`);
+^
+error: git rev-parse HEAD failed:
+at git (/Users/Shared/roster-wt/T36/tests/fixtures/make-fixture.ts:253:95)
+at makeFixture (/Users/Shared/roster-wt/T36/tests/fixtures/make-fixture.ts:595:11)
+at &lt;anonymous&gt; (/Users/Shared/roster-wt/T36/tests/identity.test.ts:57:13)
+(fail) identify on a fixture with three setups &gt; (unnamed) [5096.77ms]
+^ a beforeEach/afterEach hook timed out for this test.
+killed 1 dangling process
+tests/ingest-fetch.test.ts:
+(fail) (unnamed) [5000.79ms]
+^ a beforeEach/afterEach hook timed out for this test.
+363 pass
+2 skip
+2 fail
+1453 expect() calls
+Ran 367 tests across 34 files. [270.22s]
+[exited with code 0]</event>
+</task-notification>
