@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "bc81db8db24b",
+  "session_id": "94f611d7-febf-46bf-bd42-5bcd9c7cca6f",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T15:16:11.952764Z",
+  "branch": "task/T25",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/harness/provider.ts",
+    "tests/provider.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-haiku-5-5",
+  "turn_id": "0f59197b06d6",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 56,
+    "cache_creation_tokens": 59434,
+    "cache_read_tokens": 1625400,
+    "output_tokens": 31135,
+    "api_call_count": 28
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T15:16:11.922749Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "total_lines_changed": 0,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 403,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "src/harness/provider.ts": 45,
+        "src/price/deepseek.ts": 56,
+        "src/price/prices.json": 22,
+        "tests/price-deepseek.test.ts": 150,
+        "tests/provider.test.ts": 130
+      }
+    }
+  ]
+}
