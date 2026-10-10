@@ -1,0 +1,24 @@
+[roster setup=C task=T07]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T07 · W2 · Reverts and rework (human vs agent)
+GOAL: Detect whether a session's change was reverted, and how much of it was reworked later by humans or other agents.
+READ: docs/DESIGN.md §"Score: reverted, rework".
+OWNS: src/score/revert.ts, src/score/rework.ts, tests/score-revert.test.ts
+BUILD: reverted(repo, sha, window=20) → boolean (explicit "This reverts commit <sha>" or ≥ 50% of added lines deleted within the next
+20 first-parent commits). rework(repo, sha, window=20) → {human, agent} shares of added lines modified later, where "agent" =
+commit has an Entire-Checkpoint trailer, "human" = it does not.
+ACCEPTANCE: fixture scenarios revert and rework produce the expected values; merge commits handled via first-parent.
+TEST: bun test tests/score-revert.test.ts
+DO NOT TOUCH: anything outside OWNS.
