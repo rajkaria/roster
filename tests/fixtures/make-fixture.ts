@@ -429,10 +429,17 @@ class CheckpointBranch {
   write(checkpointId: string, files: Record<string, string>, message: string, at: number) {
     const env = { GIT_INDEX_FILE: this.index };
     const base = `${checkpointId.slice(0, 2)}/${checkpointId.slice(2)}`;
-    for (const [rel, content] of Object.entries(files)) {
-      const blob = git(this.repo, ["hash-object", "-w", "--stdin"], { input: content });
-      git(this.repo, ["update-index", "--add", "--cacheinfo", `100644,${blob},${base}/${rel}`], { env });
-    }
+    // Two git calls per checkpoint: hash every file at once, then add them all to the index.
+    const staging = join(this.repo, ".git", "roster-checkpoint-staging");
+    const entries = Object.entries(files);
+    const tmpPaths = entries.map(([, content], i) => {
+      writeRepoFile(staging, String(i), content);
+      return join(staging, String(i));
+    });
+    const blobs = git(this.repo, ["hash-object", "-w", "--stdin-paths"], { input: tmpPaths.join("\n") + "\n" }).split("\n");
+    rmSync(staging, { recursive: true, force: true });
+    const info = entries.map(([rel], i) => `100644 ${blobs[i]}\t${base}/${rel}`).join("\n") + "\n";
+    git(this.repo, ["update-index", "--add", "--index-info"], { input: info, env });
     const tree = git(this.repo, ["write-tree"], { env });
     const parents = this.head ? ["-p", this.head] : [];
     this.head = git(this.repo, ["commit-tree", tree, ...parents, "-F", "-"], { input: message, env: gitEnv(at) });
