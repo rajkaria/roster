@@ -1,0 +1,23 @@
+[roster setup=E task=F14]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F14: `roster act` command
+TASK F14 · `roster act` command
+GOAL: Turn the last gate decision into a branch with the promoted setup and a PR (or a dry run).
+OWNS: src/cli/act.ts, tests/cli-act.test.ts
+INTERFACE: src/cli/act.ts function runActCommand(args: string[], deps: { readJson(p: string): Promise<unknown>; writeFile(p: string, s: string): Promise<void>; git(args: string[]): Promise<{ code: number; stdout: string }>; openPr(o: unknown): Promise<{ opened: boolean; url?: string; reason?: string }>; stdout(s: string): void }): Promise<number>
+BEHAVIOUR: `act --gate <gate.json> [--pr] [--dry-run]`. If the decision is not "promote" → prints "nothing to act on", returns 0. Else
+writes setups/<id>.json and the candidate rules file to a new branch `roster/promote-<id>`, commits "roster: promote setup <id>", and
+with --pr calls openPr (dry-run passes through). Returns 1 if any git step fails.
