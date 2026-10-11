@@ -49,7 +49,7 @@ export function parseVerdict(
   const matches = [...text.matchAll(/^[ \t]*VERDICT:[ \t]*(X|Y|TIE)[ \t]*$/gim)];
   const last = matches[matches.length - 1];
   if (!last) return { winner: "unclear" };
-  const v = last[1].toUpperCase();
+  const v = (last[1] ?? "").toUpperCase();
   if (v === "TIE") return { winner: "tie" };
   return { winner: labels[v as "X" | "Y"] };
 }
