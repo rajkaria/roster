@@ -160,6 +160,18 @@ function rebuild(events: StoredEvent[]) {
 export const newRunId = (now: Date) =>
   `run-${now.toISOString().replace(/\D/g, "").slice(0, 14)}-${Math.random().toString(36).slice(2, 6)}`;
 
+/** Attempts an LLM error reports (LlmCallError carries them), else 1. */
+function attemptsOf(err: unknown): number {
+  const n = typeof err === "object" && err !== null ? (err as { attempts?: unknown }).attempts : undefined;
+  return typeof n === "number" && n > 0 ? n : 1;
+}
+
+const shellArg = (s: string) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
+
+/** The CLI command that resumes a run. */
+export const resumeCommand = (repo: string, runId: string, budgetUsd: number) =>
+  `roster run ${shellArg(repo)} --run-id ${shellArg(runId)} --budget ${budgetUsd}`;
+
 /** Runs (or resumes) the coordinator until promotion, an honest give-up, the budget or MAX_TURNS. */
 export async function runCoordinator(opts: CoordinatorOptions): Promise<RunResult> {
   const now = opts.now ?? (() => new Date());
@@ -278,7 +290,14 @@ export async function runCoordinator(opts: CoordinatorOptions): Promise<RunResul
         try {
           reply = await opts.llm.chat({ messages, tools: TOOL_SPECS, model: opts.model, temperature: opts.temperature ?? 0 });
         } catch (err) {
-          return result("llm_error", `LLM call failed: ${err instanceof Error ? err.message : String(err)}`);
+          // Every finished step is already in the events log, so the run resumes from here under the same id.
+          const message = err instanceof Error ? err.message : String(err);
+          const attempts = attemptsOf(err);
+          log("note", { llm_error: { message, attempts } });
+          return result(
+            "llm_error",
+            `LLM call failed after ${attempts} attempt${attempts === 1 ? "" : "s"}: ${message}. State is saved; resume with: ${resumeCommand(opts.repo, runId, opts.budgetUsd)}`,
+          );
         }
         turns++;
         if (reply.costUsd === null) unpriced++;
