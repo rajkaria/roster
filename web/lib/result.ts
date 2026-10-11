@@ -63,6 +63,29 @@ export function loadResult(forwardJson: unknown, review1Json: unknown, review1bJ
   return { forward: forward(forwardJson), v1: v1(review1Json), v2: v2(review1bJson) };
 }
 
+/** "p = 0.031", or "p < 0.001" below 0.001. Formatting only; the value is not changed. */
+export function formatP(p: number): string {
+  return p < 0.001 ? "p < 0.001" : `p = ${p.toFixed(3)}`;
+}
+
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const count = (n: string | undefined, one: string) => `${n} ${one}${n === "1" ? "" : "s"}`;
+
+function plainReason(reason: string): string {
+  let m = /^hidden_pass (\d+) < incumbent (\d+)$/.exec(reason);
+  if (m) return `fewer hidden-test passes than the incumbent (${m[1]} vs ${m[2]})`;
+  m = /^(\d+) regression\(s\) after reruns/.exec(reason);
+  if (m) return count(m[1], "regression");
+  m = /^(\d+) scope violation\(s\)/.exec(reason);
+  if (m) return count(m[1], "scope violation");
+  return reason.replace(UUID, "").replace(/[:,\s]+$/, "").trim();
+}
+
+/** Plain-words summary of gate reasons. Counts are kept; session ids are dropped. */
+export function summariseReasons(reasons: string[]): string {
+  return reasons.map(plainReason).join("; ");
+}
+
 function readJson(file: string): unknown {
   if (!existsSync(file)) return undefined;
   try {
