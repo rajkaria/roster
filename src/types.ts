@@ -162,6 +162,13 @@ export interface ForwardPair {
   /** Blind label assignment, e.g. { X: "old", Y: "new" }. */
   blind_labels: Record<string, "old" | "new">;
   seed: number;
+  /** Full-suite result per side; null = not run (only the side that would be merged runs it). */
+  suite_old?: boolean | null;
+  suite_new?: boolean | null;
+  /** Per-step timings in milliseconds. */
+  agent_old_ms?: number | null;
+  agent_new_ms?: number | null;
+  grade_ms?: number | null;
 }
 
 export type ReviewLabel = "suspect" | "no_suspect" | "insufficient_data";

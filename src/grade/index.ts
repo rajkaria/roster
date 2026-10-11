@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { gitEnv, runGit } from "../sandbox/index.ts";
 import type { Sandbox } from "../sandbox/index.ts";
 import { offScopeViolations, testEditViolations } from "./scope.ts";
 import type { Violation } from "./scope.ts";
+import { isTestFile } from "./hidden.ts";
 import type { HiddenTest } from "./hidden.ts";
 
 export { hiddenTests, isTestFile } from "./hidden.ts";
@@ -19,7 +20,10 @@ export interface PerTest {
 
 export interface GradeResult {
   hiddenPass: boolean;
-  suitePass: boolean;
+  /** null when the full suite was not run (phase "fast"). */
+  suitePass: boolean | null;
+  /** null when no typecheck ran. */
+  typecheckPass?: boolean | null;
   scopeOk: boolean;
   violations: Violation[];
   perTest: PerTest[];
@@ -36,7 +40,19 @@ export interface GradeInput {
   /** Directories the original change touched; when omitted the off-scope check is skipped. */
   touchedDirs?: string[];
   timeoutMs?: number;
+  /**
+   * "all" (default): full suite, then hidden tests. "fast": hidden tests, the change's own new test files and the
+   * typecheck, no full suite. "suite": the full suite only.
+   */
+  phase?: "all" | "fast" | "suite";
+  /** Where node_modules (and web/node_modules) are symlinked from into the grading copy; default: the sandbox. */
+  modulesFrom?: string;
+  /** Shell runner, injectable for tests. */
+  runner?: StepRunner;
 }
+
+export type StepKind = "suite" | "hidden" | "typecheck";
+export type StepRunner = (cwd: string, cmd: string, timeoutMs: number, kind: StepKind) => boolean;
 
 /** Test command by project markers: bun, pnpm, npm, pytest, go test. */
 export function detectTestCmd(dir: string): string {
@@ -75,9 +91,17 @@ export function parseJunit(xml: string): PerTest[] {
   return out;
 }
 
-function sh(cwd: string, cmd: string, timeoutMs: number) {
+const sh: StepRunner = (cwd, cmd, timeoutMs) => {
   const r = Bun.spawnSync(["bash", "-c", cmd], { cwd, env: gitEnv(), timeout: timeoutMs });
   return r.exitCode === 0;
+};
+
+function hasTypecheck(dir: string): boolean {
+  try {
+    return typeof JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts?.typecheck === "string";
+  } catch {
+    return false;
+  }
 }
 
 function showOrNull(cwd: string, rev: string, path: string): string | null {
@@ -89,12 +113,19 @@ function showOrNull(cwd: string, rev: string, path: string): string | null {
 export async function grade(input: GradeInput): Promise<GradeResult> {
   const { sandbox, hidden, preexistingTests } = input;
   const timeout = input.timeoutMs ?? 300_000;
+  const phase = input.phase ?? "all";
+  const run = input.runner ?? sh;
   const root = mkdtempSync(join(tmpdir(), "roster-grade-"));
   const work = join(root, "work");
   const out = join(root, "junit"); // JUnit lives outside the workspace
   mkdirSync(out);
   try {
-    const cp = Bun.spawnSync(["cp", "-R", sandbox.path, work]);
+    // node_modules is the bulk of the copy and is cleaned out below anyway: leave it behind and link it back in.
+    mkdirSync(work);
+    const cp = Bun.spawnSync(
+      ["bash", "-c", 'tar -C "$1" --exclude=./node_modules --exclude=./web/node_modules -cf - . | tar -C "$2" -xf -', "bash", sandbox.path, work],
+      { env: gitEnv() },
+    );
     if (cp.exitCode !== 0) throw new Error(`copy failed: ${cp.stderr.toString().trim()}`);
 
     // Capture the agent's change as a patch, then rebuild the tree from base + patch.
@@ -114,18 +145,36 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
       runGit(work, ["apply", "--binary", pf]);
     }
 
+    const modulesFrom = input.modulesFrom ?? sandbox.path;
+    for (const rel of ["node_modules", "web/node_modules"]) {
+      const src = join(modulesFrom, rel);
+      if (!existsSync(src)) continue;
+      mkdirSync(dirname(join(work, rel)), { recursive: true });
+      symlinkSync(src, join(work, rel), "dir");
+    }
+
     const testCmd = input.testCmd ?? detectTestCmd(work);
     const isBun = /^bun test\b/.test(testCmd);
     const junit = (name: string) => (isBun ? ` --reporter=junit --reporter-outfile=${join(out, name)}` : "");
+    const scopeOk = violations.length === 0;
 
-    const suitePass = sh(work, testCmd + junit("suite.xml"), timeout);
+    let suitePass: boolean | null = null;
+    if (phase !== "fast") suitePass = run(work, testCmd + junit("suite.xml"), timeout, "suite");
+    if (phase === "suite") return { hiddenPass: true, suitePass, typecheckPass: null, scopeOk, violations, perTest: [] };
 
+    const fileArgs = isBun || /^pytest\b/.test(testCmd);
+    // In the fast phase the change's own new test files ride along with the hidden run.
+    const own = phase === "fast" && fileArgs ? changed.filter((p) => isTestFile(p) && !preexistingTests.includes(p) && !hidden.some((h) => h.path === p) && existsSync(join(work, p))) : [];
     for (const h of hidden) {
       mkdirSync(dirname(join(work, h.path)), { recursive: true });
       writeFileSync(join(work, h.path), h.content);
     }
-    const files = hidden.map((h) => JSON.stringify(h.path)).join(" ");
-    const runPass = sh(work, `${testCmd}${isBun || /^pytest\b/.test(testCmd) ? " " + files : ""}${junit("hidden.xml")}`, timeout);
+    const files = [...hidden.map((h) => h.path), ...own].map((p) => JSON.stringify(p)).join(" ");
+    const skipRun = phase === "fast" && fileArgs && files === "";
+    const runPass = skipRun || run(work, `${testCmd}${fileArgs ? " " + files : ""}${junit("hidden.xml")}`, timeout, "hidden");
+
+    let typecheckPass: boolean | null = null;
+    if (phase === "fast" && isBun && hasTypecheck(work)) typecheckPass = run(work, "bun run typecheck", timeout, "typecheck");
 
     let perTest: PerTest[] = [];
     let hiddenPass = runPass;
@@ -143,7 +192,7 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
       hiddenPass = runPass && perTest.every((t) => t.pass);
     } else if (hidden.length === 0) hiddenPass = true;
 
-    return { hiddenPass, suitePass, scopeOk: violations.length === 0, violations, perTest };
+    return { hiddenPass, suitePass, typecheckPass, scopeOk, violations, perTest };
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
