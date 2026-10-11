@@ -1,0 +1,34 @@
+[roster setup=B task=F08]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F08: Compare two reviews
+TASK F08 · Compare two reviews
+GOAL: Show what changed between two reviews of the same repo (used for v1 → v2 and nightly deltas).
+OWNS: src/review/compare.ts, tests/review-compare.test.ts
+INTERFACE: src/review/compare.ts function compareReviews(before: ReviewLike, after: ReviewLike): { setup: string; field: string; before: number | null; after: number | null; delta: number | null }[] where ReviewLike = { setups: { id: string; [metric: string]: unknown }[] }
+BEHAVIOUR: For every setup present in either review and every numeric field present in either, one row; missing side → null and delta
+null; delta = after − before rounded to 4 decimals; rows sorted by setup then field; identical reviews → all deltas 0; non-numeric
+fields ignored.
+
+---
+
+<task-notification>
+<task-id>b1wb1falk</task-id>
+<tool-use-id>toolu_018H8SSBzMnK1uHP9s4a9vKa</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F08/e4889e9b-f430-4c2b-b144-84e7103595ad/tasks/b1wb1falk.output</output-file>
+<status>killed</status>
+<summary>Background command "bun test tests/review-compare.test.ts 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -3; bun test 2&gt;&amp;1 | tail -5" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
