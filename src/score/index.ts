@@ -50,13 +50,17 @@ export function maturity(repo: string, sha: string): Censor | null {
 export function sessionCostDetail(s: Session): { usd: number | null; lower_bound: boolean } {
   if (s.cost_usd !== null) return { usd: s.cost_usd, lower_bound: false };
   const promptTotal = s.tokens_in + s.cache_read + s.cache_write;
-  const r = priceSession(s.model, {
-    input: s.tokens_in,
-    output: s.tokens_out,
-    cache_read: s.cache_read,
-    cache_write: s.cache_write,
-    prompt_tokens_bound: promptTotal,
-  });
+  const r = priceSession(
+    s.model,
+    {
+      input: s.tokens_in,
+      output: s.tokens_out,
+      cache_read: s.cache_read,
+      cache_write: s.cache_write,
+      prompt_tokens_bound: promptTotal,
+    },
+    s.started_at,
+  );
   return { usd: r.usd, lower_bound: r.lower_bound === true };
 }
 

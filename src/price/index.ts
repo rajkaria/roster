@@ -1,3 +1,4 @@
+import { priceDeepSeek } from "./deepseek.ts";
 import rows from "./prices.json";
 
 // Prices are USD per 1M tokens, taken from src/price/prices.json.
@@ -104,9 +105,24 @@ function pickRow(
   );
 }
 
+/**
+ * DeepSeek bills peak and off-peak differently, so without a usable timestamp the cost is unknown (null), never a guess.
+ * Cache-read tokens are cache hits; input and cache-creation tokens are cache misses (DeepSeek has no cache-write price).
+ */
+function priceDeepSeekSession(base: string, tokens: TokenCounts, at: Date | string | undefined): PriceResult {
+  const when = at === undefined ? undefined : new Date(at);
+  const misses = tokens.input + (tokens.cache_write ?? 0) + (tokens.cache_write_1h ?? 0);
+  const r =
+    when === undefined || Number.isNaN(when.getTime())
+      ? null
+      : priceDeepSeek(base, { input: misses, output: tokens.output, cache_read: tokens.cache_read }, when);
+  return r === null ? { usd: null, row_id: "unknown" } : { usd: r.usd, row_id: r.row_id };
+}
+
 /** Prices one token-count record for a model. Returns usd: null when the model or price is unknown. */
-export function priceSession(model: string, tokens: TokenCounts): PriceResult {
+export function priceSession(model: string, tokens: TokenCounts, at?: Date | string): PriceResult {
   const { base, regional } = normaliseModelId(model);
+  if (base.startsWith("deepseek-")) return priceDeepSeekSession(base, tokens, at);
   const picked = pickRow(base, tokens.prompt_tokens, tokens.prompt_tokens_bound);
   if (picked === undefined) return { usd: null, row_id: "unknown" };
   const assumed = picked === "assumed-short";
