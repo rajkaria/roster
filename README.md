@@ -1,6 +1,28 @@
 # Roster
 
-> Roster is an agent that runs performance reviews for your AI coding agents.
+> Roster is an agent that runs performance reviews for your AI coding agents, and tests whether its call holds.
+
+## The result
+
+Four AI coding setups built this repo. Roster reviewed them and replaced Claude Code + Sonnet 5.5 (**B**) with Claude Code on DeepSeek Flash (**E**). Before it made that call, we froze 40 new build tasks and their acceptance tests (hash published). Then every task was built twice, by B and by E, and graded blind.
+
+| Forward test, pre-registered (interim: 26 valid pairs) | |
+|---|---|
+| Tasks only E passed | **6** |
+| Tasks only B passed | **0** |
+| Both passed / both failed | 17 / 3 |
+| McNemar exact, two-sided | **p = 0.031** |
+| Cost per task | E cheaper in 26 of 26 pairs: median $0.023 vs $0.155 (Wilcoxon p < 0.001) |
+
+Every number here comes from [`docs/FACTS.md`](docs/FACTS.md) or [`reports/self/forward.json`](reports/self/forward.json), both generated from the run. The pairs are on the [experiment page](https://roster-five-chi.vercel.app/experiment).
+
+**How the call was made: v1, then v2.**
+- **v1:** Roster's first review promoted E on a 0–0 tie. Every setup failed all 10 replayed tasks with hidden tests, so the cheaper one won, with no quality signal. We disclosed that before the forward run ([amendment 7](experiments/PREREGISTRATION.md)).
+- **v2:** we fixed the replay and taught the gate to refuse a tie with no signal.
+- **Review 1b:** the same 10 tasks under v2. B passes 1, E passes 0, and the gate **rejects** E.
+- **What that means:** replaying past tasks is a weak signal. The pre-registered forward test is the strong one, and it says the call held.
+
+## What it does
 
 It reads every session your coding agents recorded with [Entire](https://entire.io), and for each one works out:
 - what it cost
@@ -55,10 +77,7 @@ The test was fixed in advance in [`experiments/PREREGISTRATION.md`](experiments/
 - The 40 forward tasks and their acceptance tests were frozen before the first review. The hashes are in [`experiments/FREEZE.txt`](experiments/FREEZE.txt).
 - Every change since then is a dated amendment, including two protocol deviations and the first review's weak evidence.
 
-**Status, from [`docs/FACTS.md`](docs/FACTS.md):**
-- **Level A:** Roster reviewed its own repo (61 sessions, 4 setups) and found **no suspect** (odds ratio 4.23, p = 1.000).
-- **Level B:** Review 1 promoted **E** over B. The two tied at zero hidden-test passes, and E was cheaper. That is weak evidence, and amendment 7 says so: even the incumbent failed its own replayed tasks. The replay bug behind it is being fixed.
-- **Level C:** the forward run of B against E is in progress. Results will be published whatever they show.
+**Status:** the forward run is finishing. Results are published whatever they show, and the README table is regenerated from FACTS when it ends.
 
 ## Roster caught its own silent mistakes
 
