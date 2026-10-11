@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { lstatSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Harness, runForward } from "../src/forward/index.ts";
+import { assignLabels, type Harness, pairSeed, rng, runForward } from "../src/forward/index.ts";
 import type { StepKind } from "../src/grade/index.ts";
 import type { LlmClient } from "../src/llm/types.ts";
 import { runGit } from "../src/sandbox/index.ts";
@@ -26,8 +26,9 @@ function makeWorld() {
   return { root, repo, backlog, acceptanceDir: join(root, "acceptance") };
 }
 
-const harness: Harness = async (req) => {
-  writeFileSync(join(req.worktree, "answer-T1.txt"), "ok\n");
+/** Each side writes its answer; acceptance greps for "ok". */
+const harnessWith = (answer: (side: "old" | "new") => string): Harness => async (req) => {
+  writeFileSync(join(req.worktree, "answer-T1.txt"), answer(req.side));
   runGit(req.worktree, ["add", "-A"]);
   runGit(req.worktree, ["-c", "commit.gpgsign=false", "commit", "-q", "-m", `T1: ${req.side}`]);
   return { costUsd: 0.1 };
@@ -40,7 +41,7 @@ const llm: LlmClient = {
 };
 
 describe("forward grading speed", () => {
-  test("links node_modules, runs the suite once per pair, records timings", async () => {
+  test("links node_modules, runs the suite once when one side passes acceptance, records timings", async () => {
     const w = makeWorld();
     const calls: { kind: StepKind; modules: boolean; webModules: boolean }[] = [];
     const runner = (cwd: string, _cmd: string, _t: number, kind: StepKind) => {
@@ -49,10 +50,11 @@ describe("forward grading speed", () => {
         modules: lstatSync(join(cwd, "node_modules")).isSymbolicLink(),
         webModules: lstatSync(join(cwd, "web", "node_modules")).isSymbolicLink(),
       });
-      return true;
+      // Stub acceptance: the answer file says ok.
+      return kind !== "hidden" || readFileSync(join(cwd, "answer-T1.txt"), "utf8").includes("ok");
     };
     const summary = await runForward({
-      repo: w.repo, backlog: w.backlog, pair: { old: "A", new: "B" }, parallel: 1, harness, llm,
+      repo: w.repo, backlog: w.backlog, pair: { old: "A", new: "B" }, parallel: 1, harness: harnessWith((side) => (side === "old" ? "bad\n" : "ok new\n")), llm,
       db: join(w.root, "s.db"), wtRoot: join(w.root, "wt"), acceptanceDir: w.acceptanceDir,
       testCmd: "sh suite.sh", seed: 1, gradeRunner: runner,
     });
@@ -61,14 +63,35 @@ describe("forward grading speed", () => {
     expect(calls.filter((c) => c.kind === "suite")).toHaveLength(1);
     expect(calls.filter((c) => c.kind === "hidden")).toHaveLength(2);
 
+    // Only new passes acceptance, so only new's suite runs; old's is "not run".
     const p = summary.completed[0]!;
-    expect(p.merged).not.toBeNull();
-    const other = p.merged === "old" ? "new" : "old";
-    expect(p[`suite_pass_${p.merged!}`]).toBe(true);
-    expect(p[`suite_pass_${other}`]).toBeNull();
+    expect(p).toMatchObject({ pass_old: false, pass_new: true, merged: "new", suite_pass_new: true, suite_pass_old: null });
     for (const k of ["agent_old_ms", "agent_new_ms", "grade_ms"] as const) {
       expect(typeof p[k]).toBe("number");
       expect(p[k]!).toBeGreaterThanOrEqual(0);
     }
+  }, 60_000);
+
+  test("both sides pass acceptance: each side's suite runs once and sets pass_*; the judge's pick merges", async () => {
+    const w = makeWorld();
+    const seed = 7;
+    const pick = assignLabels(rng(pairSeed(seed, "T1"))).X; // the fake judge says X
+    const loser = pick === "old" ? "new" : "old";
+    const suites: string[] = [];
+    const runner = (cwd: string, _cmd: string, _t: number, kind: StepKind) => {
+      if (kind !== "suite") return true;
+      const side = readFileSync(join(cwd, "answer-T1.txt"), "utf8").includes("old") ? "old" : "new";
+      suites.push(side);
+      return side !== loser;
+    };
+    const summary = await runForward({
+      repo: w.repo, backlog: w.backlog, pair: { old: "A", new: "B" }, parallel: 1, harness: harnessWith((side) => `ok ${side}\n`), llm,
+      db: join(w.root, "s.db"), wtRoot: join(w.root, "wt"), acceptanceDir: w.acceptanceDir,
+      testCmd: "sh suite.sh", seed, gradeRunner: runner, buildMerge: true,
+    });
+    expect(suites.sort()).toEqual(["new", "old"]);
+    // The suite results decide H1 (only the pick passes), so the merge is pass_beats_fail; the judge's preference is the secondary.
+    const p = summary.completed[0]!;
+    expect(p).toMatchObject({ merged: pick, merged_reason: "pass_beats_fail", secondary: pick, [`pass_${pick}`]: true, [`pass_${loser}`]: false, [`suite_pass_${pick}`]: true, [`suite_pass_${loser}`]: false });
   }, 60_000);
 });

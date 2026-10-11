@@ -280,7 +280,8 @@ async function gradeBranch(opts: {
       runner: opts.runner,
     });
     const checksOk = r.typecheckPass !== false && r.ownPass !== false;
-    const pass = opts.phase === "suite" ? r.suitePass === true : r.hiddenPass && checksOk && r.scopeOk;
+    // Fast: acceptance AND scope. Typecheck and the side's own new tests only feed `checksOk` (amendment 8 candidacy), never H1.
+    const pass = opts.phase === "suite" ? r.suitePass === true : r.hiddenPass && r.scopeOk;
     return { pass, hiddenPass: r.hiddenPass, suitePass: r.suitePass, scopeOk: r.scopeOk, checksOk };
   } finally {
     await destroySandbox(sandbox.path);
@@ -338,12 +339,23 @@ async function settle(
   acceptance: Record<Side, boolean>,
   sides: Record<Side, SideState>,
   runSuite: (side: Side) => Promise<boolean>,
+  /** Remerge: `acceptance` is the recorded H1 result and stays as it is; no side's H1 is re-derived. */
+  keepPass = false,
 ): Promise<Settled> {
   const random = rng(seed);
   let labels = assignLabels(random);
   const pass = { ...acceptance };
   const eligible = { old: sides.old.checksOk && sides.old.scopeOk, new: sides.new.checksOk && sides.new.scopeOk };
-  // Without amendment 8 the judge only breaks both-pass ties; with it, it also ranks two suite+scope-ok sides.
+  // Each side's full suite runs at most once; the result is reused by H1 and by merge confirmation.
+  const suite: Record<Side, boolean | null> = { old: null, new: null };
+  const pending: Partial<Record<Side, Promise<boolean>>> = {};
+  const ensureSuite = (s: Side) => (pending[s] ??= runSuite(s).then((ok) => (suite[s] = ok)));
+  // H1 = acceptance AND scope (`acceptance` here) AND the full suite, so every side that has the first two is suite-graded.
+  if (!keepPass) {
+    const graded = (["old", "new"] as const).filter((s) => acceptance[s]);
+    await Promise.all(graded.map(async (s) => (pass[s] = await ensureSuite(s))));
+  }
+  // Without amendment 8 the judge only breaks both-pass ties; with it, it also ranks two sides that clear fast checks and scope.
   const judgeOn = ctx.buildMerge ? eligible : pass;
   let preferred: Side | null = null;
   if (judgeOn.old && judgeOn.new) {
@@ -369,17 +381,14 @@ async function settle(
     candidates.push({ side: f, reason: group === pass ? (viaJudge ? "judge" : "random_tie") : viaJudge ? "suite_scope_judge" : "suite_scope_random_tie" }, { side: other(f), reason: tail });
   } else if (group.old || group.new) candidates.push({ side: group.old ? "old" : "new", reason: tail });
 
-  const suite: Record<Side, boolean | null> = { old: null, new: null };
   let merged: Side | null = null;
   let reason: MergeReason = "both_failed";
   for (const c of candidates) {
-    suite[c.side] = await runSuite(c.side);
-    if (suite[c.side]) {
+    if (await ensureSuite(c.side)) {
       merged = c.side;
       reason = c.reason;
       break;
     }
-    pass[c.side] = false;
     ctx.log(`forward: ${task.id}: ${c.side} failed the full suite`);
   }
   if (merged && !(await mergeBranch(ctx, task.id, sides[merged].branch, setups[merged]))) {
@@ -514,6 +523,8 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
     // Fast checks and the scope guard for both sides at once; the full suite then runs on merge candidates only.
     const { v: fast, ms: fastMs } = await timed(() => Promise.all([gradeFast(task, base, o.head, hidden), gradeFast(task, base, n.head, hidden)]));
     let gradeMs = fastMs;
+    let active = 0;
+    let busySince = 0;
     const heads = { old: o.head, new: n.head };
     const settled = await settle(
       ctx, task, seed, opts.pair, { old: fast[0].pass, new: fast[1].pass },
@@ -522,9 +533,13 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
         new: { branch: n.branch, base, head: n.head, checksOk: fast[1].checksOk, scopeOk: fast[1].scopeOk },
       },
       async (side) => {
-        const { v, ms } = await timed(() => gradeSuite(task, base, heads[side]));
-        gradeMs += ms;
-        return v;
+        // Suites of the two sides may overlap: grade_ms counts wall time with at least one step running.
+        if (active++ === 0) busySince = Date.now();
+        try {
+          return await gradeSuite(task, base, heads[side]);
+        } finally {
+          if (--active === 0) gradeMs += Date.now() - busySince;
+        }
       },
     );
     const { pass, ...rest } = settled;
@@ -653,7 +668,7 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
       return { ...r, checksOk: g.checksOk, scopeOk: g.scopeOk };
     };
     const [o, n] = await Promise.all([sideOf(refs.old), sideOf(refs.new)]);
-    const settled = await settle(ctx, task, p.seed, { old: p.setup_old, new: p.setup_new }, { old: p.pass_old, new: p.pass_new }, { old: o, new: n }, async (side) => (await grade(side === "old" ? o : n, "suite")).pass);
+    const settled = await settle(ctx, task, p.seed, { old: p.setup_old, new: p.setup_new }, { old: p.pass_old, new: p.pass_new }, { old: o, new: n }, async (side) => (await grade(side === "old" ? o : n, "suite")).pass, true);
     const { pass: _pass, ...rest } = settled;
     const updated: ForwardPair = { ...p, ...rest };
     store.updateMerge(updated);
