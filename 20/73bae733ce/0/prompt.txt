@@ -1,0 +1,23 @@
+[roster setup=E task=F13]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F13: `roster book` command
+TASK F13 · `roster book` command
+GOAL: Print or write the AI-workforce book from a saved review.
+OWNS: src/cli/book.ts, tests/cli-book.test.ts
+INTERFACE: src/cli/book.ts function runBookCommand(args: string[], deps: { readJson(path: string): Promise<unknown>; writeBook?: (book: unknown) => Promise<{ ok: boolean }> ; stdout(s: string): void }): Promise<number>
+BEHAVIOUR: `book --review <path> [--engineer-usd N] [--scale-sessions N] [--write]`. Without --write prints the book JSON and returns 0.
+With --write calls deps.writeBook and returns 0 on ok, 1 otherwise. Missing --review → usage on stdout, return 2. Defaults: engineer
+15000, scale sessions 50, period from the review's date range.
