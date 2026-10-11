@@ -1,0 +1,43 @@
+[roster setup=D task=T80]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T80 · W4 · Landing page leads with the forward result and the v1 → v2 story
+GOAL: The home page opens with level-A tables. The strongest evidence is the pre-registered forward test and the v1 → v2 gate story, so
+put those first, rendered from report files only.
+READ: web/app/page.tsx, web/components/Landing*.tsx, web/lib/forward.ts (loadForwardFile), web/app/experiment/page.tsx, README.md (the
+"The result" section, for wording), reports/self/forward.json, reports/self/review-1/decisions.json, reports/self/review-1b/decision.json.
+OWNS: web/components/LandingResult.tsx (new), web/app/page.tsx (insert the section above the existing content only),
+web/lib/result.ts (new loader for the review-1/1b decision files), web/scripts/copy-reports.ts (only if self/review-1* files aren't copied
+already), tests/web-landing-result.test.ts
+BUILD: A first section titled "The result". Its parts:
+- The forward test's wording line and the counts (only-new, only-old, both, neither, n, p), from forward.json.
+- A three-row before/after: v1 promoted on a 0–0 tie; v2 on the same tasks rejects; the forward test of v1's call.
+- Links to /experiment and PREREGISTRATION.md.
+No number literals in the component: everything comes from the loaded JSON. If forward.json is missing, the section shows "forward
+run in progress". Keep the existing sections below. Mobile-safe at 375px.
+ACCEPTANCE: tests render the loaders with fixture JSON and assert the counts and verdict strings come from the files; `cd web && bun run
+build` succeeds.
+TEST: bun test tests/web-landing-result.test.ts && (cd web && bun run build) && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>btg429t93</task-id>
+<tool-use-id>toolu_01Tjye8ES9RoaC4VXEJURJju</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T80/c6768845-a3df-474d-bd29-8d04557d11ae/tasks/btg429t93.output</output-file>
+<status>completed</status>
+<summary>Background command "cd /Users/Shared/roster-wt/T80 &amp;&amp; bun run typecheck 2&gt;&amp;1 | tail -5; bun test 2&gt;&amp;1 | tail -6" completed (exit code 0)</summary>
+</task-notification>
