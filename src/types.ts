@@ -135,7 +135,8 @@ export interface Replay {
   turn_cap?: number | null;
 }
 
-export type GateVerdict = "promote" | "reject";
+/** `no_signal`: the replay measure cannot rank setups (the incumbent fails its own tasks); nothing is promoted. */
+export type GateVerdict = "promote" | "reject" | "no_signal";
 
 /** Table `gate_decisions`. */
 export interface GateDecision {
