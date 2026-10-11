@@ -162,7 +162,11 @@ export interface ForwardPair {
   /** Blind label assignment, e.g. { X: "old", Y: "new" }. */
   blind_labels: Record<string, "old" | "new">;
   seed: number;
-  /** Each side's full suite and scope guard, graded with the acceptance tests; null on rows recorded before they were kept. */
+  /** Per-step timings in milliseconds. */
+  agent_old_ms?: number | null;
+  agent_new_ms?: number | null;
+  grade_ms?: number | null;
+  /** Each side's full suite and scope guard; a suite is null when it did not run (only merge candidates run it) or on rows recorded before it was kept. */
   suite_pass_old?: boolean | null;
   suite_pass_new?: boolean | null;
   scope_ok_old?: boolean | null;
