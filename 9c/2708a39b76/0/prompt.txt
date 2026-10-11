@@ -1,0 +1,35 @@
+[roster setup=E task=F10]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F10: Planted-bug history for attribution checks
+TASK F10 · Planted-bug history for attribution checks
+GOAL: Create a copy of a repo's history in which chosen sessions introduce a bug that a later commit fixes, with a separate answer key.
+OWNS: scripts/planted/plant.ts, tests/planted.test.ts
+INTERFACE: scripts/planted/plant.ts function plant(opts: { sourceRepo: string; outDir: string; keyPath: string; commits: string[]; seed: number }): Promise<{ planted: { commit: string; file: string; line: number; fixCommit: string }[] }>
+BEHAVIOUR: Copies the repo (git clone --no-local) to outDir; for each listed commit (in history order) rewrites that commit in the copy
+to also flip one comparison operator in a line it added (deterministic choice from seed), then adds a later commit "fix: …" restoring
+it; writes the answer key JSON to keyPath (which must be outside outDir) and never inside the copy; the source repo is untouched
+(assert its HEAD and status before/after). Commits that added no editable line are skipped and listed as skipped in the key.
+
+---
+
+<task-notification>
+<task-id>b644q7hn1</task-id>
+<tool-use-id>call_00_vlE3ypIqqMMcBaPqQSHw8726</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F10/485f3caa-efc5-478b-b337-457bd3984e8f/tasks/b644q7hn1.output</output-file>
+<status>killed</status>
+<summary>Background command "Run the whole test suite" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
