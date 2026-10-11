@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "8e9bebc01689",
+  "strategy": "manual-commit",
+  "branch": "forward/F14/old",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/cli/act.ts",
+    "tests/cli-act.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/8e/9bebc01689/0/metadata.json",
+      "transcript": "/8e/9bebc01689/0/full.jsonl",
+      "compact_transcript": "/8e/9bebc01689/0/transcript.jsonl",
+      "content_hash": "/8e/9bebc01689/0/content_hash.txt",
+      "prompt": "/8e/9bebc01689/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 22,
+    "cache_creation_tokens": 26709,
+    "cache_read_tokens": 338882,
+    "output_tokens": 6635,
+    "api_call_count": 11
+  }
+}
