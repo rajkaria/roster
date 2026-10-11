@@ -53,7 +53,7 @@ export interface GradeInput {
   runner?: StepRunner;
 }
 
-export type StepKind = "suite" | "hidden" | "own" | "typecheck";
+export type StepKind = "suite" | "retry" | "hidden" | "own" | "typecheck";
 export type StepRunner = (cwd: string, cmd: string, timeoutMs: number, kind: StepKind) => boolean;
 
 /** Test command by project markers: bun, pnpm, npm, pytest, go test. */
@@ -75,9 +75,15 @@ function attr(tag: string, name: string): string | undefined {
   return m ? unescape(m[1]!) : undefined;
 }
 
-/** Per-testcase results from a JUnit file, attributed to the test file of the enclosing suite. */
-export function parseJunit(xml: string): PerTest[] {
-  const out: PerTest[] = [];
+interface JunitCase {
+  file: string;
+  name: string;
+  failed: boolean;
+  skipped: boolean;
+}
+
+function junitCases(xml: string): JunitCase[] {
+  const out: JunitCase[] = [];
   const stack: string[] = [];
   const tokens = xml.match(/<testsuite\b[^>]*>|<\/testsuite>|<testcase\b[^>]*?\/>|<testcase\b[^>]*>[\s\S]*?<\/testcase>/g) ?? [];
   for (const t of tokens) {
@@ -86,11 +92,20 @@ export function parseJunit(xml: string): PerTest[] {
     else {
       const head = t.slice(0, t.indexOf(">") + 1);
       const file = attr(head, "file") ?? stack.find((s) => /\.[a-z]+$/.test(s)) ?? stack[0] ?? "";
-      const bad = /<(failure|error)\b/.test(t) || /<skipped\b/.test(t);
-      out.push({ file, name: attr(head, "name") ?? "", pass: !bad });
+      out.push({ file, name: attr(head, "name") ?? "", failed: /<(failure|error)\b/.test(t), skipped: /<skipped\b/.test(t) });
     }
   }
   return out;
+}
+
+/** Per-testcase results from a JUnit file, attributed to the test file of the enclosing suite. */
+export function parseJunit(xml: string): PerTest[] {
+  return junitCases(xml).map((c) => ({ file: c.file, name: c.name, pass: !c.failed && !c.skipped }));
+}
+
+/** Test files with at least one failed or errored case (skips don't count), in first-seen order. */
+export function failingTestFiles(xml: string): string[] {
+  return [...new Set(junitCases(xml).filter((c) => c.failed).map((c) => c.file.replace(/^\.\//, "")))].filter(Boolean);
 }
 
 const sh: StepRunner = (cwd, cmd, timeoutMs) => {
@@ -111,6 +126,27 @@ function showOrNull(cwd: string, rev: string, path: string): string | null {
   return r.exitCode === 0 ? r.stdout.toString() : null;
 }
 
+// macOS tar packs extended attributes and AppleDouble files by default; a file whose xattrs vanish mid-read makes the
+// producer fail, and without pipefail the half-written copy went unnoticed (missing .git objects, "bad object" later).
+const TAR_FLAGS = process.platform === "darwin" ? "--no-xattrs --no-mac-metadata " : "";
+const COPY_CMD = `set -o pipefail; tar ${TAR_FLAGS}-C "$1" --exclude=./node_modules --exclude=./web/node_modules -cf - . | tar ${TAR_FLAGS}-C "$2" -xf -`;
+
+/** Copies `from` into the empty directory `to` (without node_modules), retrying once from scratch. */
+export function copyTree(from: string, to: string): void {
+  let err = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    rmSync(to, { recursive: true, force: true });
+    mkdirSync(to, { recursive: true });
+    const cp = Bun.spawnSync(["bash", "-c", COPY_CMD, "bash", from, to], { env: { ...gitEnv(), COPYFILE_DISABLE: "1" } });
+    if (cp.exitCode === 0) return;
+    err = cp.stderr.toString().trim();
+  }
+  throw new Error(`copy failed: ${err}`);
+}
+
+/** A suite with more failing files than this failed for real, not on timing: no retry. */
+const SUITE_RETRY_MAX_FILES = 5;
+
 /** Grade a finished replay in a fresh copy: base + the agent's patch (+ hidden tests for the second run). */
 export async function grade(input: GradeInput): Promise<GradeResult> {
   const { sandbox, hidden, preexistingTests } = input;
@@ -123,12 +159,7 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
   mkdirSync(out);
   try {
     // node_modules is the bulk of the copy and is cleaned out below anyway: leave it behind and link it back in.
-    mkdirSync(work);
-    const cp = Bun.spawnSync(
-      ["bash", "-c", 'tar -C "$1" --exclude=./node_modules --exclude=./web/node_modules -cf - . | tar -C "$2" -xf -', "bash", sandbox.path, work],
-      { env: gitEnv() },
-    );
-    if (cp.exitCode !== 0) throw new Error(`copy failed: ${cp.stderr.toString().trim()}`);
+    copyTree(sandbox.path, work);
 
     // Capture the agent's change as a patch, then rebuild the tree from base + patch.
     runGit(work, ["add", "-A"]);
@@ -161,7 +192,18 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
     const scopeOk = violations.length === 0;
 
     let suitePass: boolean | null = null;
-    if (phase !== "fast") suitePass = run(work, testCmd + junit("suite.xml"), timeout, "suite");
+    if (phase !== "fast") {
+      suitePass = run(work, testCmd + junit("suite.xml"), timeout, "suite");
+      // A loaded machine fails the odd test on timing: re-run only the failing files, once. A run that left no JUnit
+      // (killed, crashed, import errors bun drops) has nothing to retry and stays failed.
+      const xml = join(out, "suite.xml");
+      if (!suitePass && isBun && existsSync(xml)) {
+        const failing = failingTestFiles(readFileSync(xml, "utf8"));
+        if (failing.length > 0 && failing.length <= SUITE_RETRY_MAX_FILES) {
+          suitePass = run(work, `${testCmd} ${failing.map((f) => JSON.stringify(f)).join(" ")}${junit("suite-retry.xml")}`, timeout, "retry");
+        }
+      }
+    }
     if (phase === "suite") return { hiddenPass: true, suitePass, typecheckPass: null, scopeOk, violations, perTest: [] };
 
     const fileArgs = isBun || /^pytest\b/.test(testCmd);

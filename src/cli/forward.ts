@@ -8,7 +8,7 @@ import type { ForwardPair } from "../types.ts";
 import { UsageError } from "./review.ts";
 
 const USAGE = `usage: roster forward --backlog <file> --pair OLD,NEW [--parallel <n>] [--db <path>] [--acceptance <dir>] [--seed <n>]
-       roster forward --remerge --backlog <file> [--parallel <n>] [--db <path>]
+       roster forward --remerge [--regrade] [--tasks F01,F02] --backlog <file> [--parallel <n>] [--db <path>]
 
   --backlog <file>    task blocks between "<!-- Txx -->" and "<!-- /Txx -->"
   --pair OLD,NEW      the two setup ids (setups/<id>.json); OLD is the incumbent
@@ -18,6 +18,12 @@ const USAGE = `usage: roster forward --backlog <file> --pair OLD,NEW [--parallel
   --seed <n>          run seed for labels and tie-breaks (default random, printed)
   --remerge           revisit recorded pairs that merged nothing: re-grade suite and scope on both branches and
                       apply the merge policy below; acceptance results (H1) stay as recorded
+  --regrade           with --remerge: also re-run the acceptance tests and recompute H1 with the current grader
+                      (amendment 12: pairs graded while every suite run timed out)
+  --tasks <ids>       with --remerge: only these comma-separated task ids
+
+A rerun skips recorded pairs. A pair whose two agents already finished in an earlier run is graded from its branches
+without re-running them; a pair left half-run is discarded and starts clean.
 
 Merge policy (pre-registration amendment 8; the build policy, not a measured outcome): an acceptance pass beats a fail.
 If both fail acceptance, the side whose full suite passes with scope ok is merged; if both do, the blind judge picks;
@@ -36,10 +42,12 @@ export interface ForwardArgs {
   acceptance: string | undefined;
   seed: number | undefined;
   remerge: boolean;
+  regrade: boolean;
+  tasks: string[] | undefined;
 }
 
-const FLAGS = ["--backlog", "--pair", "--parallel", "--db", "--acceptance", "--seed"];
-const SWITCHES = ["--remerge"];
+const FLAGS = ["--backlog", "--pair", "--parallel", "--db", "--acceptance", "--seed", "--tasks"];
+const SWITCHES = ["--remerge", "--regrade"];
 
 /** Parses the arguments after `forward`. Throws UsageError on anything it does not accept. */
 export function parseForwardArgs(args: string[]): ForwardArgs {
@@ -59,6 +67,8 @@ export function parseForwardArgs(args: string[]): ForwardArgs {
     v[name] = val;
   }
   const remerge = on.has("--remerge");
+  const regrade = on.has("--regrade");
+  if ((regrade || v["--tasks"]) && !remerge) throw new UsageError("--regrade and --tasks need --remerge");
   if (!v["--backlog"]) throw new UsageError("--backlog is required");
   const pair = v["--pair"]?.split(",");
   if (pair ? pair.length !== 2 || pair.some((s) => !s) : !remerge) throw new UsageError("--pair needs OLD,NEW");
@@ -79,6 +89,8 @@ export function parseForwardArgs(args: string[]): ForwardArgs {
     acceptance: v["--acceptance"],
     seed: num("--seed", undefined),
     remerge,
+    regrade,
+    tasks: v["--tasks"]?.split(",").map((t) => t.trim()).filter(Boolean),
   };
 }
 
@@ -106,9 +118,12 @@ export const forwardCommand: Command = {
     const backlog = readFileSync(resolve(a.backlog), "utf8");
     const log = (l: string) => console.log(l);
     if (a.remerge) {
-      const res = await remergeForward({ repo: process.cwd(), backlog, llm: deepseekClient(), db: a.db, parallel: a.parallel, log });
+      const res = await remergeForward({
+        repo: process.cwd(), backlog, llm: deepseekClient(), db: a.db, parallel: a.parallel, log,
+        regrade: a.regrade, tasks: a.tasks, acceptanceDir: a.acceptance,
+      });
       const merged = res.revisited.filter((p) => p.merged).length;
-      console.log(`forward: remerge revisited ${res.revisited.length} unmerged pairs, merged ${merged}, skipped ${res.skipped.length}`);
+      console.log(`forward: ${a.regrade ? "regrade" : "remerge"} revisited ${res.revisited.length} unmerged pairs, merged ${merged}, skipped ${res.skipped.length}`);
       const s = secondaryLine(res.revisited);
       if (s) console.log(s);
       return 0;
@@ -129,6 +144,8 @@ export const forwardCommand: Command = {
     console.log(
       `forward: ${res.completed.length} pairs this run, ${res.skipped.length} already done, ${stop.pairs} total; new won ${stop.won}, lost ${stop.lost} discordant`,
     );
+    if (res.resumed.length) console.log(`forward: graded without re-running agents (finished earlier): ${res.resumed.join(", ")}`);
+    if (res.errored.length) console.log(`forward: errored, not recorded (rerun retries them): ${res.errored.join(", ")}`);
     const s = secondaryLine(res.completed);
     if (s) console.log(s);
     if (res.reverted) console.log(`forward: stop rule triggered${res.reverted.url ? `, revert PR ${res.reverted.url}` : " (revert PR stubbed)"}`);
