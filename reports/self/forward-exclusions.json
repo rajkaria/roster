@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "exclusions": [
+    {
+      "task": "F11",
+      "code": "F6",
+      "reason": "network outage: both sessions ended after 1 turn with 'Can't reach the API server (ENOTFOUND)'; excluded for both sides and not rerun",
+      "amendment": 11
+    },
+    {
+      "task": "F04",
+      "code": "F6",
+      "reason": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "amendment": 18
+    },
+    {
+      "task": "F05",
+      "code": "F6",
+      "reason": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "amendment": 18
+    },
+    {
+      "task": "F06",
+      "code": "F6",
+      "reason": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "amendment": 18
+    },
+    {
+      "task": "F08",
+      "code": "F6",
+      "reason": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "amendment": 18
+    }
+  ]
+}
