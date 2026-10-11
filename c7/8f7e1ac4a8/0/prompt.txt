@@ -1,0 +1,27 @@
+[roster setup=A task=T60]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T60 · W4 · LLM client survives network errors
+GOAL: A coordinator run ended after 4 turns with "LLM call failed: Connection error." The client retries only 429/5xx. Network on the
+run host is flaky (DNS failures, connection resets), so the coordinator must ride through them.
+READ: src/llm/client.ts (isRetryable, the retry loop, maxRetries, retryBaseMs), src/agent/coordinator.ts (how llm_error ends a run).
+OWNS: src/llm/client.ts, src/agent/coordinator.ts (only how a transient LLM failure is handled), tests/llm-network.test.ts
+BUILD: Treat connection errors (ECONNRESET, ETIMEDOUT, ENOTFOUND, EAI_AGAIN, "Connection error", fetch failed, socket hang up) and
+request timeouts as retryable, with up to 6 attempts and exponential backoff capped at 30 s plus jitter. If an LLM call still fails,
+the coordinator saves state (it's resumable), records the error with the attempt count, and the CLI prints the exact resume command
+(`roster run <repo> --run-id <id> --budget <usd>`).
+ACCEPTANCE: tests with a fake transport: two connection errors then success → one result, three attempts; persistent failure → error
+after 6 attempts and the resume hint printed. Whole suite green.
+TEST: bun test tests/llm-network.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
