@@ -1,0 +1,24 @@
+[roster setup=E task=F01]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+## F01: Rules-file candidates from failure codes
+TASK F01 · Rules-file candidates from failure codes
+GOAL: Turn a weak setup's failure codes into a new rules file whose every added rule cites the failures it answers.
+OWNS: src/candidates/rules-lib.md, src/candidates/index.ts, tests/candidates.test.ts
+INTERFACE: src/candidates/index.ts function proposeRulesCandidate(baseRules: string, codes: FailureCode[]): { rules: string; added: { rule: string; answers: FailureCode[] }[] }
+BEHAVIOUR: rules-lib.md maps codes to rules (F1 → never modify existing tests unless asked; F2 → run the full test suite before
+finishing; F4 → finish the whole task and list anything skipped; F5 → stop and report instead of retrying the same failing step more
+than twice; F7 → touch only files the task needs). Output = base text unchanged + an appended "## Added by Roster" section. Codes
+are deduplicated; a rule already present in base (case-insensitive substring) is not added again; F3 and F6 add nothing; empty codes →
+rules === baseRules and added = [].
