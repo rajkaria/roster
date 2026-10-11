@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "0423f8e2ab6b",
+  "strategy": "manual-commit",
+  "branch": "forward/F07/old",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/cfo/mcp.ts",
+    "tests/cfo-mcp.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/04/23f8e2ab6b/0/metadata.json",
+      "transcript": "/04/23f8e2ab6b/0/full.jsonl",
+      "compact_transcript": "/04/23f8e2ab6b/0/transcript.jsonl",
+      "content_hash": "/04/23f8e2ab6b/0/content_hash.txt",
+      "prompt": "/04/23f8e2ab6b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 16232,
+    "cache_read_tokens": 191644,
+    "output_tokens": 5948,
+    "api_call_count": 8
+  }
+}
