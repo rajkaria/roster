@@ -1,0 +1,32 @@
+[roster setup=B task=F36]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F36: Explain a decision in plain words
+TASK F36 · Explain a decision in plain words
+GOAL: Turn a gate decision or a suspect flag into sentences a founder can read.
+OWNS: src/cli/explain.ts, tests/explain.test.ts
+INTERFACE: src/cli/explain.ts function explainGate(d: { candidate: string; verdict: 'promote' | 'reject'; reasons: string[]; regressions: string[] }): string; explainSuspect(s: { setupId: string | null; or?: number; p?: number; n: number; reason: string }): string
+BEHAVIOUR: Failure codes F1–F7 are spelled out (F1 → "edited existing tests", …). A rejection names each regressed task. A suspect
+sentence always contains "suspect" and "observational", never "worse". setupId null → "No setup stands out" plus the reason.
+
+---
+
+<task-notification>
+<task-id>b3tykwifu</task-id>
+<tool-use-id>toolu_01QEsRv26PmT4H7w3SqTkn4Q</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F36/23fafe7f-4bcc-43cd-891b-fdec1f9cb01a/tasks/b3tykwifu.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/explain.test.ts 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -3; bun test 2&gt;&amp;1 | tail -5" completed (exit code 0)</summary>
+</task-notification>
