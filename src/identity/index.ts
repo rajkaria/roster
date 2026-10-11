@@ -37,12 +37,20 @@ export interface Identity {
 
 const TAG_RE = /^\s*\[roster setup=([^\s\]]+) task=([^\s\]]+)\]/;
 
-/** Rules files in effect for each harness, matched against the files tracked at the parent commit. */
-const RULES_FILES: Record<string, (tracked: string[]) => string[]> = {
-  "claude-code": (t) => t.filter((p) => p === "CLAUDE.md"),
-  codex: (t) => t.filter((p) => p === "AGENTS.md"),
-  cursor: (t) => t.filter((p) => p === ".cursorrules" || p.startsWith(".cursor/rules/")).sort(),
-};
+/** Rules files a repo can carry, matched against the files tracked at the parent commit, for any harness. */
+const isRulesFile = (p: string) =>
+  p === "CLAUDE.md" ||
+  p === "AGENTS.md" ||
+  p === ".cursorrules" ||
+  p === ".github/copilot-instructions.md" ||
+  p.startsWith(".cursor/rules/");
+
+/** Rules hash and path for a session whose parent commit carries no rules file: a real configuration. */
+const NO_RULES_HASH = createHash("sha256").update("no-rules-file").digest("hex");
+const NO_RULES_PATH = "(none)";
+
+/** Model used in the setup id when the session records none, so sessions still group by harness. */
+const UNKNOWN_MODEL_ID = "unknown-model";
 
 /** Default rules path recorded when the transcript carries the rules text itself. */
 const DEFAULT_RULES_PATH: Record<string, string> = {
@@ -113,17 +121,20 @@ function git(repo: string, args: string[]): string | null {
 }
 
 /**
- * Rules in effect at a commit's parent: the file contents as they stood before the session's
- * first linked commit. Null when the commit or its parent is unknown, or no rules file exists.
+ * Rules in effect at a commit's parent: the rules files as they stood before the session's first
+ * linked commit. A parent with no rules file yields the no-rules sentinel. Null when the commit,
+ * its parent (a root commit has none), or the git read is unknown.
  */
 function rulesAtParent(harness: string, repo: string, commitSha: string | null): { rulesHash: string; rulesPath: string } | null {
-  const rules = RULES_FILES[harness];
-  if (!rules || !commitSha) return null;
+  if (!commitSha) return null;
   const parent = git(repo, ["rev-parse", "--verify", "-q", `${commitSha}^`])?.trim();
   if (!parent) return null;
-  const tracked = git(repo, ["ls-tree", "-r", "--name-only", parent])?.split("\n").filter(Boolean) ?? [];
-  const paths = rules(tracked);
-  if (paths.length === 0) return null;
+  const tracked = git(repo, ["ls-tree", "-r", "--name-only", parent])?.split("\n").filter(Boolean);
+  if (!tracked) return null;
+  // The harness's own rules file when the parent has it; otherwise every rules file the repo carries.
+  const primary = DEFAULT_RULES_PATH[harness];
+  const paths = (primary && tracked.includes(primary) ? [primary] : tracked.filter(isRulesFile)).sort();
+  if (paths.length === 0) return { rulesHash: NO_RULES_HASH, rulesPath: NO_RULES_PATH };
   const texts: string[] = [];
   for (const p of paths) {
     const text = git(repo, ["show", `${parent}:${p}`]);
@@ -135,7 +146,8 @@ function rulesAtParent(harness: string, repo: string, commitSha: string | null):
 
 /**
  * Setup of one session. The rules hash comes from the transcript when it records one, otherwise
- * from the rules file at the parent of the session's commit. Anything unknown is null.
+ * from the rules files at the parent of the session's commit (or the no-rules sentinel when that
+ * parent has none). Null only when neither source is available.
  */
 export function identify(session: IdentitySource, repoPath: string): Identity {
   const harness = harnessId(session.harness);
@@ -149,7 +161,7 @@ export function identify(session: IdentitySource, repoPath: string): Identity {
     if (found) ({ rulesHash, rulesPath } = found);
   }
   return {
-    setupId: setupIdOf(harness, model, rulesHash),
+    setupId: setupIdOf(harness, session.model || UNKNOWN_MODEL_ID, rulesHash),
     harness,
     model,
     rulesHash,
