@@ -57,8 +57,27 @@
   - E ran out of turns at the 40-turn cap. The original session took 59, so the cap now scales with the original (T46).
   - E's cost is now priced from tokens: $0.045, against Claude Code's $2.01 estimate.
 
+- **2026-10-11 10:39 IST, review 1:** Roster's first performance review of this repo.
+  - Level A found no suspect.
+  - The coordinator (DeepSeek) replayed 12 of setup B's past tasks under B, E and F. The gate promoted E on a 0–0 hidden-test tie, cheaper wins. That's disclosed as weak evidence in amendment 7, before the forward run.
+- **2026-10-11 10:41 → 2026-10-12, forward run:** the 40 pre-registered tasks, each built by B and E in paired worktrees and graded blind. Problems found and fixed during the run, every change dated in the pre-registration (amendments 8–18):
+  - The frozen acceptance tests were over-specified.
+  - Suite timeouts under load produced false failures, so pairs were re-graded with logged failures.
+  - Claude Code priced DeepSeek runs at Claude rates, so costs were re-priced from tokens.
+  - One test failed on the wave-A base commit, so 4 pairs were excluded as environment failures.
+- **Forward result (interim, 26 valid pairs):** E passed 6 tasks B failed, and B passed 0 that E failed. McNemar exact p = 0.031. E was cheaper in every pair. Source: `reports/self/forward.json`.
+- **2026-10-12 04:00, review 1b:** review 1's 10 hidden-test tasks re-run under the v2 replay and gate.
+  - B passes 1, E passes 0, and the gate rejects E.
+  - Detections flagged 3 silent passes (D1) on E: the visible suite passed and the hidden tests failed.
+- **Product built through the forward run and integration tasks:**
+  - `/try`, `/experiment`, `/book`, and the `/r` index with corpus totals
+  - detections D1–D4 in every run
+  - a neatlogs trace spool (`roster traces flush`)
+  - the forward export and generated FACTS
+
 ## Demo
-- Pending.
+- Live: https://roster-five-chi.vercel.app (result on the home page; /experiment, /r, /try, /book).
+- CLI: `bun src/cli.ts review <github-url> --observational`.
 
 ## Known limitations and next steps
 - Nothing is live yet.
