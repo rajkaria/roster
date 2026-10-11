@@ -23,6 +23,12 @@ export const DEFAULT_FORWARD_DB = ".roster/roster.db";
 export const FORWARD_STEP_TIMEOUT_MS = Number(process.env.ROSTER_GRADE_TIMEOUT_MS ?? 45 * 60_000);
 /** Per-test timeout for bun in forward grading: bun's 5 s default fails tests on timing alone under load. */
 export const FORWARD_BUN_TEST_TIMEOUT_MS = 60_000;
+/**
+ * Grading branches at once across the queue (amendment 13). Grading steps no longer block the queue, so agents keep
+ * launching while a pair grades; grading itself stays one at a time by default, as it effectively was when every step
+ * blocked, so suites don't compete with each other for the 45-minute limit.
+ */
+export const FORWARD_GRADE_PARALLEL = Number(process.env.ROSTER_GRADE_PARALLEL ?? 1);
 
 /** The test command forward grading uses for a tree: bun gets a per-test timeout; undefined leaves detection to grade(). */
 export function forwardTestCmd(dir: string): string | undefined {
@@ -231,6 +237,41 @@ class Mutex {
       () => undefined,
     );
     return r;
+  }
+}
+
+/** At most `n` of the functions it runs in flight at once; the rest wait their turn in order. */
+export class Slots {
+  private free: number;
+  private waiting: (() => void)[] = [];
+  constructor(n: number) {
+    this.free = Math.max(1, Math.floor(n) || 1);
+  }
+  async run<T>(fn: () => Promise<T> | T): Promise<T> {
+    if (this.free > 0) this.free--;
+    else await new Promise<void>((r) => this.waiting.push(r));
+    try {
+      return await fn();
+    } finally {
+      const next = this.waiting.shift();
+      if (next) next();
+      else this.free++;
+    }
+  }
+}
+
+/** Wall time with at least one of the functions it times running: overlapping steps count once, waits not at all. */
+export class BusyClock {
+  ms = 0;
+  private active = 0;
+  private since = 0;
+  async time<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.active++ === 0) this.since = Date.now();
+    try {
+      return await fn();
+    } finally {
+      if (--this.active === 0) this.ms += Date.now() - this.since;
+    }
   }
 }
 
@@ -447,6 +488,8 @@ export interface ForwardOptions {
   seed?: number;
   /** Replaces the shell runner for grading steps (tests count and stub the suite runs through it). */
   gradeRunner?: StepRunner;
+  /** Branches graded at once across the queue. Default FORWARD_GRADE_PARALLEL. */
+  gradeParallel?: number;
   openRevertPr?: (req: RevertRequest) => Promise<RevertOutcome>;
   log?: (line: string) => void;
   /**
@@ -530,10 +573,12 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
     const v = await f();
     return { v, ms: Date.now() - t0 };
   };
-  const gradeFast = (task: BacklogTask, base: string, head: string, hidden: HiddenTest[]) =>
-    gradeBranch({ repo, base, head, hidden, owns: task.owns, testCmd: opts.testCmd, scratch, phase: "fast", runner: opts.gradeRunner });
-  const gradeSuite = async (task: BacklogTask, base: string, head: string) =>
-    (await gradeBranch({ repo, base, head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch, phase: "suite", runner: opts.gradeRunner })).pass;
+  // Every branch grades through the queue's grading slots; a pair's clock counts only its time holding one.
+  const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL);
+  const gradeFast = (task: BacklogTask, base: string, head: string, hidden: HiddenTest[], clock = new BusyClock()) =>
+    grading.run(() => clock.time(() => gradeBranch({ repo, base, head, hidden, owns: task.owns, testCmd: opts.testCmd, scratch, phase: "fast", runner: opts.gradeRunner })));
+  const gradeSuite = async (task: BacklogTask, base: string, head: string, clock = new BusyClock()) =>
+    (await grading.run(() => clock.time(() => gradeBranch({ repo, base, head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch, phase: "suite", runner: opts.gradeRunner })))).pass;
 
   const runsDir = join(repo, ".roster", "runs");
   const agentDone =
@@ -599,11 +644,10 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
       ({ v: n, ms: agentNewMs } = rn);
     }
     const hidden = loadAcceptance(acceptanceDir, task.id);
-    // Fast checks and the scope guard for both sides at once; the full suite then runs on merge candidates only.
-    const { v: fast, ms: fastMs } = await timed(() => Promise.all([gradeFast(task, base, o.head, hidden), gradeFast(task, base, n.head, hidden)]));
-    let gradeMs = fastMs;
-    let active = 0;
-    let busySince = 0;
+    // Fast checks and the scope guard for both sides; the full suite then runs on merge candidates only. grade_ms counts
+    // wall time with at least one of this pair's steps running (overlapping sides once, waiting for a slot not at all).
+    const clock = new BusyClock();
+    const fast = await Promise.all([gradeFast(task, base, o.head, hidden, clock), gradeFast(task, base, n.head, hidden, clock)]);
     const heads = { old: o.head, new: n.head };
     const settled = await settle(
       ctx, task, seed, opts.pair, { old: fast[0].pass, new: fast[1].pass },
@@ -611,15 +655,7 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
         old: { branch: o.branch, base, head: o.head, checksOk: fast[0].checksOk, scopeOk: fast[0].scopeOk },
         new: { branch: n.branch, base, head: n.head, checksOk: fast[1].checksOk, scopeOk: fast[1].scopeOk },
       },
-      async (side) => {
-        // Suites of the two sides may overlap: grade_ms counts wall time with at least one step running.
-        if (active++ === 0) busySince = Date.now();
-        try {
-          return await gradeSuite(task, base, heads[side]);
-        } finally {
-          if (--active === 0) gradeMs += Date.now() - busySince;
-        }
-      },
+      (side) => gradeSuite(task, base, heads[side], clock),
     );
     const { pass, ...rest } = settled;
     return {
@@ -634,7 +670,7 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
       ...rest,
       agent_old_ms: agentOldMs,
       agent_new_ms: agentNewMs,
-      grade_ms: gradeMs,
+      grade_ms: clock.ms,
     };
   };
 
