@@ -1,7 +1,8 @@
 import { loadReview, listParams } from "@/lib/reviews";
 import type { SetupRow } from "@/lib/types";
 import { Section, SuspectCard, ReplaysTable, GateList, ForwardTable } from "@/components/Sections";
-import { loadReplays, loadGate, loadForward, loadOutcomes } from "./sidecar";
+import { Detections, loadDetections } from "@/components/Detections";
+import { loadReplays,loadGate, loadForward, loadOutcomes } from "./sidecar";
 
 export const dynamicParams = false;
 
@@ -103,6 +104,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
       <Section title="Gate decisions" level="B">
         <GateList rows={loadGate(owner, repo)} />
       </Section>
+      <Detections rows={loadDetections(owner, repo)} />
       <Section title="Forward" level="C">
         <ForwardTable rows={loadForward(owner, repo)} />
       </Section>

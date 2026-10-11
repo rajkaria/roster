@@ -7,8 +7,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { ATTR } from "../obs/attributes.ts";
 import { withSpan } from "../obs/index.ts";
+import { type Detection, detect } from "../obs/detections.ts";
 import type { ChatMessage, LlmClient } from "../llm/types.ts";
-import type { Plan } from "../types.ts";
+import type { Plan, Replay } from "../types.ts";
 import { planFile, writePlanFile } from "./plan.ts";
 import {
   type Decision,
@@ -20,6 +21,23 @@ import {
   type ToolBackend,
   type ToolContext,
 } from "./tools.ts";
+
+/** D1–D4 over replay rows. A null hidden or scope result (no signal on that track) is not a failure. D2 needs line-mapping data replays don't carry. */
+export function detectionsFor(replays: Replay[], incumbent: string | null): Detection[] {
+  return detect({
+    replays: replays.map((r) => ({
+      task: r.task_session_id,
+      setup: r.setup_id,
+      suitePass: r.suite_pass === true,
+      hiddenPass: r.hidden_pass !== false,
+      scopeOk: r.scope_ok !== false,
+      costUsd: r.cost_usd,
+      failureCodes: r.failure_codes,
+    })),
+    incumbent: incumbent ?? "",
+    unmappedLineShare: {},
+  });
+}
 
 export const MAX_TURNS = 40;
 export const DEFAULT_DB = ".roster/roster.db";
@@ -233,7 +251,26 @@ export async function runCoordinator(opts: CoordinatorOptions): Promise<RunResul
       decisionsPath,
       resumed,
     });
-    const writeDecisions = (r: RunResult) => {
+    /** D1–D4 over every replay of the run's plans, one GUARDRAIL span each. A backend that can't list replays yields none. */
+    const runDetections = async (): Promise<Detection[]> => {
+      const rows = new Map<string, Replay>();
+      for (const plan of state.plans) {
+        try {
+          for (const r of await opts.backend.getReplayResults({ plan_id: planId(runId, plan) })) rows.set(r.id, r);
+        } catch {
+          // Not available (or no replays yet): nothing to detect over for this plan.
+        }
+      }
+      const found = detectionsFor([...rows.values()], state.plans.at(-1)?.body.suspect ?? null);
+      for (const d of found) {
+        await withSpan("GUARDRAIL", `detection ${d.id}`, { setup: d.setup, task: d.task, repo: opts.repo }, async (span) => {
+          span.setAttribute("roster.detection", d.id);
+          span.setAttribute("roster.detection_detail", d.detail);
+        });
+      }
+      return found;
+    };
+    const writeDecisions = (r: RunResult, detections: Detection[]) => {
       mkdirSync(opts.outDir, { recursive: true });
       const doc = {
         run_id: runId,
@@ -246,6 +283,7 @@ export async function runCoordinator(opts: CoordinatorOptions): Promise<RunResul
         turns: r.turns,
         excluded_tasks: state.excludedTasks,
         decisions: state.decisions,
+        detections,
       };
       writeFileSync(decisionsPath, JSON.stringify(doc, null, 2) + "\n");
     };
@@ -316,7 +354,7 @@ export async function runCoordinator(opts: CoordinatorOptions): Promise<RunResul
       return r;
     });
     log("end", { result: finalResult });
-    writeDecisions(finalResult);
+    writeDecisions(finalResult, await runDetections());
     return finalResult;
   } finally {
     store.close();
