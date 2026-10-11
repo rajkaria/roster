@@ -1,0 +1,23 @@
+[roster setup=B task=F19]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F19: Public corpus runner
+TASK F19 · Public corpus runner
+GOAL: Review the top public repos from the corpus candidates and keep going when one fails.
+OWNS: scripts/corpus-run.ts, tests/corpus-run.test.ts
+INTERFACE: scripts/corpus-run.ts function runCorpus(opts: { candidates: { repo: string; score: number }[]; top: number; review: (repo: string) => Promise<unknown>; write: (path: string, data: unknown) => Promise<void> }): Promise<{ done: string[]; failed: { repo: string; reason: string }[] }>
+BEHAVIOUR: Takes the `top` highest-score candidates (ties broken by repo name), reviews them sequentially, writes
+reports/corpus/<owner>__<repo>/review.json for each success and reports/corpus/index.json at the end with done and failed lists. A
+throwing review is recorded with its message and does not stop the run.
