@@ -1,0 +1,22 @@
+[roster setup=E task=F37]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F37: Coordinator prompt as data
+TASK F37 · Coordinator prompt as data
+GOAL: Keep the coordinator's system prompt and tool descriptions in one checked file.
+OWNS: src/agent/prompts.ts, tests/agent-prompts.test.ts
+INTERFACE: src/agent/prompts.ts export const SYSTEM_PROMPT: string; export const TOOL_DOCS: Record<string, string>; checkPrompt(registered: string[]): { ok: boolean; missing: string[]; extra: string[] }
+BEHAVIOUR: SYSTEM_PROMPT contains the sentences "You decide what to try next. The gate decides what ships." and "Never claim a result
+the tools didn't return." and states the budget stops the run. checkPrompt compares TOOL_DOCS keys with the registered tool names.
