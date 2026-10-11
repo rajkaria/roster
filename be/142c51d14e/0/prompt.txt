@@ -1,0 +1,23 @@
+[roster setup=E task=F09]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F09: Forward-run analysis exactly as pre-registered
+TASK F09 · Forward-run analysis exactly as pre-registered
+GOAL: Compute the forward result and whether a claim may be made.
+OWNS: src/forward/analysis.ts, tests/forward-analysis.test.ts
+INTERFACE: src/forward/analysis.ts function mcnemarExact(b: number, c: number): number (two-sided p over discordant counts b, c); wilcoxonSignedRank(diffs: number[]): { w: number; p: number; n: number }; forwardSummary(pairs: { task: string; passOld: boolean; passNew: boolean; costOld: number | null; costNew: number | null; excluded?: string }[]): { n: number; excludedCount: number; newOnly: number; oldOnly: number; both: number; neither: number; p: number; claim: boolean; costP: number | null; wording: string }
+BEHAVIOUR: Excluded pairs are not counted in n. claim = n ≥ 24. mcnemarExact uses the exact binomial on b + c with p = 0.5 (b + c = 0
+→ p = 1). Wilcoxon: zeros dropped, average ranks for ties, normal approximation for n > 20, exact for n ≤ 20; fewer than 1 non-zero →
+p 1. wording: "x vs y passed, p = 0.031" with "not significant at n = N" when p ≥ 0.05, "no claim: n = N < 24" when n < 24.
