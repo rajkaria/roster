@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "f39c92f78482",
+  "strategy": "manual-commit",
+  "branch": "forward/F02/old",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/act/pr-body.ts",
+    "tests/pr-body.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f3/9c92f78482/0/metadata.json",
+      "transcript": "/f3/9c92f78482/0/full.jsonl",
+      "compact_transcript": "/f3/9c92f78482/0/transcript.jsonl",
+      "content_hash": "/f3/9c92f78482/0/content_hash.txt",
+      "prompt": "/f3/9c92f78482/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 12435,
+    "cache_read_tokens": 104160,
+    "output_tokens": 5544,
+    "api_call_count": 5
+  }
+}

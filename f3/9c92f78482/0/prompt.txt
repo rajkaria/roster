@@ -1,0 +1,22 @@
+[roster setup=B task=F02]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+## F02: Pull-request body for a promotion
+TASK F02 · Pull-request body for a promotion
+GOAL: Render the PR description Roster opens when it promotes a setup, using only data it is given.
+OWNS: src/act/pr-body.ts, tests/pr-body.test.ts
+INTERFACE: src/act/pr-body.ts function renderPrBody(input: { repo: string; incumbent: string; promoted: string; tasks: { id: string; incumbentPass: boolean; candidatePass: boolean; costUsd: number | null; traceUrl?: string; entireUrl?: string }[]; rejected: { candidate: string; reasons: string[] }[]; evidenceLevel: 'B' | 'C' }): string
+BEHAVIOUR: Markdown with sections Summary, Evidence (a table with one row per task, pass shown as ✓/✗, cost to 2 decimals or "n/a"),
+Rejected candidates (each with reasons), Links. Totals line "x of n tasks passed (incumbent y of n)". Never prints a number that is
+not derivable from the input; no adjectives such as "significant" or "best". Empty rejected list → section says "None".
