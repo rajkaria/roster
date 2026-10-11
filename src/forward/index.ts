@@ -4,7 +4,7 @@ import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
-import { grade, isTestFile } from "../grade/index.ts";
+import { detectTestCmd, grade, isTestFile } from "../grade/index.ts";
 import type { HiddenTest, StepRunner } from "../grade/index.ts";
 import type { LlmClient } from "../llm/types.ts";
 import { createSandbox, destroySandbox, runGit } from "../sandbox/index.ts";
@@ -16,6 +16,23 @@ import { priceRunLog, runLogPath } from "./cost.ts";
 export * from "./blind.ts";
 
 export const DEFAULT_FORWARD_DB = ".roster/roster.db";
+/**
+ * Every grading step's time limit. The full suite takes about 15 minutes on the loaded build machine; grade()'s
+ * 5-minute default timed every forward suite run out, so no side could pass H1 (amendment 12).
+ */
+export const FORWARD_STEP_TIMEOUT_MS = Number(process.env.ROSTER_GRADE_TIMEOUT_MS ?? 45 * 60_000);
+/** Per-test timeout for bun in forward grading: bun's 5 s default fails tests on timing alone under load. */
+export const FORWARD_BUN_TEST_TIMEOUT_MS = 60_000;
+
+/** The test command forward grading uses for a tree: bun gets a per-test timeout; undefined leaves detection to grade(). */
+export function forwardTestCmd(dir: string): string | undefined {
+  try {
+    const cmd = detectTestCmd(dir);
+    return cmd === "bun test" ? `bun test --timeout ${FORWARD_BUN_TEST_TIMEOUT_MS}` : cmd;
+  } catch {
+    return undefined;
+  }
+}
 export const MIN_PAIRS = 15;
 export const MIN_NET_LOSSES = 3;
 
@@ -113,11 +130,12 @@ export class ForwardStore {
       .run(p.task_id, p.setup_old, p.setup_new, +p.pass_old, +p.pass_new, p.cost_old, p.cost_new, p.merged, JSON.stringify(p.blind_labels), p.seed, seq, ...extraValues(p));
   }
 
-  /** Rewrites a recorded pair's merge outcome (remerge). The H1 fields, costs and seq are left as recorded. */
-  updateMerge(p: ForwardPair): void {
+  /** Rewrites a recorded pair's merge outcome (remerge). Costs and seq are left as recorded; H1 only with `withPass` (regrade). */
+  updateMerge(p: ForwardPair, withPass = false): void {
     this.db
       .query("UPDATE forward_pairs SET suite_old=?, suite_new=?, scope_old=?, scope_new=?, merged_reason=?, secondary=?, agent_old_ms=?, agent_new_ms=?, grade_ms=?, merged=?, blind_labels=? WHERE task_id=?")
       .run(...extraValues(p), p.merged, JSON.stringify(p.blind_labels), p.task_id);
+    if (withPass) this.db.query("UPDATE forward_pairs SET pass_old=?, pass_new=? WHERE task_id=?").run(+p.pass_old, +p.pass_new, p.task_id);
   }
 
   getState(key: string): string | null {
@@ -268,7 +286,8 @@ async function gradeBranch(opts: {
       hidden: opts.hidden,
       preexistingTests,
       touchedDirs: opts.owns.length ? opts.owns : undefined,
-      testCmd: opts.testCmd,
+      testCmd: opts.testCmd ?? forwardTestCmd(sandbox.path),
+      timeoutMs: FORWARD_STEP_TIMEOUT_MS,
       phase: opts.phase,
       modulesFrom: opts.repo,
       runner: opts.runner,
@@ -434,6 +453,8 @@ export interface ForwardOptions {
    * are unaffected. Off by default so the registered policy stays the library's; `roster forward` turns it on.
    */
   buildMerge?: boolean;
+  /** Whether a side's agent finished in an earlier run (resume). Default: its run log holds a result event. */
+  agentDone?: (taskId: string, setup: string) => boolean;
 }
 
 /** Most tasks in flight at once. */
@@ -444,6 +465,10 @@ export interface ForwardSummary {
   skipped: string[];
   /** Tasks run on the old setup alone after the stop rule triggered. */
   soloOnOld: string[];
+  /** Tasks whose pair threw (agent launch or grading); nothing was recorded, so a rerun retries them. */
+  errored: string[];
+  /** Tasks whose agents had already finished in an earlier run: graded from their branches without re-running them. */
+  resumed: string[];
   stop: StopRuleState;
   reverted: RevertOutcome | null;
   seed: number;
@@ -469,6 +494,8 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
   const scratch = mkdtempSync(join(tmpdir(), "roster-forward-"));
   const completed: ForwardPair[] = [];
   const soloOnOld: string[] = [];
+  const errored: string[] = [];
+  const resumed: string[] = [];
   let reverted: RevertOutcome | null = store.getState("reverted") ? JSON.parse(store.getState("reverted")!) : null;
   let revertedFlag = reverted !== null;
 
@@ -506,13 +533,69 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
   const gradeSuite = async (task: BacklogTask, base: string, head: string) =>
     (await gradeBranch({ repo, base, head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch, phase: "suite", runner: opts.gradeRunner })).pass;
 
+  const runsDir = join(repo, ".roster", "runs");
+  const agentDone =
+    opts.agentDone ??
+    ((id: string, setup: string) => {
+      try {
+        return readFileSync(runLogPath(runsDir, id, setup), "utf8").includes('"type":"result"');
+      } catch {
+        return false;
+      }
+    });
+  const branchExists = (b: string) => Bun.spawnSync(["git", "rev-parse", "--verify", "-q", b], { cwd: repo }).exitCode === 0;
+  /**
+   * Sides an earlier run left behind (amendment 12). Both agents finished: grade their branches from the pair's base
+   * (where the two branches meet) without re-running them. Anything partial is discarded, so the pair starts clean.
+   */
+  const prior = (task: BacklogTask) =>
+    git.run(() => {
+      const sides = {
+        old: { worktree: join(wtRoot, "old", task.id), branch: `forward/${task.id}/old` },
+        new: { worktree: join(wtRoot, "new", task.id), branch: `forward/${task.id}/new` },
+      };
+      const present = (s: Side) => existsSync(sides[s].worktree) && branchExists(sides[s].branch);
+      if (present("old") && present("new") && agentDone(task.id, opts.pair.old) && agentDone(task.id, opts.pair.new)) {
+        const heads = { old: "", new: "" };
+        for (const s of ["old", "new"] as const) {
+          const wt = sides[s].worktree;
+          runGit(wt, ["add", "-A"]);
+          if (runGit(wt, ["status", "--porcelain"])) runGit(wt, ["-c", "commit.gpgsign=false", "commit", "-q", "-m", `${task.id}: uncommitted work from ${s} run`]);
+          heads[s] = runGit(wt, ["rev-parse", "HEAD"]);
+        }
+        return { base: runGit(repo, ["merge-base", sides.old.branch, sides.new.branch]), heads, sides };
+      }
+      for (const s of ["old", "new"] as const) {
+        if (existsSync(sides[s].worktree)) {
+          if (Bun.spawnSync(["git", "worktree", "remove", "--force", sides[s].worktree], { cwd: repo }).exitCode !== 0) {
+            rmSync(sides[s].worktree, { recursive: true, force: true });
+            Bun.spawnSync(["git", "worktree", "prune"], { cwd: repo });
+          }
+        }
+        if (branchExists(sides[s].branch)) runGit(repo, ["branch", "-D", sides[s].branch]);
+      }
+      return null;
+    });
+
   const runPair = async (task: BacklogTask): Promise<ForwardPair> => {
-    const base = await git.run(() => runGit(repo, ["rev-parse", "HEAD"]));
+    const resume = await prior(task);
+    const base = resume?.base ?? (await git.run(() => runGit(repo, ["rev-parse", "HEAD"])));
     const seed = pairSeed(runSeed, task.id);
-    const [{ v: o, ms: agentOldMs }, { v: n, ms: agentNewMs }] = await Promise.all([
-      timed(() => startSide(task, "old", opts.pair.old, base)),
-      timed(() => startSide(task, "new", opts.pair.new, base)),
-    ]);
+    let o: { branch: string; head: string; costUsd: number | null };
+    let n: { branch: string; head: string; costUsd: number | null };
+    let agentOldMs: number | null = null;
+    let agentNewMs: number | null = null;
+    if (resume) {
+      resumed.push(task.id);
+      log(`forward: ${task.id}: both agents finished in an earlier run; grading their branches from base ${base.slice(0, 7)}`);
+      const cost = (setup: string) => priceRunLog(runLogPath(runsDir, task.id, setup), new Date()).usd;
+      o = { branch: resume.sides.old.branch, head: resume.heads.old, costUsd: cost(opts.pair.old) };
+      n = { branch: resume.sides.new.branch, head: resume.heads.new, costUsd: cost(opts.pair.new) };
+    } else {
+      const [ro, rn] = await Promise.all([timed(() => startSide(task, "old", opts.pair.old, base)), timed(() => startSide(task, "new", opts.pair.new, base))]);
+      ({ v: o, ms: agentOldMs } = ro);
+      ({ v: n, ms: agentNewMs } = rn);
+    }
     const hidden = loadAcceptance(acceptanceDir, task.id);
     // Fast checks and the scope guard for both sides at once; the full suite then runs on merge candidates only.
     const { v: fast, ms: fastMs } = await timed(() => Promise.all([gradeFast(task, base, o.head, hidden), gradeFast(task, base, n.head, hidden)]));
@@ -580,8 +663,14 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
 
   const worker = async () => {
     for (let t = queue.shift(); t; t = queue.shift()) {
-      if (revertedFlag) await runSolo(t);
-      else await onPair(await runPair(t));
+      try {
+        if (revertedFlag) await runSolo(t);
+        else await onPair(await runPair(t));
+      } catch (e) {
+        // One pair's failure (agent launch, grading copy, git) must not end the run; nothing is recorded, so a rerun retries it.
+        errored.push(t.id);
+        log(`forward: ${t.id}: error, pair not recorded: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
   };
   try {
@@ -591,7 +680,7 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
   }
   const stop = evaluateStopRule(store.pairs());
   store.close();
-  return { completed, skipped, soloOnOld, stop, reverted, seed: runSeed };
+  return { completed, skipped, soloOnOld, errored, resumed, stop, reverted, seed: runSeed };
 }
 
 function clampParallel(n: number | undefined): number {
@@ -609,6 +698,15 @@ export interface RemergeOptions {
   testCmd?: string;
   parallel?: number;
   log?: (line: string) => void;
+  /**
+   * Regrade (amendment 12): also re-run the acceptance tests and recompute H1 (pass_old/pass_new) with the current
+   * grader, for pairs graded while every suite run timed out. Without it, the recorded H1 stays as it is.
+   */
+  regrade?: boolean;
+  /** Only these task ids (default: every unmerged pair). */
+  tasks?: string[];
+  acceptanceDir?: string;
+  gradeRunner?: StepRunner;
 }
 
 export interface RemergeSummary {
@@ -626,7 +724,9 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
   const repo = resolve(opts.repo);
   const store = new ForwardStore(resolve(opts.db ?? DEFAULT_FORWARD_DB));
   const tasks = new Map(parseBacklog(opts.backlog).map((t) => [t.id, t]));
-  const queue = store.pairs().filter((p) => p.merged === null);
+  const only = opts.tasks ? new Set(opts.tasks) : null;
+  const queue = store.pairs().filter((p) => p.merged === null && (!only || only.has(p.task_id)));
+  const acceptanceDir = resolve(repo, opts.acceptanceDir ?? "experiments/acceptance");
   const git = new Mutex();
   const ctx: SettleContext = { repo, git, llm: opts.llm, log, buildMerge: true };
   const scratch = mkdtempSync(join(tmpdir(), "roster-remerge-"));
@@ -654,23 +754,41 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
       log(`forward: remerge ${p.task_id}: side branch missing, skipped`);
       return skipped.push(p.task_id);
     }
+    const hidden = opts.regrade ? loadAcceptance(acceptanceDir, task.id) : [];
     const grade = (r: { head: string; base: string }, phase: "fast" | "suite") =>
-      gradeBranch({ repo, base: r.base, head: r.head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch, phase });
-    // Acceptance results are kept as recorded; the fast checks (new tests, typecheck) and scope are re-graded, then the suite on candidates.
-    const sideOf = async (r: { branch: string; head: string; base: string }): Promise<SideState> => {
+      gradeBranch({ repo, base: r.base, head: r.head, hidden: phase === "fast" ? hidden : [], owns: task.owns, testCmd: opts.testCmd, scratch, phase, runner: opts.gradeRunner });
+    // Remerge keeps the recorded acceptance results; regrade re-runs them. Either way the fast checks (new tests,
+    // typecheck) and scope are re-graded, then the suite: on candidates, and with regrade on every acceptance pass (H1).
+    const sideOf = async (r: { branch: string; head: string; base: string }) => {
       const g = await grade(r, "fast");
-      return { ...r, checksOk: g.checksOk, scopeOk: g.scopeOk };
+      return { state: { ...r, checksOk: g.checksOk, scopeOk: g.scopeOk } as SideState, acceptance: g.pass };
     };
     const [o, n] = await Promise.all([sideOf(refs.old), sideOf(refs.new)]);
-    const settled = await settle(ctx, task, p.seed, { old: p.setup_old, new: p.setup_new }, { old: p.pass_old, new: p.pass_new }, { old: o, new: n }, async (side) => (await grade(side === "old" ? o : n, "suite")).pass, true);
-    const { pass: _pass, ...rest } = settled;
-    const updated: ForwardPair = { ...p, ...rest };
-    store.updateMerge(updated);
+    const acceptance = opts.regrade ? { old: o.acceptance, new: n.acceptance } : { old: p.pass_old, new: p.pass_new };
+    const settled = await settle(
+      ctx, task, p.seed, { old: p.setup_old, new: p.setup_new }, acceptance, { old: o.state, new: n.state },
+      async (side) => (await grade(side === "old" ? o.state : n.state, "suite")).pass,
+      !opts.regrade,
+    );
+    const { pass, ...rest } = settled;
+    const updated: ForwardPair = opts.regrade ? { ...p, ...rest, pass_old: pass.old, pass_new: pass.new } : { ...p, ...rest };
+    store.updateMerge(updated, opts.regrade ?? false);
+    if (opts.regrade && (updated.pass_old !== p.pass_old || updated.pass_new !== p.pass_new)) {
+      log(`forward: regrade ${p.task_id}: H1 old ${p.pass_old ? "pass" : "fail"} -> ${updated.pass_old ? "pass" : "fail"}, new ${p.pass_new ? "pass" : "fail"} -> ${updated.pass_new ? "pass" : "fail"}`);
+    }
     revisited.push(updated);
   };
 
   const worker = async () => {
-    for (let p = queue.shift(); p; p = queue.shift()) await revisit(p);
+    for (let p = queue.shift(); p; p = queue.shift()) {
+      try {
+        await revisit(p);
+      } catch (e) {
+        // One pair's failure must not abort the rest; it stays unmerged and a later run retries it.
+        skipped.push(p.task_id);
+        log(`forward: remerge ${p.task_id}: error, left as recorded: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
   };
   try {
     await Promise.all(Array.from({ length: clampParallel(opts.parallel) }, worker));
