@@ -1,0 +1,8 @@
+{
+  "promoted": "E",
+  "from": "a9544a002085",
+  "reasons": [
+    "tie on hidden_pass 0; candidate cheaper $0.4385 < $2.5181"
+  ],
+  "at": "2026-10-11T05:09:26.886Z"
+}
