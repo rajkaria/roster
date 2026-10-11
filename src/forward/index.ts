@@ -24,11 +24,11 @@ export const FORWARD_STEP_TIMEOUT_MS = Number(process.env.ROSTER_GRADE_TIMEOUT_M
 /** Per-test timeout for bun in forward grading: bun's 5 s default fails tests on timing alone under load. */
 export const FORWARD_BUN_TEST_TIMEOUT_MS = 60_000;
 /**
- * Grading branches at once across the queue (amendment 13). Grading steps no longer block the queue, so agents keep
- * launching while a pair grades; grading itself stays one at a time by default, as it effectively was when every step
- * blocked, so suites don't compete with each other for the 45-minute limit.
+ * Grading slots (amendment 13, machine-wide since amendment 15). Grading steps don't block the queue, so agents keep
+ * launching while a pair grades. Two branches at a time (amendment 16): with the 90-minute step limit two suites fit
+ * comfortably, and one slot made grading the bottleneck of the whole run.
  */
-export const FORWARD_GRADE_PARALLEL = Number(process.env.ROSTER_GRADE_PARALLEL ?? 1);
+export const FORWARD_GRADE_PARALLEL = Number(process.env.ROSTER_GRADE_PARALLEL ?? 2);
 
 /** The test command forward grading uses for a tree: bun gets a per-test timeout; undefined leaves detection to grade(). */
 export function forwardTestCmd(dir: string): string | undefined {
@@ -278,10 +278,39 @@ const alive = (pid: number) => {
   }
 };
 
-/** One of `n` slot directories under `dir`, created atomically; a slot whose holder process is gone is taken over. */
+/**
+ * One of `n` slot directories under `dir`, created atomically; a slot whose holder process is gone is taken over.
+ * Waiters across processes are served first come, first served (amendment 16): each takes a ticket, and only the oldest
+ * live ticket may claim a free slot. Without it, a process that released a slot took it straight back for its next step
+ * before any other process polled, and the regrades waited for hours behind the queue.
+ */
 async function acquireFileSlot(dir: string, n: number, pollMs = 2_000): Promise<() => void> {
-  mkdirSync(dir, { recursive: true });
-  for (;;) {
+  const tickets = join(dir, "tickets");
+  mkdirSync(tickets, { recursive: true });
+  const mine = `${String(Date.now()).padStart(15, "0")}-${process.pid}-${Math.random().toString(36).slice(2, 10)}`;
+  writeFileSync(join(tickets, mine), String(process.pid));
+  try {
+    for (;;) {
+      const head = readdirSync(tickets)
+        .sort()
+        .find((t) => {
+          if (alive(Number(t.split("-")[1]))) return true;
+          rmSync(join(tickets, t), { force: true });
+          return false;
+        });
+      if (head === mine) {
+        const release = claimFreeSlot(dir, n);
+        if (release) return release;
+      }
+      await Bun.sleep(pollMs);
+    }
+  } finally {
+    rmSync(join(tickets, mine), { force: true });
+  }
+}
+
+function claimFreeSlot(dir: string, n: number): (() => void) | null {
+  for (let pass = 0; pass < 2; pass++) {
     for (let i = 0; i < n; i++) {
       const slot = join(dir, `slot-${i}`);
       try {
@@ -301,8 +330,8 @@ async function acquireFileSlot(dir: string, n: number, pollMs = 2_000): Promise<
       writeFileSync(join(slot, "pid"), String(process.pid));
       return () => rmSync(slot, { recursive: true, force: true });
     }
-    await Bun.sleep(pollMs);
   }
+  return null;
 }
 
 /** Wall time with at least one of the functions it times running: overlapping steps count once, waits not at all. */
