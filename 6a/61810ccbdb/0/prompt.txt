@@ -1,0 +1,37 @@
+[roster setup=A task=T69]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T69 · W4 · Book this repo's AI team: book.json now, cfo.ai when connected
+GOAL: The /book page and the cfo.ai integration have no data. Build the AI-workforce book for this repo from its review, write
+reports/self/book.json for the site, and write it into cfo.ai through the MCP when a connection exists. When it doesn't, say exactly
+what's missing.
+READ: src/cfo/book.ts (buildBook), src/cfo/mcp.ts (writeBook, diffBook), web/lib/book.ts (loadBook: expected shape and path),
+web/app/book/page.tsx, reports/rajkaria__roster/review.json, docs/DESIGN.md §"Book (cfo.ai)".
+OWNS: src/cfo/client.ts (new), scripts/book-self.ts (new), tests/cfo-client.test.ts, reports/self/book.json (generated)
+BUILD:
+- src/cfo/client.ts is an MCP client bridge with the call(tool, args) interface writeBook expects. It runs `claude -p` with only the
+  `cfoai` MCP server allowed (`--strict-mcp-config` plus an mcp config for https://api.cfo.ai/mcp, or the user's configured server) and a
+  fixed prompt: call the named tool with this JSON and return the tool result verbatim as JSON. It detects "server not configured or not
+  authenticated" and returns a typed error with the message "cfo.ai not connected: run `claude mcp add --transport http cfoai
+  https://api.cfo.ai/mcp`".
+- scripts/book-self.ts builds the book from reports/rajkaria__roster/review.json. Period: the review's session date range. Assumptions:
+  engineer $12,000/month loaded, scale 50 sessions/week, both labelled as assumptions. It writes reports/self/book.json in loadBook's
+  shape (plus `shareUrl: null` until a cfo.ai page exists). With `--write` it calls writeBook through the bridge and records the
+  outcome in book.json (`cfo: {written, verified, error}`).
+ACCEPTANCE: tests with a stubbed `claude` binary: a connected bridge round-trips edit and inspect; a not-connected bridge returns the typed
+error; the script writes book.json that loadBook parses. Run the script once without --write and commit the generated
+reports/self/book.json.
+TEST: bun test tests/cfo-client.test.ts && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
