@@ -1,0 +1,44 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "9d31554bbfae",
+  "session_id": "514cfe24-5a6b-4345-a013-ab39403abca5",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T13:39:09.310509Z",
+  "branch": "forward/F22/new",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/cli/status.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "deepseek-flash",
+  "turn_id": "a89169244f33",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 42993,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1814400,
+    "output_tokens": 27058,
+    "api_call_count": 39
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T13:39:09.225972Z",
+    "agent_lines": 218,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 218,
+    "total_lines_changed": 218,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
