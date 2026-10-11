@@ -54,7 +54,8 @@ export interface GradeInput {
 }
 
 export type StepKind = "suite" | "retry" | "hidden" | "own" | "typecheck";
-export type StepRunner = (cwd: string, cmd: string, timeoutMs: number, kind: StepKind) => boolean;
+/** Runs one grading step; may be async (the default is, so grading never blocks the event loop). */
+export type StepRunner = (cwd: string, cmd: string, timeoutMs: number, kind: StepKind) => boolean | Promise<boolean>;
 
 /** Test command by project markers: bun, pnpm, npm, pytest, go test. */
 export function detectTestCmd(dir: string): string {
@@ -108,9 +109,11 @@ export function failingTestFiles(xml: string): string[] {
   return [...new Set(junitCases(xml).filter((c) => c.failed).map((c) => c.file.replace(/^\.\//, "")))].filter(Boolean);
 }
 
-const sh: StepRunner = (cwd, cmd, timeoutMs) => {
-  const r = Bun.spawnSync(["bash", "-c", cmd], { cwd, env: gitEnv(), timeout: timeoutMs });
-  return r.exitCode === 0;
+// Async on purpose: a spawnSync here froze the whole forward run (every worker, every agent launch) for the length of
+// each suite run, so "parallel" pairs were graded one step at a time.
+const sh: StepRunner = async (cwd, cmd, timeoutMs) => {
+  const p = Bun.spawn(["bash", "-c", cmd], { cwd, env: gitEnv(), stdout: "ignore", stderr: "ignore", timeout: timeoutMs });
+  return (await p.exited) === 0;
 };
 
 function hasTypecheck(dir: string): boolean {
@@ -193,14 +196,14 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
 
     let suitePass: boolean | null = null;
     if (phase !== "fast") {
-      suitePass = run(work, testCmd + junit("suite.xml"), timeout, "suite");
+      suitePass = await run(work, testCmd + junit("suite.xml"), timeout, "suite");
       // A loaded machine fails the odd test on timing: re-run only the failing files, once. A run that left no JUnit
       // (killed, crashed, import errors bun drops) has nothing to retry and stays failed.
       const xml = join(out, "suite.xml");
       if (!suitePass && isBun && existsSync(xml)) {
         const failing = failingTestFiles(readFileSync(xml, "utf8"));
         if (failing.length > 0 && failing.length <= SUITE_RETRY_MAX_FILES) {
-          suitePass = run(work, `${testCmd} ${failing.map((f) => JSON.stringify(f)).join(" ")}${junit("suite-retry.xml")}`, timeout, "retry");
+          suitePass = await run(work, `${testCmd} ${failing.map((f) => JSON.stringify(f)).join(" ")}${junit("suite-retry.xml")}`, timeout, "retry");
         }
       }
     }
@@ -215,11 +218,11 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
     }
     const files = hidden.map((h) => JSON.stringify(h.path)).join(" ");
     const skipRun = phase === "fast" && fileArgs && files === "";
-    const runPass = skipRun || run(work, `${testCmd}${fileArgs ? " " + files : ""}${junit("hidden.xml")}`, timeout, "hidden");
-    const ownPass: boolean | null = own.length ? run(work, `${testCmd} ${own.map((p) => JSON.stringify(p)).join(" ")}${junit("own.xml")}`, timeout, "own") : null;
+    const runPass = skipRun || (await run(work, `${testCmd}${fileArgs ? " " + files : ""}${junit("hidden.xml")}`, timeout, "hidden"));
+    const ownPass: boolean | null = own.length ? await run(work, `${testCmd} ${own.map((p) => JSON.stringify(p)).join(" ")}${junit("own.xml")}`, timeout, "own") : null;
 
     let typecheckPass: boolean | null = null;
-    if (phase === "fast" && isBun && hasTypecheck(work)) typecheckPass = run(work, "bun run typecheck", timeout, "typecheck");
+    if (phase === "fast" && isBun && hasTypecheck(work)) typecheckPass = await run(work, "bun run typecheck", timeout, "typecheck");
 
     let perTest: PerTest[] = [];
     let hiddenPass = runPass;
