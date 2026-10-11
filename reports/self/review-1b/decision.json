@@ -1,0 +1,24 @@
+{
+  "verdict": "reject",
+  "reasons": [
+    "hidden_pass 0 < incumbent 1",
+    "1 regression(s) after reruns: ea846f90-734e-4fb0-bd01-0ce8658c6b0c",
+    "1 scope violation(s): 8d77769a-b6f0-44cb-b3d4-928acc638e1b"
+  ],
+  "regressions": [
+    "ea846f90-734e-4fb0-bd01-0ce8658c6b0c"
+  ],
+  "ties": "none",
+  "hidden_pass": {
+    "incumbent": 1,
+    "candidate": 0
+  },
+  "scope_violations": [
+    "8d77769a-b6f0-44cb-b3d4-928acc638e1b"
+  ],
+  "cost": {
+    "incumbent": 2.1440193999999995,
+    "candidate": 0.50404794
+  },
+  "excluded": []
+}
