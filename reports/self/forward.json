@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "rows": [
+    {
+      "task": "F02",
+      "old": true,
+      "new": true,
+      "costOld": 0.1462655,
+      "costNew": 0.016254017999999995,
+      "merged": "old"
+    },
+    {
+      "task": "F01",
+      "old": false,
+      "new": true,
+      "costOld": 0.1982497,
+      "costNew": 0.013234115999999999,
+      "merged": "new"
+    },
+    {
+      "task": "F03",
+      "old": false,
+      "new": true,
+      "costOld": 0.17028440000000003,
+      "costNew": 0.026754444000000002,
+      "merged": "new"
+    },
+    {
+      "task": "F04",
+      "old": false,
+      "new": false,
+      "costOld": 0.2717554,
+      "costNew": 0.02728896,
+      "excluded": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "merged": null
+    },
+    {
+      "task": "F05",
+      "old": false,
+      "new": false,
+      "costOld": 0.2025335,
+      "costNew": 0.035557506,
+      "excluded": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "merged": null
+    },
+    {
+      "task": "F06",
+      "old": false,
+      "new": false,
+      "costOld": 0.1689661,
+      "costNew": 0.02927025,
+      "excluded": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "merged": null
+    },
+    {
+      "task": "F08",
+      "old": false,
+      "new": false,
+      "costOld": 0.1153631,
+      "costNew": 0.027037451999999997,
+      "excluded": "F6: inherited base test tests/agent-backend.test.ts (bd90b27), amendment 18",
+      "merged": null
+    },
+    {
+      "task": "F09",
+      "old": false,
+      "new": false,
+      "costOld": 0.26726900000000003,
+      "costNew": 0.037080282,
+      "merged": null
+    },
+    {
+      "task": "F10",
+      "old": false,
+      "new": false,
+      "costOld": 0.36863149999999995,
+      "costNew": 0.12330319799999997,
+      "merged": "new"
+    },
+    {
+      "task": "F15",
+      "old": true,
+      "new": true,
+      "costOld": 0.16560470000000002,
+      "costNew": 2.3027469999999997,
+      "merged": "new"
+    },
+    {
+      "task": "F12",
+      "old": true,
+      "new": true,
+      "costOld": 0.1288618,
+      "costNew": 2.170482,
+      "merged": "new"
+    },
+    {
+      "task": "F16",
+      "old": false,
+      "new": true,
+      "costOld": 0.1930295,
+      "costNew": 0.037930182,
+      "merged": "new"
+    },
+    {
+      "task": "F17",
+      "old": false,
+      "new": true,
+      "costOld": 0.1409884,
+      "costNew": 0.044320968,
+      "merged": "new"
+    },
+    {
+      "task": "F18",
+      "old": false,
+      "new": true,
+      "costOld": 0.20609380000000002,
+      "costNew": 0.031611653999999996,
+      "merged": "new"
+    },
+    {
+      "task": "F19",
+      "old": true,
+      "new": true,
+      "costOld": 0.09375080000000001,
+      "costNew": 0.019686534,
+      "merged": "new"
+    },
+    {
+      "task": "F20",
+      "old": true,
+      "new": true,
+      "costOld": 0.10706449999999999,
+      "costNew": 0.019236629999999998,
+      "merged": "old"
+    },
+    {
+      "task": "F21",
+      "old": true,
+      "new": true,
+      "costOld": 0.22978300000000004,
+      "costNew": 0.019070094,
+      "merged": "old"
+    },
+    {
+      "task": "F22",
+      "old": true,
+      "new": true,
+      "costOld": 0.1839101,
+      "costNew": 0.038606514,
+      "merged": "new"
+    },
+    {
+      "task": "F23",
+      "old": true,
+      "new": true,
+      "costOld": 0.10913310000000001,
+      "costNew": 0.024187049999999998,
+      "merged": "old"
+    },
+    {
+      "task": "F24",
+      "old": true,
+      "new": true,
+      "costOld": 0.1549054,
+      "costNew": 0.022893204,
+      "merged": "new"
+    },
+    {
+      "task": "F25",
+      "old": true,
+      "new": true,
+      "costOld": 0.1329016,
+      "costNew": 0.021418986,
+      "merged": "new"
+    },
+    {
+      "task": "F26",
+      "old": true,
+      "new": true,
+      "costOld": 0.1164879,
+      "costNew": 0.010321164,
+      "merged": "old"
+    },
+    {
+      "task": "F27",
+      "old": true,
+      "new": true,
+      "costOld": 0.1802289,
+      "costNew": 0.01705401,
+      "merged": "old"
+    },
+    {
+      "task": "F28",
+      "old": true,
+      "new": true,
+      "costOld": 0.14844899999999997,
+      "costNew": 0.028857347999999998,
+      "merged": "new"
+    },
+    {
+      "task": "F29",
+      "old": true,
+      "new": true,
+      "costOld": 0.10602080000000003,
+      "costNew": 0.013185972,
+      "merged": "new"
+    },
+    {
+      "task": "F30",
+      "old": true,
+      "new": true,
+      "costOld": 0.11745779999999999,
+      "costNew": 0.015135834,
+      "merged": "new"
+    },
+    {
+      "task": "F14",
+      "old": false,
+      "new": false,
+      "costOld": 0.2206454,
+      "costNew": 0.038079882,
+      "merged": null
+    },
+    {
+      "task": "F07",
+      "old": true,
+      "new": true,
+      "costOld": 0.15450189999999997,
+      "costNew": 0.015305129999999998,
+      "merged": "old"
+    },
+    {
+      "task": "F31",
+      "old": false,
+      "new": true,
+      "costOld": 0.10348270000000001,
+      "costNew": 0.01437207,
+      "merged": "new"
+    },
+    {
+      "task": "F32",
+      "old": true,
+      "new": true,
+      "costOld": 0.08762620000000002,
+      "costNew": 0.010134174000000001,
+      "merged": "new"
+    }
+  ],
+  "summary": {
+    "n": 26,
+    "excludedCount": 4,
+    "newOnly": 6,
+    "oldOnly": 0,
+    "both": 17,
+    "neither": 3,
+    "p": 0.031250000000000014,
+    "claim": true,
+    "costP": 0.001636345474263834,
+    "wording": "6 vs 0 passed, p = 0.031"
+  },
+  "pairs": {
+    "n": 26,
+    "recorded": 30,
+    "excluded": 4
+  },
+  "mcnemar": {
+    "new_only": 6,
+    "old_only": 0,
+    "both": 17,
+    "neither": 3,
+    "p": 0.031250000000000014
+  },
+  "wording": "6 vs 0 passed, p = 0.031",
+  "cost_p": 0.001636345474263834,
+  "sensitivity": {
+    "n": 30,
+    "excludedCount": 0,
+    "newOnly": 6,
+    "oldOnly": 0,
+    "both": 17,
+    "neither": 7,
+    "p": 0.031250000000000014,
+    "claim": true,
+    "costP": 0.000373230585908102,
+    "wording": "6 vs 0 passed, p = 0.031"
+  },
+  "secondary": {
+    "old": 8,
+    "new": 10,
+    "tie": 1,
+    "none": 7,
+    "unrecorded": 0
+  },
+  "build_only_merges": 0,
+  "unmatched_exclusions": [
+    "F11"
+  ]
+}
