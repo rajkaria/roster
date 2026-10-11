@@ -12,8 +12,10 @@ import { type Identity, identify, inferenceAccuracy } from "../identity/index.ts
 import { survival, survivalMany } from "../score/survival.ts";
 import { isReverted, reverted } from "../score/revert.ts";
 import { BUDGET_MESSAGE, gitFailure, gitPool, type GitResult, type GitRunner, rework, reworkShares, trackMany } from "../score/rework.ts";
+import { reviewDifficulty } from "../difficulty/index.ts";
 import { buildSetupRows, buildTags, repoSlug, type ReviewReport, slugDir, writeReview } from "../review/export.ts";
-import type { Outcome, Review, Session } from "../types.ts";
+import { NO_SUSPECT_LABEL, type SetupOutcome, SUSPECT_LABEL, suspect } from "../review/suspect.ts";
+import type { Outcome, Review, ReviewLabel, Session } from "../types.ts";
 
 export const DEFAULT_CACHE = ".roster/cache";
 /** Mature = at least this many first-parent commits after the session's commit, and this many seconds older than HEAD. */
@@ -244,7 +246,7 @@ const pct = (x: number) => `${(100 * x).toFixed(1)}%`;
 /** Wall time per stage, in ms. */
 type Timings = Map<string, number>;
 
-/** Timed stages in print order. `difficulty` is not part of this command yet, so it prints as not run. */
+/** Timed stages in print order. */
 const TIMED = ["fetch", "parse", "identify", "score", "difficulty", "export"] as const;
 
 export function formatTimings(times: Timings, totalMs: number): string {
@@ -344,6 +346,12 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         ];
       });
 
+      const difficultyNotes: string[] = [];
+      const outcomes = await timed(times, "difficulty", () =>
+        withDifficulty(scored.out, scored.outcomes, fetched.repoPath, difficultyNotes),
+      );
+      const call = verdict(scored.out, outcomes);
+
       root.setAttribute(
         ATTR.summary,
         summaryAttr({
@@ -361,6 +369,8 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         ...scored.failed.map((f) => `could not be scored: ${f}`),
         `${scored.out.filter((s) => s.cost_usd === null).length} sessions have no price (unknown model, or a price that depends on prompt size)`,
         `${scored.out.filter((s) => s.setup_id === null).length} sessions have no setup because their rules hash is unknown`,
+        `suspect call: ${call.reason}`,
+        ...difficultyNotes,
       ];
       const tags = buildTags(scored.out);
       const review: Review = {
@@ -371,19 +381,18 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         has_entire_data: true,
         setups: buildSetupRows(scored.out, scored.outcomes),
         ...(tags ? { tags } : {}),
-        label: "insufficient_data",
-        suspect: null,
-        odds_ratio: null,
-        ci95: null,
-        p_value: null,
+        label: call.label,
+        suspect: call.suspect,
+        odds_ratio: call.odds_ratio,
+        ci95: call.ci95,
+        p_value: call.p_value,
         evidence_level: "A",
       };
       const report: ReviewReport = {
         review,
-        note:
-          "No suspect call. The difficulty-matched Mantel–Haenszel test (DESIGN.md §\"Difficulty and review\") is not part of this command yet, so the setup numbers below are descriptive only.",
+        note: call.note,
         sessions: scored.out,
-        outcomes: scored.outcomes,
+        outcomes,
         notes,
       };
       const written = await timed(times, "export", async () => writeReview(outDir, report));
@@ -395,6 +404,71 @@ export async function runReview(args: ReviewArgs): Promise<number> {
     if (times.size > 0) console.log(formatTimings(times, performance.now() - t0));
     await flushObs();
   }
+}
+
+/**
+ * Sets difficulty and tercile on every outcome (src/difficulty falls back per session: graph, then fan-in).
+ * A failure of the whole stage leaves both null and adds a note; it never fails the review.
+ */
+async function withDifficulty(sessions: Session[], outcomes: Outcome[], repo: string, notes: string[]): Promise<Outcome[]> {
+  try {
+    const { scores } = await reviewDifficulty(sessions, repo);
+    const byId = new Map(scores.map((d) => [d.session_id, d]));
+    return outcomes.map((o) => {
+      const d = byId.get(o.session_id);
+      return { ...o, difficulty: d?.difficulty ?? null, tercile: d?.tercile ?? null };
+    });
+  } catch (err) {
+    notes.push(`difficulty could not be scored, so no session is difficulty-matched: ${err instanceof Error ? err.message : String(err)}`);
+    return outcomes;
+  }
+}
+
+/** The Review fields that carry the suspect call, plus the plain-words note for review.md. */
+export interface Verdict {
+  label: ReviewLabel;
+  suspect: string | null;
+  odds_ratio: number | null;
+  ci95: [number, number] | null;
+  p_value: number | null;
+  note: string;
+  reason: string;
+}
+
+/** The suspect call for a review: each mature outcome joined to its session's setup, then suspect(). */
+export function verdict(sessions: Session[], outcomes: Outcome[]): Verdict {
+  const setupOf = new Map(sessions.map((s) => [s.id, s.setup_id]));
+  const j = suspect(outcomes.map((o): SetupOutcome => ({ ...o, setup_id: setupOf.get(o.session_id) ?? null })));
+  // erfc can return a hair above 1 at zero deviation (src/review/stats.ts), so p is clamped to the Review type's [0, 1].
+  const base = { suspect: j.setupId, odds_ratio: j.or, ci95: j.ci95, p_value: j.p === null ? null : Math.min(1, j.p), reason: j.reason };
+  if (j.label === SUSPECT_LABEL && j.setupId !== null && j.or !== null && j.ci95 !== null && j.p !== null) {
+    const [lo, hi] = j.ci95;
+    return {
+      ...base,
+      label: "suspect",
+      note:
+        `Setup ${j.setupId} is flagged. Comparing sessions of the same difficulty tercile, its bad outcomes ` +
+        `(reverted, or more than 30% of its lines reworked by a human) have odds ${j.or.toFixed(2)} times the other setups' ` +
+        `(95% CI ${lo.toFixed(2)} to ${hi.toFixed(2)}, p ${j.p.toFixed(4)}). This is observational evidence, not proof.`,
+    };
+  }
+  if (j.label === NO_SUSPECT_LABEL) {
+    return {
+      ...base,
+      label: "no_suspect",
+      suspect: null,
+      note: `No setup is flagged: ${j.reason}. The highest matched odds ratio is shown for context only.`,
+    };
+  }
+  return {
+    ...base,
+    label: "insufficient_data",
+    suspect: null,
+    odds_ratio: null,
+    ci95: null,
+    p_value: null,
+    note: `No suspect call: ${j.reason}.`,
+  };
 }
 
 /** A ParsedSession without the parse-only fields, so sessions.json holds Session rows. */
