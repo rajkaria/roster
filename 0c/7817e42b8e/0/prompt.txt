@@ -1,0 +1,35 @@
+[roster setup=B task=T62]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T62 · W5 · FACTS from the report files that actually exist
+GOAL: docs/FACTS.md lists three placeholder facts whose sources don't exist (reports/review.json#$.sessions.total and so on), so
+every public number is PENDING. Define the real facts from the real report layout, so the README and the site can quote them.
+READ: scripts/facts.ts, scripts/sumcheck.ts, reports/rajkaria__roster/review.json (fields: label, suspect, odds_ratio, ci95,
+p_value, setups[] with sessions, mature_sessions, spend_usd, priced_sessions, spend_lower_bound, unattended, survival, reverted, label),
+reports/<owner>__<repo>/review.json for the public repos, reports/self/review-1/ (plan.json, decisions.json when present),
+reports/self/forward.json (may not exist yet), experiments/FREEZE.txt.
+OWNS: scripts/facts.ts, tests/facts-real.test.ts, docs/FACTS.md (generated)
+BUILD: Facts (each with its source file and path; PENDING when missing):
+- SELF_SESSIONS, SELF_MATURE, SELF_SETUPS, SELF_SPEND_USD (sum of setup spend; prefix "≥" when any setup is a lower bound),
+  SELF_LABEL, SELF_ODDS_RATIO, SELF_P
+- CORPUS_REPOS (public repo reviews, excluding rajkaria__roster and _sample), CORPUS_SESSIONS (sum of sessions)
+- REVIEW1_OUTCOME, REVIEW1_PROMOTED, REVIEW1_REPLAYS, REVIEW1_SPEND_USD (from reports/self/review-1/decisions.json)
+- FORWARD_PAIRS_N, FORWARD_NEW_ONLY, FORWARD_OLD_ONLY, FORWARD_P, FORWARD_WORDING (from reports/self/forward.json)
+- BACKLOG_SHA256 (from experiments/FREEZE.txt)
+Support a path that sums over an array or a directory glob, so totals aren't typed in by hand. Numbers are printed with their unit
+and rounding stated (money to 2 decimals).
+ACCEPTANCE: tests on a fixture reports dir produce the expected FACTS lines, including PENDING for a missing forward.json and "≥" for
+a lower-bound spend; running the script on the real reports/ writes docs/FACTS.md with SELF_* filled. Whole suite green.
+TEST: bun test tests/facts-real.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
