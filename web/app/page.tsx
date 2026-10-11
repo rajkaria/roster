@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { loadReview } from "@/lib/reviews";
 import { SELF_OWNER, SELF_REPO, forwardStarted } from "@/components/LandingData";
 import { Hero, OwnReview, HowItWorks, Experiment, BuiltWith } from "@/components/LandingSections";
+import { LandingResult } from "@/components/LandingResult";
+import { loadResultFile } from "@/lib/result";
 
 const TITLE = "Roster: performance reviews for your AI coding agents";
 const DESCRIPTION =
@@ -15,9 +17,11 @@ export const metadata: Metadata = {
 export default function Home() {
   const review = loadReview(SELF_OWNER, SELF_REPO);
   const started = forwardStarted(join(process.cwd(), "public", "data"));
+  const result = loadResultFile(join(process.cwd(), "public", "data"));
   return (
     <>
       <Hero />
+      <LandingResult result={result} />
       <OwnReview review={review} />
       <HowItWorks />
       <Experiment started={started} />
