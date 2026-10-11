@@ -123,3 +123,6 @@ The amendment 3 block (T27–T42) is used up. Integration tasks T43 and up take 
   - If both do, the blind diff-judge picks.
   - If neither does, nothing is merged.
 - **Secondary outcome (exploratory, defined now after 3 pairs).** It's the blind judge's preference among the sides that pass their suite and scope. It's reported separately and never as H1.
+
+### Amendment 9: 2026-10-11 14:05 IST, one guardrail line added for all sessions
+Twice now, a headless session ended without committing: T26 and T64 each started a background command and then waited for a notification that can't arrive. From now on the shared guardrails (`scripts/guardrails.txt`) include: "Never start a command in the background or wait for a notification … run tests and builds in the foreground, then commit." The line reaches both sides of every forward pair launched after this commit. Pairs F01–F05 ran without it.
