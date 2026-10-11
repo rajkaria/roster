@@ -1,0 +1,33 @@
+[roster setup=B task=F29]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F29: Export a run to report files
+TASK F29 · Export a run to report files
+GOAL: Write a run's review, plan, replays and gate decisions to versioned JSON files.
+OWNS: src/report/export.ts, tests/report-export.test.ts
+INTERFACE: src/report/export.ts function exportRun(run: { review: unknown; plan?: unknown; replays?: unknown[]; gate?: unknown[] }, outDir: string): Promise<string[]>
+BEHAVIOUR: Writes review.json always, and plan.json, replays.json, gate.json when present, each as { schemaVersion: 1, generatedAt,
+data }. Writes atomically (temp file + rename). Returns the written paths sorted. Re-export overwrites; generatedAt is the only field
+that changes when data is identical.
+
+---
+
+<task-notification>
+<task-id>bp0f45c4k</task-id>
+<tool-use-id>toolu_01CANseK6vPWygiMPkCfWyQr</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F29/66b3a5c0-b247-4b79-be01-3dadd5a87cfa/tasks/bp0f45c4k.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/report-export.test.ts 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -5; bun test 2&gt;&amp;1 | tail -6" completed (exit code 0)</summary>
+</task-notification>
