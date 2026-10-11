@@ -149,11 +149,17 @@ describe("forward run with stub sides, amendment 8 on", () => {
       const res = await runForward(opts(w, scripted(script), j.llm));
       const by = Object.fromEntries(res.completed.map((p) => [p.task_id, p]));
 
-      expect(by.T1).toMatchObject({
-        pass_old: false, pass_new: false, suite_pass_old: false, suite_pass_new: true, scope_ok_old: true, scope_ok_new: true,
-        merged: "new", merged_reason: "suite_scope", secondary: "new",
+      // Both clear the fast checks and scope, so the judge ranks them (it said Y); the suite then confirms the first candidate,
+      // and the other side's suite runs only if the first one failed. A suite that did not run is null.
+      const t1 = by.T1!;
+      const t1PickedOld = t1.blind_labels.Y === "old";
+      expect(t1).toMatchObject({
+        pass_old: false, pass_new: false, suite_pass_new: true, scope_ok_old: true, scope_ok_new: true,
+        merged: "new", secondary: t1.blind_labels.Y,
+        suite_pass_old: t1PickedOld ? false : null, merged_reason: t1PickedOld ? "suite_scope" : "suite_scope_judge",
       });
-      expect(by.T2).toMatchObject({ pass_old: false, pass_new: false, suite_pass_old: false, suite_pass_new: false, merged: null, merged_reason: "both_failed", secondary: "none" });
+      // Nothing confirms: both candidates ran their suite and failed.
+      expect(by.T2).toMatchObject({ pass_old: false, pass_new: false, suite_pass_old: false, suite_pass_new: false, merged: null, merged_reason: "both_failed", secondary: by.T2!.blind_labels.Y });
       const t3 = by.T3!;
       expect(t3).toMatchObject({ pass_old: false, pass_new: false, merged_reason: "suite_scope_judge" });
       expect(t3.merged).toBe(t3.blind_labels.Y!); // the judge said Y; the merge follows the label back to its side
@@ -162,8 +168,8 @@ describe("forward run with stub sides, amendment 8 on", () => {
       // The judge prefers Y here, yet acceptance decides the merge; the secondary outcome records the judge's preference.
       expect(by.T5).toMatchObject({ pass_old: true, pass_new: false, merged: "old", merged_reason: "pass_beats_fail", secondary: by.T5!.blind_labels.Y });
 
-      // T3 and T5 have two suite+scope-ok sides, so the judge ran there and nowhere else, still blind.
-      expect(j.inputs).toHaveLength(2);
+      // T1, T2, T3 and T5 have two sides clearing the fast checks and scope, so the judge ran there and nowhere else, still blind.
+      expect(j.inputs).toHaveLength(4);
       for (const input of j.inputs) {
         const text = input.map((m) => m.content).join("\n");
         expect(text).not.toContain(OLD);
@@ -184,7 +190,7 @@ describe("forward run with stub sides, amendment 8 on", () => {
         expect([pby[id]!.pass_old, pby[id]!.pass_new]).toEqual([by[id]!.pass_old, by[id]!.pass_new]);
       }
       expect(plain.stop).toEqual(res.stop);
-      expect(pby.T1).toMatchObject({ merged: null, merged_reason: "both_failed", secondary: null, suite_pass_new: true });
+      expect(pby.T1).toMatchObject({ merged: null, merged_reason: "both_failed", secondary: null, suite_pass_new: null }); // no candidate under the registered policy: no suite ran
     } finally {
       rmSync(w.root, { recursive: true, force: true });
       rmSync(ref.root, { recursive: true, force: true });
@@ -214,14 +220,18 @@ describe("--remerge", () => {
       const res = await remergeForward({ repo: w.repo, backlog: w.backlog, llm: j.llm, db, testCmd: "sh suite.sh", parallel: 2 });
       expect(res.skipped).toEqual([]);
       expect(res.revisited.map((p) => p.task_id).sort()).toEqual(["T1", "T2"]);
-      expect(j.inputs).toHaveLength(0); // never more than one eligible side here
+      expect(j.inputs).toHaveLength(2); // T1 and T2 each have two sides clearing the fast checks: the judge ranks them
 
       const after = new ForwardStore(db);
       const pairs = after.pairs();
       after.close();
       const by = Object.fromEntries(pairs.map((p) => [p.task_id, p]));
-      expect(by.T1).toMatchObject({ pass_old: false, pass_new: false, suite_pass_old: false, suite_pass_new: true, merged: "new", merged_reason: "suite_scope", secondary: "new" });
-      expect(by.T2).toMatchObject({ merged: null, merged_reason: "both_failed", secondary: "none" });
+      const t1PickedOld = by.T1!.blind_labels.X === "old"; // the judge said X
+      expect(by.T1).toMatchObject({
+        pass_old: false, pass_new: false, suite_pass_new: true, merged: "new", secondary: by.T1!.blind_labels.X,
+        suite_pass_old: t1PickedOld ? false : null, merged_reason: t1PickedOld ? "suite_scope" : "suite_scope_judge",
+      });
+      expect(by.T2).toMatchObject({ merged: null, merged_reason: "both_failed", suite_pass_old: false, suite_pass_new: false, secondary: by.T2!.blind_labels.X });
       // Already-merged pairs are left alone, and the recorded order and H1 fields hold.
       expect(by.T3).toEqual(recorded.find((p) => p.task_id === "T3")!);
       expect(pairs.map((p) => p.task_id)).toEqual(recorded.map((p) => p.task_id));
