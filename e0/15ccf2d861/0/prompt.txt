@@ -1,0 +1,40 @@
+[roster setup=D task=T84]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T84 · W4 · The book finds the promoted setup in the review
+GOAL: scripts/book-self.ts says "promoted setup E has no sessions in this review", but the review has 40 sessions labelled "Claude Code ·
+deepseek-flash", which is setup E (setups/candidates/E.json). Review setups are hashed ids, and the promotion names a definition id. Map
+one to the other, so the hire-vs-scale scenario gets E's measured rates.
+READ: scripts/book-self.ts (promotedOf), src/setups/registry.ts (loadSetups), src/agent/backend.ts (resolveSetup: tags, then
+harness+model+rules), reports/rajkaria__roster/review.json (setups, tags), reports/self/review-1/promotion.json, setups/candidates/E.json.
+OWNS: scripts/book-self.ts, tests/book-self-promoted.test.ts
+BUILD: Resolve the promoted definition id to a review setup in this order: (1) the review's prompt-tag map; (2) the setup whose model
+matches the definition's model (for E: deepseek-flash) and whose harness matches; (3) otherwise keep the current note. When resolved,
+compute the scale scenario from that setup's measured cost per session and surviving-changes rate. Record which rule matched in book.json
+(`promoted.matchedBy`).
+ACCEPTANCE: tests with a fixture review and E.json: E resolves by model to the deepseek-flash setup and the scenario is non-null;
+unmatched keeps the note. Run `bun scripts/book-self.ts` and commit the regenerated reports/self/book.json.
+TEST: bun test tests/book-self-promoted.test.ts && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bpke90563</task-id>
+<tool-use-id>toolu_01EQpUgbETrEz7JyQ837RubT</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T84/49cd2008-c13a-428d-b460-2b824ad2c6ba/tasks/bpke90563.output</output-file>
+<status>completed</status>
+<summary>Background command "bun scripts/book-self.ts &amp;&amp; git diff --stat &amp;&amp; bun test 2&gt;&amp;1 | tail -6" completed (exit code 0)</summary>
+</task-notification>
