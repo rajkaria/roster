@@ -1,7 +1,7 @@
 [
   {
     "id": "5cf39bd3-4670-4c2d-a70b-23631ca659ee",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "faeef015cbcf",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -25,7 +25,7 @@
   },
   {
     "id": "3b7e1533-cc3a-4adb-a197-f7c337ab5586",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "3821cf56a3ab",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -51,7 +51,7 @@
   },
   {
     "id": "3fe82180-7148-42b1-8ac2-dbc12ff66411",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "0eff79666a3c",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -77,7 +77,7 @@
   },
   {
     "id": "40edf221-0853-4de8-a946-84a3987424b7",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "3298b38da441",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -103,7 +103,7 @@
   },
   {
     "id": "deef7b55-f78a-4204-89ff-71ff3eb68be7",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "a11ca31d0421",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -138,7 +138,7 @@
   },
   {
     "id": "6e2d8330-fb64-4310-948f-e53f1f40023e",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "58ccefdcbccf",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -164,7 +164,7 @@
   },
   {
     "id": "322c865f-75a5-40bd-84b1-e5c69c55e6f1",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "e238918b6983",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -189,7 +189,7 @@
   },
   {
     "id": "90243acb-1ce8-4eaa-aab3-c4b7de028deb",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "36b57a4977ee",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -214,7 +214,7 @@
   },
   {
     "id": "762637f3-a925-4ab9-9b01-c408be2f3341",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "151a27e5c900",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -240,7 +240,7 @@
   },
   {
     "id": "03ac4b80-b246-40cc-a8ed-b8708b85f633",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "10b2babee58b",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -267,7 +267,7 @@
   },
   {
     "id": "e5b173f3-cb5f-4f94-9d9c-c5975f559ec3",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "7b69e7f7ea71",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -292,7 +292,7 @@
   },
   {
     "id": "36e587a5-5c90-4cda-a0b1-68e3dce38b15",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "562c858d50a0",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -317,7 +317,7 @@
   },
   {
     "id": "37d60971-d17c-424c-87dc-f2dd4b7c53ab",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "3ae857216c62",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -342,7 +342,7 @@
   },
   {
     "id": "52254903-c079-4d4a-860d-c24d1ad23c17",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "1e8707e05493",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -368,7 +368,7 @@
   },
   {
     "id": "955550f7-33e0-4fb3-81aa-b659fa7310d6",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "f04ab44aa581",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -395,7 +395,7 @@
   },
   {
     "id": "6995db2b-ead9-4e3e-b5c2-be15bdd17959",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "2f143e55eaa1",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -420,7 +420,7 @@
   },
   {
     "id": "e55bac7b-6ffa-4d9e-9d23-aaca3ebc9f1f",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "733704170957",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -445,7 +445,7 @@
   },
   {
     "id": "fa6a41e1-6394-4100-bbe5-6803fcbc27e6",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "c32eb62e0c6c",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -474,7 +474,7 @@
   },
   {
     "id": "ad9e7787-4a4f-4c67-ba1c-c6f1e81c5f63",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "0ee256a1ea6c",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -500,7 +500,7 @@
   },
   {
     "id": "da49358c-bd0d-4994-85a1-ffa95d4478e6",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "87a5460f6046",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -526,7 +526,7 @@
   },
   {
     "id": "1b4f69ae-da1d-4bd5-9fa5-680b312ff478",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "8bd176d9fac8",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -551,7 +551,7 @@
   },
   {
     "id": "7a3832d0-c3a5-4943-8cfe-9dfaabeb0b87",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "4b7de6e00be8",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -583,7 +583,7 @@
   },
   {
     "id": "5863ee46-3873-400b-a344-ac55e16da42e",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "0f22b90b81b8",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -607,7 +607,7 @@
   },
   {
     "id": "ea846f90-734e-4fb0-bd01-0ce8658c6b0c",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "1d5e7d639b1a",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -632,7 +632,7 @@
   },
   {
     "id": "4adf5036-1dff-4ce2-b42f-0bc68f404797",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "5218cdd15cd8",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -657,7 +657,7 @@
   },
   {
     "id": "a8541456-9a05-4a84-a649-593f17262420",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "10e2ebd980b0",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -684,7 +684,7 @@
   },
   {
     "id": "8d77769a-b6f0-44cb-b3d4-928acc638e1b",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "56d67e971d9c",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -710,7 +710,7 @@
   },
   {
     "id": "94f611d7-febf-46bf-bd42-5bcd9c7cca6f",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "bc81db8db24b",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -737,7 +737,7 @@
   },
   {
     "id": "31a0090a-31be-4a99-a598-01a68b01f15c",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "4f4121ce2d35",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -761,7 +761,7 @@
   },
   {
     "id": "156c4e94-0568-40d6-abe9-99dbfb5b780a",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "73f790483421",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -786,7 +786,7 @@
   },
   {
     "id": "553908ec-32f7-4890-802f-41a0914aa22b",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "d36382d37183",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -812,7 +812,7 @@
   },
   {
     "id": "3a27526c-0032-42f0-8dd6-20a7e48aa6c7",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "01dcf4c8550a",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -839,7 +839,7 @@
   },
   {
     "id": "710ca790-1043-4f4e-abb1-03f7b7275149",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "f28b823fbdd1",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -864,7 +864,7 @@
   },
   {
     "id": "6e3d87b3-3423-4a03-a0cb-289262232825",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "b24ffbca5cd1",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -889,7 +889,7 @@
   },
   {
     "id": "b7684991-522b-455e-b2e0-51b8f418fa1f",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "105e0b01fe31",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -914,7 +914,7 @@
   },
   {
     "id": "2ffad602-d66e-423e-9ae2-3d8bcf7fb15d",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "8eccc460657c",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -941,7 +941,7 @@
   },
   {
     "id": "cd085452-8fd6-4e11-8e60-14b011df7de3",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "9215a2973163",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -966,7 +966,7 @@
   },
   {
     "id": "d8c740ce-82bc-41a9-b77c-f3dd53c17af5",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "ff38daae0ff6",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -992,7 +992,7 @@
   },
   {
     "id": "0c84655e-8cb1-485c-957d-d1df0a7c7cde",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "6744efcdeca2",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -1018,7 +1018,7 @@
   },
   {
     "id": "2d7fc8b9-18cb-497b-b571-b489d1263f94",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "490f93deeb1f",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -1046,7 +1046,7 @@
   },
   {
     "id": "b67f35a1-54b4-4c65-b184-30ac1bd75228",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "abf677eb3826",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1074,7 +1074,7 @@
   },
   {
     "id": "3f3621e1-2ea0-4e19-803c-198da5f60061",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "635a2046119d",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1099,7 +1099,7 @@
   },
   {
     "id": "e33201b1-8004-449d-933d-f570acddd215",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "b9d2b5f5e652",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1123,7 +1123,7 @@
   },
   {
     "id": "8d35a58c-0fd5-472a-883f-d1e46cf59ec0",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "731c1ff73aaf",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1148,7 +1148,7 @@
   },
   {
     "id": "dfdc13b8-1a0d-47dc-a3aa-fa783cd0f3e0",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "57b11285c7af",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1174,7 +1174,7 @@
   },
   {
     "id": "d25e3fb9-eb98-4e0b-8f9c-e7861aa8bc22",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "4ba7d1b23e87",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1200,7 +1200,7 @@
   },
   {
     "id": "8d500a36-7e4c-4e8c-b0ac-476dcadd4016",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "c8317267f487",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1227,7 +1227,7 @@
   },
   {
     "id": "3dc6ee58-f66c-4a62-9172-e3638172d8ca",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "cea2d4f6d7b1",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -1254,7 +1254,7 @@
   },
   {
     "id": "54b90f3b-9575-4229-8f9e-e5a7e17ac99d",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "613d2bd2d036",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -1281,7 +1281,7 @@
   },
   {
     "id": "313b575e-d680-495a-a014-8db06c0181e6",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "2f76e9d2f732",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -1308,7 +1308,7 @@
   },
   {
     "id": "ea964f0a-150d-439b-b96d-d3211bf30ef9",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "4e60f2259a9c",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1334,7 +1334,7 @@
   },
   {
     "id": "bdbaee96-0a22-4937-99e7-cf2cbf9ef5f6",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "7ad79ecb0159",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1361,7 +1361,7 @@
   },
   {
     "id": "0f2a31fa-9b60-48b3-ad8d-8e4c493698ed",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "4d23f73301e0",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -1387,7 +1387,7 @@
   },
   {
     "id": "5ae0b6be-ca5d-4af3-9c21-a7ab82725525",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "257bf9626a53",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -1417,7 +1417,7 @@
   },
   {
     "id": "aba1da0d-82a2-4ad7-b298-a4d38b69743d",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "c6b52a9ae2a8",
     "harness": "Claude Code",
     "model": "claude-sonnet-5-5",
@@ -1444,7 +1444,7 @@
   },
   {
     "id": "ff8a04e9-e4fc-4329-b7f9-7ee2fbfa182c",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "33ce52f4edfe",
     "harness": "Claude Code",
     "model": "claude-haiku-5-5",
@@ -1472,7 +1472,7 @@
   },
   {
     "id": "510756cb-29cd-448b-8769-572ec390953b",
-    "repo": "b195555fa320f435cc028c22",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
     "checkpoint_id": "7f4ab572540b",
     "harness": "Claude Code",
     "model": "claude-opus-5-5",
@@ -1493,6 +1493,110 @@
       "src/obs/attributes.ts",
       "src/obs/index.ts",
       "tests/obs-flush.test.ts"
+    ],
+    "entire_url": null,
+    "source": "branch"
+  },
+  {
+    "id": "ea82b045-4cee-4c13-a25c-4a03b3a752a0",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
+    "checkpoint_id": "a385fa398360",
+    "harness": "Claude Code",
+    "model": "claude-haiku-5-5",
+    "rules_hash": "dabdd04c2d924f1e355b9f5ad27c1268a39177cf5579f9cfe3a35647be309801",
+    "setup_id": "c8d6907735ec",
+    "tokens_in": 144,
+    "tokens_out": 41478,
+    "cache_read": 3332474,
+    "cache_write": 106372,
+    "cost_usd": 0.06737464,
+    "n_user_prompts": 11,
+    "first_prompt": "[roster setup=C task=T57]\n\nHACKATHON GUARDRAILS (non-negotiable):\n- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.\n- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:\n  if you need a change, make it minimal and say so in your final message.\n- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.\n- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests\n  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.\n- Commit in small steps as work lands, message prefix \"<task id>: \". Never rewrite history. Never commit secrets or .env.\n- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.\n- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.\n- Final message: what you built, test output summary, any types.ts change, anything you could not finish.\n\nTASK T57 · W1 · Sessions with no recorded rules still belong to a setup\nGOAL: Three public repos (BbrSofiane/sof-pi, itsmeyaw/binden, entireio/forgemark) review as \"0 setups\": every session's rules hash is\nnull, so no session gets a setup id. Example: sof-pi's 51 sessions are all harness \"Pi\" with rules_hash null. Not having a rules file\nis a real configuration, not an unknown one.\nREAD: src/identity/index.ts (identify, rulesAtParent, setupIdOf), src/ingest/parse.ts (rules_hash from transcripts),\nreports/BbrSofiane__sof-pi/sessions.json for real shapes.\nOWNS: src/identity/index.ts, tests/identity-norules.test.ts\nBUILD: When the transcript records no rules, fall back to the rules files present at the parent of the session's first linked commit,\nfor any harness: CLAUDE.md, AGENTS.md, .cursorrules, .cursor/rules/*, .github/copilot-instructions.md. If none exist there, the rules\nhash is the fixed sentinel sha256(\"no-rules-file\") and rulesPath is \"(none)\". An empty model becomes \"unknown-model\" for the setup id,\nso sessions still group by harness. Only a session with no linked commit and no transcript rules keeps setupId null.\nACCEPTANCE: tests: a Pi session with no rules in its transcript and no rules file at its parent gets a setup id equal to another such\nsession's; adding an AGENTS.md at the parent changes the id; existing identity tests pass.\nTEST: bun test tests/identity-norules.test.ts && bun test && bun run typecheck\nDO NOT TOUCH: anything outside OWNS.",
+    "commit_sha": "3239f722a388c578c60bc0ea99b39b59eb4c6d6b",
+    "started_at": "2026-10-10T22:20:56.395Z",
+    "ended_at": "2026-10-10T22:28:42.175097Z",
+    "files": [
+      "src/identity/index.ts",
+      "tests/identity-norules.test.ts"
+    ],
+    "entire_url": null,
+    "source": "branch"
+  },
+  {
+    "id": "aef7bfab-bf8d-4064-86cd-5e2ed603c778",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
+    "checkpoint_id": "f8ead492d7c3",
+    "harness": "Claude Code",
+    "model": "claude-sonnet-5-5",
+    "rules_hash": "243fa26caa1f686668b910cedfda21d5bb8a4c1a1e185b1e27c63f729bc5398f",
+    "setup_id": "97433f7b4446",
+    "tokens_in": 38,
+    "tokens_out": 21187,
+    "cache_read": 861785,
+    "cache_write": 53575,
+    "cost_usd": 0.432062,
+    "n_user_prompts": 1,
+    "first_prompt": "[roster setup=D task=T58]\n\nHACKATHON GUARDRAILS (non-negotiable):\n- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.\n- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:\n  if you need a change, make it minimal and say so in your final message.\n- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.\n- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests\n  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.\n- Commit in small steps as work lands, message prefix \"<task id>: \". Never rewrite history. Never commit secrets or .env.\n- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.\n- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.\n- Final message: what you built, test output summary, any types.ts change, anything you could not finish.\n\nTASK T58 · W2 · Scoring hangs on some repos: bound every step and say where time goes\nGOAL: `roster review https://github.com/crcorbett/taxkit --observational` (50 sessions) gets through identify, then sits in scoring\nfor more than 400 s until killed. postgkyl, agent-skills and binden do the same. A review must never hang; it should finish with what\nit could score and mark the rest.\nREAD: src/cli/review.ts (stage flow, T53's timings), src/score/survival.ts, src/score/revert.ts, src/score/rework.ts,\nsrc/difficulty/index.ts, src/difficulty/graph.ts.\nOWNS: src/score/survival.ts, src/score/revert.ts, src/score/rework.ts, src/difficulty/graph.ts, src/cli/review.ts (progress output\nonly), tests/score-bounds.test.ts\nBUILD: Progress lines inside scoring (every 10 sessions, with elapsed time). Every git subprocess gets a timeout (30 s default). Skip\nblame for binary files, files over 5,000 lines, lockfiles, generated or vendored paths (dist/, build/, vendor/, node_modules/,\n*.min.*, *.lock), notebooks (.ipynb) and data files (.csv, .json over 1 MB); skipped files count as \"not scored\" with a reason. A\nwhole-review scoring budget (default 120 s): sessions not scored when it runs out are marked `not_scored: time budget` instead of\nblocking the review.\nACCEPTANCE: tests with an injectable runner: a git call that never returns is killed at the timeout and the session is marked not\nscored; a 6,000-line file is skipped with a reason; the review still writes its outputs. Whole suite green.\nTEST: bun test tests/score-bounds.test.ts && bun test && bun run typecheck\nDO NOT TOUCH: anything outside OWNS.",
+    "commit_sha": "83c634b0c1a5150d15d39f7d0f2bccac627591a2",
+    "started_at": "2026-10-10T22:20:57.034Z",
+    "ended_at": "2026-10-10T22:28:19.403Z",
+    "files": [
+      "src/cli/review.ts",
+      "src/difficulty/graph.ts",
+      "src/score/rework.ts",
+      "src/score/survival.ts",
+      "tests/score-bounds.test.ts"
+    ],
+    "entire_url": null,
+    "source": "branch"
+  },
+  {
+    "id": "1aad87ac-29b5-496d-8b59-c12e9edf39a0",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
+    "checkpoint_id": "3f5fdbe19d30",
+    "harness": "Claude Code",
+    "model": "claude-haiku-5-5",
+    "rules_hash": "dabdd04c2d924f1e355b9f5ad27c1268a39177cf5579f9cfe3a35647be309801",
+    "setup_id": "c8d6907735ec",
+    "tokens_in": 156,
+    "tokens_out": 77874,
+    "cache_read": 6886974,
+    "cache_write": 214656,
+    "cost_usd": 0.13465433999999998,
+    "n_user_prompts": 1,
+    "first_prompt": "[roster setup=C task=T59]\n\nHACKATHON GUARDRAILS (non-negotiable):\n- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.\n- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:\n  if you need a change, make it minimal and say so in your final message.\n- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.\n- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests\n  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.\n- Commit in small steps as work lands, message prefix \"<task id>: \". Never rewrite history. Never commit secrets or .env.\n- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.\n- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.\n- Final message: what you built, test output summary, any types.ts change, anything you could not finish.\n\nTASK T59 · W2 · `roster review` runs difficulty and the suspect test\nGOAL: Every review says \"insufficient data\", because src/cli/review.ts hard-codes label \"insufficient_data\" and suspect null with the\nnote \"the difficulty-matched Mantel–Haenszel test is not part of this command yet\". src/difficulty (difficulty, terciles,\nreviewDifficulty) and src/review/suspect.ts (suspect) are built and tested but never called. Wire them in.\nREAD: src/cli/review.ts (the Review object near `label: \"insufficient_data\"` and the TIMED stages), src/difficulty/index.ts\n(reviewDifficulty, difficulty, terciles), src/review/suspect.ts (suspect, labels, MIN_MATURE_SESSIONS), src/types.ts (Outcome.difficulty,\nOutcome.tercile, Review), docs/DESIGN.md §\"Difficulty and review\".\nOWNS: src/cli/review.ts, tests/review-suspect.test.ts, and any assertion in tests/cli-review.test.ts, tests/review-contract.test.ts or\ntests/review-unattended-labels.test.ts that encodes the hard-coded label or the \"not part of this command\" note (you may modify those;\nsay which)\nBUILD: After scoring, run the difficulty stage (timed as \"difficulty\"), set each outcome's difficulty and tercile, then call suspect()\non mature outcomes with setup ids, and put its label (mapped to the Review label enum), suspect setup id, odds ratio, CI and p into\nreview.json. Remove the \"not part of this command\" note; keep notes that explain the result in plain words (for example \"no setup\nhas ≥ 8 mature sessions\" for insufficient data). Difficulty failures fall back as src/difficulty documents and never fail the review.\nACCEPTANCE: tests on fixtures: the confound scenario gives \"no suspect\" (or insufficient) rather than flagging X; a true-effect fixture\ngives a suspect with p < 0.05 in review.json; difficulty appears in the timing line. Whole suite green, typecheck clean.\nTEST: bun test tests/review-suspect.test.ts && bun test && bun run typecheck\nDO NOT TOUCH: anything outside OWNS.",
+    "commit_sha": "8068b39364034987d5a325f64a576fe7ed640a49",
+    "started_at": "2026-10-11T03:29:07.581Z",
+    "ended_at": "2026-10-11T03:42:44.959Z",
+    "files": [
+      "src/cli/review.ts",
+      "tests/review-suspect.test.ts"
+    ],
+    "entire_url": null,
+    "source": "branch"
+  },
+  {
+    "id": "ef4a7546-340e-44db-a3ad-aed1d7b95499",
+    "repo": "fe234fb4bf2f0a2ee54e5983",
+    "checkpoint_id": "c78f7e1ac4a8",
+    "harness": "Claude Code",
+    "model": "claude-opus-5-5",
+    "rules_hash": "dabdd04c2d924f1e355b9f5ad27c1268a39177cf5579f9cfe3a35647be309801",
+    "setup_id": "6a200cd990a7",
+    "tokens_in": 30,
+    "tokens_out": 12756,
+    "cache_read": 584836,
+    "cache_write": 42123,
+    "cost_usd": 0.5828222000000001,
+    "n_user_prompts": 1,
+    "first_prompt": "[roster setup=A task=T60]\n\nHACKATHON GUARDRAILS (non-negotiable):\n- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.\n- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:\n  if you need a change, make it minimal and say so in your final message.\n- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.\n- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests\n  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.\n- Commit in small steps as work lands, message prefix \"<task id>: \". Never rewrite history. Never commit secrets or .env.\n- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.\n- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.\n- Final message: what you built, test output summary, any types.ts change, anything you could not finish.\n\nTASK T60 · W4 · LLM client survives network errors\nGOAL: A coordinator run ended after 4 turns with \"LLM call failed: Connection error.\" The client retries only 429/5xx. Network on the\nrun host is flaky (DNS failures, connection resets), so the coordinator must ride through them.\nREAD: src/llm/client.ts (isRetryable, the retry loop, maxRetries, retryBaseMs), src/agent/coordinator.ts (how llm_error ends a run).\nOWNS: src/llm/client.ts, src/agent/coordinator.ts (only how a transient LLM failure is handled), tests/llm-network.test.ts\nBUILD: Treat connection errors (ECONNRESET, ETIMEDOUT, ENOTFOUND, EAI_AGAIN, \"Connection error\", fetch failed, socket hang up) and\nrequest timeouts as retryable, with up to 6 attempts and exponential backoff capped at 30 s plus jitter. If an LLM call still fails,\nthe coordinator saves state (it's resumable), records the error with the attempt count, and the CLI prints the exact resume command\n(`roster run <repo> --run-id <id> --budget <usd>`).\nACCEPTANCE: tests with a fake transport: two connection errors then success → one result, three attempts; persistent failure → error\nafter 6 attempts and the resume hint printed. Whole suite green.\nTEST: bun test tests/llm-network.test.ts && bun test && bun run typecheck\nDO NOT TOUCH: anything outside OWNS.",
+    "commit_sha": "d896e1f15f105d72755d504e501285546aea0327",
+    "started_at": "2026-10-11T03:29:07.623Z",
+    "ended_at": "2026-10-11T03:36:12.677Z",
+    "files": [
+      "src/agent/coordinator.ts",
+      "src/llm/client.ts",
+      "tests/llm-network.test.ts"
     ],
     "entire_url": null,
     "source": "branch"
