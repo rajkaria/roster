@@ -1,0 +1,24 @@
+[roster setup=C task=T12]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T12 · W4 · CLI: `roster review --observational`
+GOAL: One command that turns a repo into reports/<slug>/review.json end to end (fetch → parse → identify → score), traced in neatlogs.
+READ: docs/DESIGN.md §"CLI".
+OWNS: src/cli.ts, src/cli/review.ts, src/review/export.ts, tests/cli-review.test.ts
+BUILD: `bun src/cli.ts review <repo> --observational [--out dir]`; stage progress lines; writes review.json (Review type) and
+review.md; each stage wrapped with src/obs withSpan; exits non-zero with a clear message on 'none' backend. Command registry so other
+workstreams add src/cli/<cmd>.ts.
+ACCEPTANCE: on the fixture → review.json validates against the type and passes sumcheck; on our own repo (local path) → runs.
+TEST: bun test tests/cli-review.test.ts
+DO NOT TOUCH: modules you call (import them; report bugs in your final message).
