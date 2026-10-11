@@ -1,5 +1,6 @@
 // Roster's own model calls, on DeepSeek's OpenAI-compatible API. Never a Claude API
-// (DESIGN.md §"Models Roster itself uses"). Retries 429/5xx twice with backoff (§"Recovery").
+// (DESIGN.md §"Models Roster itself uses"). Retries 429/5xx twice, and network failures (resets, DNS, timeouts) up to
+// six attempts, with capped exponential backoff (§"Recovery").
 import OpenAI from "openai";
 import { traceOpenAI, withSpan } from "../obs/index.ts";
 import { priceDeepSeek } from "../price/deepseek.ts";
@@ -48,10 +49,16 @@ export interface DeepSeekOptions {
   baseURL?: string;
   /** Default: env ROSTER_LLM_MODEL, else DEFAULT_MODEL. */
   model?: string;
-  /** Retries on 429/5xx only. Default 2. */
+  /** Retries on 429/5xx. Default 2. */
   maxRetries?: number;
-  /** First backoff delay; doubles per retry. Default 1000. */
+  /** Total attempts when the failure is a network error (see isNetworkError). Default NETWORK_MAX_ATTEMPTS. */
+  networkMaxAttempts?: number;
+  /** First backoff delay; doubles per retry, capped at maxBackoffMs. Default 1000. */
   retryBaseMs?: number;
+  /** Ceiling on one backoff delay, before jitter. Default MAX_BACKOFF_MS. */
+  maxBackoffMs?: number;
+  /** Jitter source in [0, 1) for network retries. Default Math.random. */
+  random?: () => number;
   sleep?: (ms: number) => Promise<void>;
   /** Replaces the network call. Tests use it; production leaves it unset. */
   transport?: Transport;
@@ -73,10 +80,53 @@ export function errorStatus(err: unknown): number | null {
   return null;
 }
 
-/** True for the failures worth retrying: rate limits and server errors. */
+export const NETWORK_MAX_ATTEMPTS = 6;
+export const MAX_BACKOFF_MS = 30_000;
+
+const NETWORK_CODES = new Set([
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "EPIPE",
+  "UND_ERR_SOCKET",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+const NETWORK_MESSAGE = /connection error|fetch failed|socket hang up|request timed out|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN/i;
+
+/** True when the error, or anything in its cause chain, is a connection failure or a request timeout. */
+export function isNetworkError(err: unknown): boolean {
+  let e: unknown = err;
+  for (let depth = 0; depth < 5 && typeof e === "object" && e !== null; depth++) {
+    if (e instanceof OpenAI.APIConnectionError) return true;
+    const { code, name, message } = e as { code?: unknown; name?: unknown; message?: unknown };
+    if (typeof code === "string" && NETWORK_CODES.has(code)) return true;
+    if (name === "TimeoutError") return true;
+    if (typeof message === "string" && NETWORK_MESSAGE.test(message)) return true;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/** True for the failures worth retrying: rate limits, server errors and network failures. */
 export function isRetryable(err: unknown): boolean {
   const s = errorStatus(err);
-  return s !== null && (s === 429 || s >= 500);
+  return (s !== null && (s === 429 || s >= 500)) || isNetworkError(err);
+}
+
+/** What chat() throws once it gives up: the last failure, plus how many attempts were made. */
+export class LlmCallError extends Error {
+  readonly attempts: number;
+  readonly status: number | null;
+
+  constructor(cause: unknown, attempts: number) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    super(`${message} (${attempts} attempt${attempts === 1 ? "" : "s"})`, { cause });
+    this.name = "LlmCallError";
+    this.attempts = attempts;
+    this.status = errorStatus(cause);
+  }
 }
 
 function toWire(m: ChatMessage): Record<string, unknown> {
@@ -132,7 +182,10 @@ export function toResult(raw: RawCompletion, at?: Date, requestedModel?: string)
 /** A client for DeepSeek's chat completions. Throws when no API key is configured and no transport is given. */
 export function deepseekClient(opts: DeepSeekOptions = {}): LlmClient {
   const maxRetries = opts.maxRetries ?? 2;
+  const networkAttempts = opts.networkMaxAttempts ?? NETWORK_MAX_ATTEMPTS;
   const baseMs = opts.retryBaseMs ?? 1000;
+  const capMs = opts.maxBackoffMs ?? MAX_BACKOFF_MS;
+  const random = opts.random ?? Math.random;
   const sleep = opts.sleep ?? ((ms: number) => Bun.sleep(ms));
   const now = opts.now ?? (() => new Date());
   let transport = opts.transport;
@@ -166,8 +219,12 @@ export function deepseekClient(opts: DeepSeekOptions = {}): LlmClient {
           // Retries are a recovery path, so each one is a TOOL span carrying roster.attempt.
           return await withSpan("TOOL", "llm retry", { attempt }, async () => toResult(await send(body), now(), model));
         } catch (err) {
-          if (!isRetryable(err) || attempt > maxRetries) throw err;
-          await sleep(baseMs * 2 ** (attempt - 1));
+          const network = isNetworkError(err);
+          const limit = network ? networkAttempts : maxRetries + 1;
+          if (!isRetryable(err) || attempt >= limit) throw new LlmCallError(err, attempt);
+          const delay = Math.min(baseMs * 2 ** (attempt - 1), capMs);
+          // Jitter spreads reconnects after a network blip; HTTP retries keep their exact schedule.
+          await sleep(network ? delay + Math.floor(random() * baseMs) : delay);
         }
       }
     },
