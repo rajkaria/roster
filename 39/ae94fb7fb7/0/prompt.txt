@@ -1,0 +1,23 @@
+[roster setup=B task=F15]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F15: Experiment page
+TASK F15 · Experiment page
+GOAL: A public page showing the pre-registration and the forward run as it fills in.
+OWNS: web/app/experiment/page.tsx, web/lib/forward.ts, tests/web-forward.test.ts
+INTERFACE: web/lib/forward.ts function loadForward(json: unknown): { rows: { task: string; old: boolean; new: boolean; costOld: number | null; costNew: number | null; excluded?: string }[]; summary: { n: number; wording: string } | null }
+BEHAVIOUR: The page reads public/data/self/forward.json (absent → empty state "The forward run has not started"). Shows the backlog
+sha256 from public/data/self/prereg.json if present, a link to experiments/PREREGISTRATION.md on GitHub, the pair table, and the
+summary wording verbatim. loadForward rejects malformed rows (skips them and counts them in a `skipped` field on summary).
