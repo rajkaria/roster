@@ -4,6 +4,7 @@
 import type { TraceOptions } from "neatlogs";
 import { EvidenceLevel, FailureCode } from "../types.ts";
 import { type SpanAttrs, type SpanKind, capAttr, toAttributes } from "./attributes.ts";
+import { DEFAULT_SPOOL_DIR, TraceRecorder, saveTrace, toTraceRequest } from "./spool.ts";
 
 export type { SpanAttrs, SpanKind } from "./attributes.ts";
 
@@ -31,6 +32,9 @@ let sentSpans = 0;
 let failedSpans = 0;
 /** Trace ids of the WORKFLOW roots opened since the last flush, printed when it ends. */
 let rootTraces: string[] = [];
+/** A local copy of every span tree since the last flush, spooled to disk when the SDK loses any of it (T81). */
+let recorder = new TraceRecorder();
+let workflowName = "roster";
 
 /** Test hook: runs on `mod` as if initObs had started it (bun's mock.module cannot swap an SDK another file already loaded). */
 export function _useSdkForTests(mod: unknown): void {
@@ -47,6 +51,8 @@ export function _resetObsForTests(): void {
   initPromise = null;
   pendingSpans = sentSpans = failedSpans = 0;
   rootTraces = [];
+  recorder = new TraceRecorder();
+  workflowName = "roster";
 }
 
 function warnOnce(msg: string): void {
@@ -83,6 +89,7 @@ async function startSdk(opts: { workflowName: string }): Promise<boolean> {
     await mod.init({ apiKey, workflowName: opts.workflowName });
     wrapOpenAI = (await import("neatlogs/openai")).wrapOpenAI;
     sdk = mod;
+    workflowName = opts.workflowName;
     return true;
   } catch (err) {
     warnOnce(`could not start neatlogs (${err instanceof Error ? err.message : String(err)})`);
@@ -125,20 +132,27 @@ export async function withSpan<T>(
   if (kind === "WORKFLOW" && sessionId !== undefined) options.sessionId = sessionId;
   pendingSpans += 1;
   return client.trace(options, async (span) => {
-    for (const [key, value] of Object.entries(toAttributes(attrs))) span.setAttribute(key, value);
-    if (sessionId !== undefined) span.setAttribute("session.id", sessionId);
-    const obsSpan = toObsSpan(span);
+    // Every attribute also lands in the local copy the spool writes from.
+    const local: Record<string, string | number | boolean> = {};
+    const obsSpan = toObsSpan(span, local);
+    for (const [key, value] of Object.entries(toAttributes(attrs))) obsSpan.setAttribute(key, value);
+    if (sessionId !== undefined) obsSpan.setAttribute("session.id", sessionId);
     if (kind === "WORKFLOW" && obsSpan.traceId && !rootTraces.includes(obsSpan.traceId)) rootTraces.push(obsSpan.traceId);
-    return fn(obsSpan);
+    const ids = { traceId: obsSpan.traceId, spanId: span.spanContext?.().spanId };
+    return recorder.record(ids, kind, name, () => local, () => fn(obsSpan));
   });
 }
 
 /** Adapts an SDK span (an OpenTelemetry span) to ObsSpan. The trace id comes from spanContext(). */
-function toObsSpan(span: NeatlogsSpan): ObsSpan {
+function toObsSpan(span: NeatlogsSpan, local: Record<string, string | number | boolean>): ObsSpan {
   // A bare `traceId` field is honored too, for span stand-ins that carry one directly.
   const direct = (span as { traceId?: string }).traceId;
   return {
-    setAttribute: (key, value) => void span.setAttribute(key, capAttr(value)),
+    setAttribute: (key, value) => {
+      const capped = capAttr(value);
+      local[key] = capped;
+      span.setAttribute(key, capped);
+    },
     traceId: direct ?? span.spanContext?.().traceId,
   };
 }
@@ -169,6 +183,10 @@ export interface FlushOptions {
   log?: (msg: string) => void;
   /** Where flushObs's export report and trace ids go. Default console.log. */
   print?: (msg: string) => void;
+  /** Where a failed or lossy flush spools its traces. Default DEFAULT_SPOOL_DIR. */
+  spoolDir?: string;
+  /** Where the "saved for retry" lines go. Default console.error. */
+  notify?: (msg: string) => void;
 }
 
 /** What flushAllDetailed resolves to (neatlogs FlushAllResult). */
@@ -270,6 +288,25 @@ export async function flushObs(opts: FlushOptions = {}): Promise<boolean> {
   const dropped = dropsBefore !== null && dropsAfter !== null ? Math.max(0, dropsAfter - dropsBefore) : null;
   const exported = ok ? Math.max(0, batch - (dropped ?? 0)) : 0;
   print(`[roster] neatlogs: ${exported} spans exported, ${dropped ?? "unknown"} dropped${ok ? "" : " (flush failed)"}`);
+  spoolLost(!ok || (dropped ?? 0) > 0, opts);
   for (const id of traces) print(`[roster] neatlogs trace ${id}`);
   return ok;
+}
+
+/**
+ * Hands this flush's recorded span trees to the spool when the SDK failed or dropped spans, and forgets them
+ * otherwise. Each saved trace gets one line; `roster traces flush` re-sends it. Never throws.
+ */
+function spoolLost(lost: boolean, opts: FlushOptions): void {
+  const taken = recorder.take();
+  if (!lost) return;
+  const notify = opts.notify ?? ((m: string) => console.error(m));
+  for (const { traceId, spans } of taken) {
+    try {
+      saveTrace(opts.spoolDir ?? DEFAULT_SPOOL_DIR, traceId, toTraceRequest(spans, workflowName), process.env.NEATLOGS_API_KEY);
+      notify(`[roster] neatlogs: trace ${traceId} saved for retry`);
+    } catch (err) {
+      notify(`[roster] neatlogs: trace ${traceId} could not be saved (${err instanceof Error ? err.message : String(err)})`);
+    }
+  }
 }

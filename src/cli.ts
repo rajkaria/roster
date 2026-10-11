@@ -5,6 +5,7 @@ import { acceptanceCommand } from "./cli/acceptance.ts";
 import { forwardCommand } from "./cli/forward.ts";
 import { reviewCommand } from "./cli/review.ts";
 import { runCommand } from "./cli/run.ts";
+import { tracesCommand } from "./cli/traces.ts";
 
 export interface Command {
   name: string;
@@ -14,7 +15,7 @@ export interface Command {
   run: (args: string[]) => Promise<number>;
 }
 
-export const COMMANDS: readonly Command[] = [reviewCommand, runCommand, forwardCommand, acceptanceCommand];
+export const COMMANDS: readonly Command[] = [reviewCommand, runCommand, forwardCommand, acceptanceCommand, tracesCommand];
 
 function printUsage(out: (s: string) => void): void {
   out("usage: roster <command> [args]\n");
