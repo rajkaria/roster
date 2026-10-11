@@ -244,51 +244,123 @@
       "costOld": 0.08762620000000002,
       "costNew": 0.010134174000000001,
       "merged": "new"
+    },
+    {
+      "task": "F33",
+      "old": true,
+      "new": true,
+      "costOld": 0.1597772,
+      "costNew": 0.011774514,
+      "merged": "old"
+    },
+    {
+      "task": "F34",
+      "old": true,
+      "new": false,
+      "costOld": 0.17778550000000004,
+      "costNew": 0.035061948,
+      "merged": "old"
+    },
+    {
+      "task": "F36",
+      "old": false,
+      "new": true,
+      "costOld": 0.1305108,
+      "costNew": 0.011444801999999999,
+      "merged": "new"
+    },
+    {
+      "task": "F35",
+      "old": true,
+      "new": true,
+      "costOld": 0.0979338,
+      "costNew": 0.020485638,
+      "merged": "old"
+    },
+    {
+      "task": "F37",
+      "old": false,
+      "new": true,
+      "costOld": 0.1609895,
+      "costNew": 0.016188168,
+      "merged": "new"
+    },
+    {
+      "task": "F38",
+      "old": false,
+      "new": true,
+      "costOld": 0.1208636,
+      "costNew": 0.011367864,
+      "merged": "new"
+    },
+    {
+      "task": "F40",
+      "old": true,
+      "new": true,
+      "costOld": 0.11306440000000001,
+      "costNew": 0.015141143999999999,
+      "merged": "old"
+    },
+    {
+      "task": "F39",
+      "old": false,
+      "new": true,
+      "costOld": 0.11052590000000001,
+      "costNew": 0.017633028,
+      "merged": "new"
+    },
+    {
+      "task": "F13",
+      "old": false,
+      "new": true,
+      "costOld": 0.22568419999999997,
+      "costNew": 0.023401584,
+      "merged": "new"
     }
   ],
   "summary": {
-    "n": 26,
+    "n": 35,
     "excludedCount": 4,
-    "newOnly": 6,
-    "oldOnly": 0,
-    "both": 17,
+    "newOnly": 11,
+    "oldOnly": 1,
+    "both": 20,
     "neither": 3,
-    "p": 0.031250000000000014,
+    "p": 0.006347656250000002,
     "claim": true,
-    "costP": 0.000008803669768964184,
-    "wording": "6 vs 0 passed, p = 0.031"
+    "costP": 2.587691416700011e-7,
+    "wording": "11 vs 1 passed, p = 0.006"
   },
   "pairs": {
-    "n": 26,
-    "recorded": 30,
+    "n": 35,
+    "recorded": 39,
     "excluded": 4
   },
   "mcnemar": {
-    "new_only": 6,
-    "old_only": 0,
-    "both": 17,
+    "new_only": 11,
+    "old_only": 1,
+    "both": 20,
     "neither": 3,
-    "p": 0.031250000000000014
+    "p": 0.006347656250000002
   },
-  "wording": "6 vs 0 passed, p = 0.031",
-  "cost_p": 0.000008803669768964184,
+  "wording": "11 vs 1 passed, p = 0.006",
+  "cost_p": 2.587691416700011e-7,
   "sensitivity": {
-    "n": 30,
+    "n": 39,
     "excludedCount": 0,
-    "newOnly": 6,
-    "oldOnly": 0,
-    "both": 17,
+    "newOnly": 11,
+    "oldOnly": 1,
+    "both": 20,
     "neither": 7,
-    "p": 0.031250000000000014,
+    "p": 0.006347656250000002,
     "claim": true,
-    "costP": 0.0000018253714564320234,
-    "wording": "6 vs 0 passed, p = 0.031"
+    "costP": 5.465166252882625e-8,
+    "wording": "11 vs 1 passed, p = 0.006"
   },
   "secondary": {
-    "old": 8,
-    "new": 10,
+    "old": 11,
+    "new": 14,
     "tie": 1,
-    "none": 7,
+    "none": 9,
     "unrecorded": 0
   },
   "build_only_merges": 0,

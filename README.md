@@ -6,13 +6,13 @@
 
 Four AI coding setups built this repo. Roster reviewed them and replaced Claude Code + Sonnet 5.5 (**B**) with Claude Code on DeepSeek Flash (**E**). Before it made that call, we froze 40 new build tasks and their acceptance tests (hash published). Then every task was built twice, by B and by E, and graded blind.
 
-| Forward test, pre-registered (interim: 26 valid pairs) | |
+| Forward test, pre-registered (final: 35 valid pairs) | |
 |---|---|
-| Tasks only E passed | **6** |
-| Tasks only B passed | **0** |
-| Both passed / both failed | 17 / 3 |
-| McNemar exact, two-sided | **p = 0.031** |
-| Cost per task | E cheaper in 26 of 26 pairs: median $0.023 vs $0.155 (Wilcoxon p < 0.001) |
+| Tasks only E passed | **11** |
+| Tasks only B passed | **1** |
+| Both passed / both failed | 20 / 3 |
+| McNemar exact, two-sided | **p = 0.006** |
+| Cost per task | E cheaper in 35 of 35 pairs: median $0.020 vs $0.148 (Wilcoxon p < 0.001) |
 
 Every number here comes from [`docs/FACTS.md`](docs/FACTS.md) or [`reports/self/forward.json`](reports/self/forward.json), both generated from the run. The pairs are on the [experiment page](https://roster-five-chi.vercel.app/experiment).
 
@@ -77,7 +77,7 @@ The test was fixed in advance in [`experiments/PREREGISTRATION.md`](experiments/
 - The 40 forward tasks and their acceptance tests were frozen before the first review. The hashes are in [`experiments/FREEZE.txt`](experiments/FREEZE.txt).
 - Every change since then is a dated amendment, including two protocol deviations and the first review's weak evidence.
 
-**Status:** the forward run is finishing. Results are published whatever they show, and the README table is regenerated from FACTS when it ends.
+**Status:** the forward run is complete: 40 tasks, 39 recorded pairs. 4 pairs are excluded as environment failures (amendment 18; including them gives the same discordant counts), and F11 was excluded for a network outage (amendment 11). Exploratory secondary outcome (blind judge preference, not H1): see `reports/self/forward.json`.
 
 ## Roster caught its own silent mistakes
 
