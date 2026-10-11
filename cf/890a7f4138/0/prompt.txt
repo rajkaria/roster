@@ -1,0 +1,32 @@
+[roster setup=E task=F39]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F39: Session cache keyed by checkpoint state
+TASK F39 · Session cache keyed by checkpoint state
+GOAL: Don't re-parse a repo's checkpoints when nothing changed.
+OWNS: src/ingest/cache.ts, tests/ingest-cache.test.ts
+INTERFACE: src/ingest/cache.ts class SessionCache { constructor(dir: string); key(repo: string, refsDigest: string): string; get(key: string): Promise<unknown[] | null>; set(key: string, sessions: unknown[]): Promise<void> } ; refsDigest(refs: { name: string; sha: string }[]): string
+BEHAVIOUR: refsDigest is a sha256 over name=sha lines sorted by name (order-independent). get on a missing or corrupt file → null
+(corrupt files are deleted). set writes atomically. Keys are filesystem-safe.
+
+---
+
+<task-notification>
+<task-id>bl5vfdp26</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F39/d2f778de-a9e5-4546-b3cd-b5a4c1795751/tasks/bl5vfdp26.output</output-file>
+<status>completed</status>
+<summary>Background command "Re-run suite, capture output in gitignored dir" completed (exit code 0)</summary>
+</task-notification>
