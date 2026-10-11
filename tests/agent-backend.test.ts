@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defaultBackend, simpleSample } from "../src/agent/backend.ts";
@@ -89,14 +89,19 @@ function writeSetups(): void {
 const replayEnv = { TEST_DEEPSEEK_TOKEN: "test-token" };
 
 /** A backend over the fixture: replays under the stub harness, `testCmd` "true" so the suite passes. */
-function backend(harness: typeof runClaude = stubHarness(), dbFile: string | undefined = undefined) {
+function backend(
+  harness: typeof runClaude = stubHarness(),
+  dbFile: string | undefined = undefined,
+  over: { testCmd?: string; reportsDir?: string } = {},
+) {
   return defaultBackend({
     cacheDir,
-    reportsDir,
+    reportsDir: over.reportsDir ?? reportsDir,
     dbPath: dbFile,
-    replay: { repo, setupsRoot, env: replayEnv, workRoot, harness, testCmd: "true", parallel: 2 },
+    replay: { repo, setupsRoot, env: replayEnv, workRoot, harness, testCmd: over.testCmd ?? "true", parallel: 2 },
   });
 }
+
 
 const ctxFor = (over: Partial<ToolContext> = {}): ToolContext => ({
   runId: "run-t48",
@@ -106,8 +111,29 @@ const ctxFor = (over: Partial<ToolContext> = {}): ToolContext => ({
   ...over,
 });
 
+/**
+ * The T01 "basic" fixture has no test files, so every task is judge-only and the gate has nothing to count. Rewrite its
+ * history so each commit also carries tests/<module>.test.ts for the src/ modules in its tree: the commit that adds a
+ * module then adds its test, and the task replaying that commit has hidden tests (the tests track). The replays still go
+ * through the real task builder and grader.
+ */
+function addHiddenTests(dir: string): void {
+  const script = `for f in src/*.ts; do b=$(basename "$f" .ts); [ "$b" = index ] && continue; mkdir -p tests; printf 'import { expect, test } from "bun:test";\\ntest("%s", () => expect(1).toBe(1));\\n' "$b" > "tests/$b.test.ts"; done`;
+  const r = Bun.spawnSync(["git", "filter-branch", "-f", "--tree-filter", script, "--", "HEAD"], {
+    cwd: dir,
+    env: { ...process.env, FILTER_BRANCH_SQUELCH_WARNING: "1" },
+  });
+  if (r.exitCode !== 0) throw new Error(`filter-branch failed: ${r.stderr.toString()}`);
+  Bun.spawnSync(["git", "for-each-ref", "--format=%(refname)", "refs/original"], { cwd: dir })
+    .stdout.toString()
+    .split("\n")
+    .filter(Boolean)
+    .forEach((ref) => Bun.spawnSync(["git", "update-ref", "-d", ref], { cwd: dir }));
+}
+
 beforeAll(() => {
   truth = makeFixture(repo, "basic");
+  addHiddenTests(repo);
   writeSetups();
 });
 
@@ -202,7 +228,9 @@ describe("scripted coordinator run on the fixture", () => {
     const steps: FakeStep[] = [
       { toolCalls: [fakeToolCall("list_tasks", {})], costUsd: 0 },
       (req): FakeStep => {
-        const ids = (lastResult(req).tasks as TaskSummary[]).slice(0, 2).map((t) => t.id);
+        // Tests-track tasks: the incumbent passes them (testCmd "true"), the candidate too and at lower cost.
+        const ids = (lastResult(req).tasks as TaskSummary[]).filter((t) => t.track === "tests").slice(0, 2).map((t) => t.id);
+        expect(ids.length).toBe(2);
         return {
           toolCalls: [fakeToolCall("plan_replays", { rationale: "two listed tasks under the incumbent and E", suspect: "X", candidates: ["E"], tasks: ids })],
           costUsd: 0,
@@ -241,6 +269,23 @@ describe("scripted coordinator run on the fixture", () => {
     expect(promotion.from).toBe("X");
     expect(Array.isArray(promotion.reasons)).toBe(true);
     expect(typeof promotion.at).toBe("string");
+  });
+
+  test("an incumbent that fails every tests-track task is no_signal: nothing is promoted and promotion.json is not written", async () => {
+    const noSignalReports = join(root, "reports-no-signal");
+    // A test command that always fails: both sides fail every hidden test, so no rerun splits them and the gate rules.
+    const b = backend(stubHarness(), join(root, "no-signal.db"), { testCmd: "false", reportsDir: noSignalReports });
+    const tests = (await b.listTasks!({ repo })).filter((t) => t.track === "tests").map((t) => t.id);
+    expect(tests.length).toBeGreaterThanOrEqual(3);
+
+    await b.runReplays({ plan_id: "no-signal-p1", tasks: tests, setups: ["X", "E"], max_cost_usd: 5 });
+    const raw = await b.gate({ plan_id: "no-signal-p1", candidate: "E", incumbent: "X", budget_usd: 5 });
+    const decision = { ...raw, failed_tasks: raw.failed_tasks ?? [] };
+    expect(decision.verdict).toBe("no_signal");
+    expect(decision.reasons[0]).toContain("no signal");
+
+    await expect(b.promote!({ repo, candidate: "E", decision, from: "X" })).rejects.toThrow("did not approve");
+    expect(existsSync(join(noSignalReports, reviewSlug(repo), "promotion.json"))).toBe(false);
   });
 });
 

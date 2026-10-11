@@ -1,6 +1,7 @@
 // Blind grading for the forward run (DESIGN.md §"Forward run"): random X/Y labels, a judge that sees only the
 // labelled diffs, and the merge policy. Randomness is a seeded PRNG so every pick can be replayed from the logged seed.
 import type { ChatMessage, LlmClient } from "../llm/types.ts";
+import type { ForwardPair } from "../types.ts";
 
 export type Side = "old" | "new";
 export type Verdict = "X" | "Y" | "tie";
@@ -89,15 +90,35 @@ export async function blindJudge(
   return { labels, verdict, preferred: verdict === "tie" ? null : labels[verdict], input };
 }
 
+export type MergeReason = NonNullable<ForwardPair["merged_reason"]>;
+export type Secondary = NonNullable<ForwardPair["secondary"]>;
+
 export interface MergeChoice {
   merged: Side | null;
-  reason: "pass_beats_fail" | "judge" | "random_tie" | "both_failed";
+  reason: MergeReason;
 }
 
-/** Pass beats fail; both pass → the judge's preference; judge tie → a seeded random pick. */
-export function chooseMerge(pass: Record<Side, boolean>, preferred: Side | null, random: () => number): MergeChoice {
+/**
+ * Pass beats fail; both pass → the judge's preference; judge tie → a seeded random pick.
+ * With `eligible` (amendment 8, build only: per side, suite passes and scope is ok), a both-fail pair merges the one
+ * eligible side, or the judge's pick when both are; without it, or when neither is, nothing merges.
+ */
+export function chooseMerge(pass: Record<Side, boolean>, preferred: Side | null, random: () => number, eligible?: Record<Side, boolean>): MergeChoice {
   if (pass.old !== pass.new) return { merged: pass.old ? "old" : "new", reason: "pass_beats_fail" };
-  if (!pass.old) return { merged: null, reason: "both_failed" };
+  if (!pass.old) {
+    if (!eligible || (!eligible.old && !eligible.new)) return { merged: null, reason: "both_failed" };
+    if (eligible.old !== eligible.new) return { merged: eligible.old ? "old" : "new", reason: "suite_scope" };
+    if (preferred) return { merged: preferred, reason: "suite_scope_judge" };
+    return { merged: random() < 0.5 ? "old" : "new", reason: "suite_scope_random_tie" };
+  }
   if (preferred) return { merged: preferred, reason: "judge" };
   return { merged: random() < 0.5 ? "old" : "new", reason: "random_tie" };
+}
+
+/** The exploratory secondary outcome: among sides with suite and scope ok, the judge's pick (one eligible side wins outright). */
+export function secondaryOutcome(eligible: Record<Side, boolean>, preferred: Side | null): Secondary {
+  if (eligible.old && eligible.new) return preferred ?? "tie";
+  if (eligible.old) return "old";
+  if (eligible.new) return "new";
+  return "none";
 }
