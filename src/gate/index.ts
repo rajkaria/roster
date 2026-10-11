@@ -5,7 +5,9 @@
 //   ∧ regressions == 0          # incumbent passed, candidate failed, after reruns
 //   ∧ scope_violations == 0
 //   ∧ cost(candidate) ≤ budget
-// ties → cheaper wins; still tied → keep incumbent
+// ties → cheaper wins; still tied → keep incumbent; a tie at zero hidden passes never promotes
+// no_signal: the incumbent passes none of its ≥ NO_SIGNAL_MIN_TASKS tasks with hidden tests, so the measure
+//   can't rank setups and nothing is promoted.
 //
 // Conventions:
 // - Results are Replay rows; several rows for one task are reruns (`attempt`).
@@ -22,6 +24,9 @@ import type { GateVerdict, Replay } from "../types.ts";
 
 /** Max attempts per task and side (DESIGN.md §"Grade" step 6). */
 export const MAX_ATTEMPTS = 3;
+/** Fewest tasks with hidden tests before an incumbent with zero passes counts as no signal. */
+export const NO_SIGNAL_MIN_TASKS = 3;
+export const NO_SIGNAL_REASON = "the incumbent fails its own tasks: the replay measure has no signal";
 
 export type GateResults = Pick<
   Replay,
@@ -56,6 +61,8 @@ interface Tally {
   scopeViolation: boolean;
   /** Mean usable-attempt cost; null when any cost is unknown. */
   cost: number | null;
+  /** The task has hidden tests: some usable attempt reports hidden_pass. Judge-only tasks report null. */
+  tests: boolean;
 }
 
 function usable(r: GateResults[number]): boolean {
@@ -86,6 +93,7 @@ function tally(results: GateResults): Map<string, Tally> {
       passes: rs.filter((r) => r.hidden_pass === true).length,
       scopeViolation: rs.some((r) => r.scope_ok === false),
       cost: known && rs.length > 0 ? sum / rs.length : null,
+      tests: rs.some((r) => r.hidden_pass !== null),
     });
   }
   return out;
@@ -181,8 +189,21 @@ export function gate(incumbentResults: GateResults, candidateResults: GateResult
   if (cost.candidate === null) reasons.push("candidate cost unknown; cannot verify budget");
   else if (cost.candidate > opts.budget) reasons.push(`cost ${fmt(cost.candidate)} > budget ${fmt(opts.budget)}`);
 
+  // The incumbent passing none of its tasks with hidden tests says the measure is broken, not that setups are equal.
+  const testTasks = tasks.filter((t) => inc.get(t)?.tests === true);
+  if (testTasks.length >= NO_SIGNAL_MIN_TASKS && testTasks.every((t) => !passes(inc.get(t)))) {
+    reasons.unshift(NO_SIGNAL_REASON);
+    return { verdict: "no_signal", reasons, regressions, ties: "none", hidden_pass: hidden, scope_violations, cost, excluded };
+  }
+
   let ties: GateTie = "none";
   if (reasons.length === 0 && hidden.candidate === hidden.incumbent) {
+    // A 0–0 tie carries no quality signal: cost alone never promotes.
+    if (hidden.candidate === 0) {
+      ties = "incumbent";
+      reasons.push("tie at 0 hidden passes: no quality signal, keep incumbent");
+      return { verdict: "reject", reasons, regressions, ties, hidden_pass: hidden, scope_violations, cost, excluded };
+    }
     // Rules passed with equal hidden_pass: candidate must be strictly cheaper.
     if (cost.incumbent !== null && cost.candidate !== null && cost.candidate < cost.incumbent) {
       ties = "cheaper";
