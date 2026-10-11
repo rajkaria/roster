@@ -263,6 +263,34 @@ export function tokensOf(j: Json | null): HarnessTokens {
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export interface ResultPrice {
+  /** null when the run cannot be priced. Never a guess. */
+  usd: number | null;
+  /** The model that did the work, or the fallback when the result names none. */
+  model: string | null;
+  /**
+   * "deepseek-tokens": priced from the usage counts by priceDeepSeek.
+   * "total_cost_usd": the harness's own figure, a Claude price, for Claude models only.
+   */
+  basis: "deepseek-tokens" | "total_cost_usd" | null;
+}
+
+/**
+ * Prices one session from its result event, by the rules runClaude applies on a provider run: DeepSeek models from
+ * their tokens (priceDeepSeek, at `at`), Claude models from total_cost_usd. Any other model is null, because
+ * Claude Code's dollar figure would price it at Claude rates.
+ */
+export function priceResultEvent(result: Json | null, fallbackModel: string | null, at: Date = new Date()): ResultPrice {
+  const model = resolvedModel(result).model ?? fallbackModel;
+  if (!result || !model) return { usd: null, model, basis: null };
+  const t = tokensOf(result);
+  const deepseek = priceDeepSeek(model, { input: t.input, output: t.output, cache_read: t.cacheRead, cache_write: t.cacheWrite }, at);
+  if (deepseek) return { usd: deepseek.usd, model, basis: "deepseek-tokens" };
+  const reported = num(result.total_cost_usd);
+  if (/^claude-/i.test(model.trim()) && reported !== null) return { usd: reported, model, basis: "total_cost_usd" };
+  return { usd: null, model, basis: null };
+}
+
 // ---------- entry ----------
 export async function runClaude(o: HarnessRunOptions): Promise<ClaudeHarnessResult> {
   const sandboxPath = resolve(o.sandboxPath);
