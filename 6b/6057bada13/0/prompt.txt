@@ -1,0 +1,33 @@
+[roster setup=B task=F26]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F26: Replay eligibility
+TASK F26 · Replay eligibility
+GOAL: Decide whether a past task can be replayed fairly, with a reason.
+OWNS: src/replay/eligibility.ts, tests/eligibility.test.ts
+INTERFACE: src/replay/eligibility.ts function checkEligibility(task: { userPrompts: number; hiddenTests: string[]; strategy: string }, probe: () => Promise<{ installs: boolean; suitePasses: boolean }>): Promise<{ eligible: boolean; track: 'tests' | 'judge-only' | 'none'; reason: string }>
+BEHAVIOUR: strategy "import" → none ("imported history"). userPrompts > 2 → none. probe fails to install → none ("parent does not
+install"); suite fails at parent → none. No hidden tests → eligible true, track judge-only. Otherwise eligible, track tests. The probe
+is not called when an earlier rule already decides.
+
+---
+
+<task-notification>
+<task-id>bm6ljzfym</task-id>
+<tool-use-id>toolu_01STXtETG8qnX8iHczAASbVL</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F26/a43d2e18-6389-4a7f-a235-882aecae618a/tasks/bm6ljzfym.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/eligibility.test.ts 2&gt;&amp;1 | tail -6; bun run typecheck 2&gt;&amp;1 | tail -3; bun test 2&gt;&amp;1 | tail -5" completed (exit code 0)</summary>
+</task-notification>

@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "6b6057bada13",
+  "session_id": "a43d2e18-6389-4a7f-a235-882aecae618a",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T19:11:55.864309Z",
+  "branch": "forward/F26/old",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/replay/eligibility.ts",
+    "tests/eligibility.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "86ab2bcbbf95",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 11847,
+    "cache_read_tokens": 197295,
+    "output_tokens": 3575,
+    "api_call_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T19:11:55.838479Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "total_lines_changed": 0,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 72,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "src/replay/eligibility.ts": 24,
+        "tests/eligibility.test.ts": 48
+      }
+    }
+  ]
+}
