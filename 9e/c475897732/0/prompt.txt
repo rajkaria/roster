@@ -1,0 +1,81 @@
+[roster setup=B task=T64]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T64 · W4 · Coordinator backend test: keep the promote path valid under the no-signal rule
+GOAL: T63 made the gate return "no_signal" (no promotion) when the incumbent passes 0 of at least 3 tests-track tasks. The scripted
+run in tests/agent-backend.test.ts ("list_tasks → plan_replays → run_replays → get_replay_results → gate → promote writes
+promotion.json") used an all-failing incumbent, so it now fails.
+READ: tests/agent-backend.test.ts (the scripted scenario and its stub harness), src/gate/index.ts (no_signal rule), src/agent/backend.ts.
+OWNS: tests/agent-backend.test.ts (this task explicitly allows modifying this scenario)
+BUILD: Make the stub harness let the incumbent pass at least one tests-track task, and the candidate pass the same tasks or more at lower
+cost, so the gate promotes. Add a second scenario where the incumbent fails all of them and assert outcome no_signal with no
+promotion.json. Don't change other tests.
+ACCEPTANCE: whole suite green, typecheck clean.
+TEST: bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bbstpobrv</task-id>
+<tool-use-id>toolu_016d2ygxzBXnDcEXKdFVvk5v</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T64/c0368d1d-fb7c-4526-b6b3-bbd584d5f9c3/tasks/bbstpobrv.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test 2&gt;&amp;1 | grep -v "^\[fetch" | tail -12; bun run typecheck 2&gt;&amp;1 | tail -5" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b2jlrkvn2</task-id>
+<tool-use-id>toolu_01NyqwEpcmiyfbmVEqSsNy24</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T64/c0368d1d-fb7c-4526-b6b3-bbd584d5f9c3/tasks/b2jlrkvn2.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test 2&gt;&amp;1 | grep -v "^\[fetch" | tail -8" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b34f4du0f</task-id>
+<tool-use-id>toolu_01F397nwcmrUJnpozBFzL5B4</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T64/c0368d1d-fb7c-4526-b6b3-bbd584d5f9c3/tasks/b34f4du0f.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test 2&gt;&amp;1 | grep -E "^\(fail\)|error:" | head" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+Your session can't receive background notifications. Run the full suite in the foreground now (bun test, then bun run typecheck); if green, commit your change to tests/agent-backend.test.ts with the T64: prefix. Don't start anything in the background.
+
+---
+
+<task-notification>
+<task-id>b7t3lreji</task-id>
+<tool-use-id>toolu_01T1jSd5oAB8kqHfk6zjpBLb</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T64/c0368d1d-fb7c-4526-b6b3-bbd584d5f9c3/tasks/b7t3lreji.output</output-file>
+<status>killed</status>
+<summary>Background command "bun test 2&gt;&amp;1 | grep -E "\(fail\)|^ +[0-9]+ (pass|fail|skip)"; bun run typecheck 2&gt;&amp;1 | tail -3" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b7bvw8wmc</task-id>
+<tool-use-id>toolu_01ST9PW7BeLFRmrhAyZZWHZW</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T64/c0368d1d-fb7c-4526-b6b3-bbd584d5f9c3/tasks/b7bvw8wmc.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/identity.test.ts 2&gt;&amp;1 | grep -E "\(fail\)|^ +[0-9]+ (pass|fail)"; bun test tests/j tests/l tests/o tests/p tests/r 2&gt;&amp;1 | grep -E "\(fail\)|^ +[0-9]+ (pass|fail|skip)"" completed (exit code 0)</summary>
+</task-notification>
