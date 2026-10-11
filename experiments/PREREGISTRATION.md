@@ -114,3 +114,12 @@ The amendment 3 block (T27–T42) is used up. Integration tasks T43 and up take 
 - **What that means.** The level-B evidence for this promotion carries **no quality signal**. Even the incumbent passed 0 of 10 hidden-test tasks when replaying its own work, so the replay's hidden-test measure is degenerate. The likely cause is a replay bug (the original session's helper files aren't copied with the hidden tests). It's being fixed for future reviews.
 - **No re-review.** The decision is not re-run. Re-running after seeing a result would be a forking path.
 - **The forward run** tests the decision as made: **OLD = B, NEW = E**, on the frozen backlog, with the frozen acceptance tests, which are independent of the replay bug.
+
+### Amendment 8: 2026-10-11 11:40 IST, the frozen acceptance tests are over-specified; merge policy for build progress
+- **What we found.** After 3 of 40 pairs (F01–F03), both sides fail the frozen acceptance tests in every pair. The failures are mostly exact-string details, for example a test expecting "stop and report …" while the implementation writes "Stop and report …".
+- **The primary metric doesn't change.** H1, pass/fail on the frozen acceptance tests, stays as registered. Results are reported as they come, including if most pairs end both-fail.
+- **Merge policy, for the build only (it isn't a measured outcome):**
+  - If both sides fail acceptance, the side that passes its full suite with scope OK is merged.
+  - If both do, the blind diff-judge picks.
+  - If neither does, nothing is merged.
+- **Secondary outcome (exploratory, defined now after 3 pairs).** It's the blind judge's preference among the sides that pass their suite and scope. It's reported separately and never as H1.
