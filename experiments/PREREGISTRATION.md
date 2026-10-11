@@ -153,3 +153,17 @@ How it's handled:
 - **Not rerun**, so there's no second attempt to choose between.
 - **Recorded** in `reports/self/forward-exclusions.json`, and left out of the paired analysis.
 - **If the product needs F11's module** (line-level attribution), it will be built as a separate, disclosed task outside the forward run.
+
+### Amendment 12: 2026-10-11 17:35 IST, the forward grader timed out every full-suite run; fixes, regrade, resume
+- **What was wrong.**
+  - **Suite timeout.** Every grading step ran under the grader's default 5-minute timeout. The full suite takes about 15 minutes on the loaded build machine, so every full-suite run in the forward run was recorded as a failure. That covers wave A under the original grader and the B–D pairs F12 and F15. H1 needs the full suite, so no side could pass H1, whatever its acceptance result.
+  - **Grading copy.** The copy added in T66 ran `tar` without pipefail and packed macOS extended attributes. A failed copy went unnoticed and later broke grading with "bad object". That crashed the wave-A re-merge and the B–D queue (17:26).
+- **Fixes** (ops commit `cee4921`, excluded from every comparison):
+  - each grading step gets a 45-minute timeout
+  - forward grading gives bun a 60-second per-test timeout (bun's 5-second default fails tests on timing alone under this load)
+  - the copy runs with pipefail and without extended attributes, and is retried once
+  - a failing suite re-runs only its failing files (at most 5), once, and passes only if they all pass
+  - one pair's error no longer ends a run or a re-merge
+  - the forward database waits for a lock instead of failing
+- **Regrade.** Every pair recorded before the fix is regraded with `roster forward --remerge --regrade` and the fixed grader. That's wave A (F01–F10 without F11, which amendment 11 excludes) plus F12 and F15. On each agent's recorded branch, the acceptance tests and the full suite run again, pass_old/pass_new are recomputed, and the merge policy is applied. Agents aren't re-run. Each change to H1 is logged as old → new. The H1 definition (acceptance + full suite + scope) is unchanged. The per-test timeout and the one-shot retry change how the suite is run, not what H1 means. They apply identically to both sides and to every pair, and they were set before any regraded result was seen.
+- **Resume.** The restarted queue grades F16 and F17, whose two agents had both finished before the crash, from their branches without re-running them. F18's agents were about 12 minutes in. They were stopped, and F18 restarts clean from the current `main`.

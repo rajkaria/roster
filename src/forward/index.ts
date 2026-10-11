@@ -85,6 +85,8 @@ export class ForwardStore {
   constructor(path: string) {
     if (path !== ":memory:") mkdirSync(dirname(resolve(path)), { recursive: true });
     this.db = new Database(path, { create: true });
+    // The queue, a remerge/regrade and the wave-A copy can write the same file; wait for a lock instead of failing.
+    this.db.exec("PRAGMA busy_timeout = 30000");
     this.db.exec(`CREATE TABLE IF NOT EXISTS forward_pairs (
       task_id TEXT PRIMARY KEY, setup_old TEXT NOT NULL, setup_new TEXT NOT NULL, pass_old INTEGER NOT NULL, pass_new INTEGER NOT NULL,
       cost_old REAL, cost_new REAL, merged TEXT, blind_labels TEXT NOT NULL, seed INTEGER NOT NULL, seq INTEGER NOT NULL)`);
