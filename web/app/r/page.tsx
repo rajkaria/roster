@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { listReviews } from "@/lib/reviews";
+import { listReviews, loadCorpusTotals } from "@/lib/reviews";
 import type { ReviewLabel } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -16,11 +16,18 @@ const LABEL_TEXT: Record<ReviewLabel, string> = {
 
 export default function ReviewsIndex() {
   const rows = listReviews();
+  const totals = loadCorpusTotals();
   return (
     <>
       <h1>Reviews</h1>
       <p className="lede">Each review compares the agent setups that worked on one public repo.</p>
       <p className="meta">Evidence: level A: observational. A setup is never called worse on level A alone.</p>
+      {totals && (
+        <p className="meta">
+          Totals: {totals.repos} repos, {totals.sessions} sessions
+          {totals.costUsd !== null && `, $${totals.costUsd.toFixed(2)} spend (priced sessions only)`}.
+        </p>
+      )}
       {rows.length === 0 ? (
         <div className="empty">No reviews have been published yet.</div>
       ) : (
