@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "f2057422acbd",
+  "session_id": "6debd535-e7b5-4766-95d0-8530a9335544",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T09:59:39.581933Z",
+  "branch": "task/T67",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "scripts/reprice-forward.ts",
+    "tests/forward-cost.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-haiku-5-5",
+  "turn_id": "708ae67c1158",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 68,
+    "cache_creation_tokens": 88553,
+    "cache_read_tokens": 2306694,
+    "output_tokens": 41045,
+    "api_call_count": 34
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T09:59:39.50461Z",
+    "agent_lines": 267,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 267,
+    "total_lines_changed": 267,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}

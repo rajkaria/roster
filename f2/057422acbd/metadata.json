@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "f2057422acbd",
+  "strategy": "manual-commit",
+  "branch": "task/T67",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/reprice-forward.ts",
+    "tests/forward-cost.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f2/057422acbd/0/metadata.json",
+      "transcript": "/f2/057422acbd/0/full.jsonl",
+      "compact_transcript": "/f2/057422acbd/0/transcript.jsonl",
+      "content_hash": "/f2/057422acbd/0/content_hash.txt",
+      "prompt": "/f2/057422acbd/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 68,
+    "cache_creation_tokens": 88553,
+    "cache_read_tokens": 2306694,
+    "output_tokens": 41045,
+    "api_call_count": 34
+  }
+}

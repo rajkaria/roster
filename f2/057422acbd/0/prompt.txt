@@ -1,0 +1,54 @@
+[roster setup=C task=T67]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T67 · W5 · Forward costs: price each side from its token usage, not Claude Code's dollar figure
+GOAL: Forward pairs record each side's cost from the `total_cost_usd` in the session's result event. For setup E (DeepSeek through Claude
+Code) that figure prices DeepSeek tokens at Claude rates. Recorded E pairs average $1.39 a side, while replays priced from tokens with
+priceDeepSeek average $0.036. The replay path (src/harness/claude.ts, T43) already prices from tokens; the forward path doesn't.
+READ: src/harness/claude.ts (resolvedModel, token counts, the priceDeepSeek branch), src/price/deepseek.ts, src/price/index.ts,
+src/forward/index.ts (runSetupHarness reads the cost; ForwardStore cost_old/cost_new), a real log: .roster/runs/F01.E.jsonl (result event: usage, modelUsage).
+OWNS: src/harness/claude.ts (only to export the existing pricing as a function of a result event), src/forward/cost.ts,
+src/forward/index.ts (only runSetupHarness's cost lines), scripts/reprice-forward.ts, tests/forward-cost.test.ts, tests/fixtures/forward-cost/ (copied from real logs)
+BUILD: (1) `priceResultEvent(result, fallbackModel)` returns { usd, model, basis } using the same rules as the replay path: DeepSeek
+models priced from tokens by priceDeepSeek, Claude models by the existing price table or total_cost_usd exactly as the replay path does, and null
+(never a guess) when it can't be priced. (2) runSetupHarness uses it. (3) `bun scripts/reprice-forward.ts [--db <path>] [--dry-run]`
+re-prices every recorded pair from .roster/runs/<task>.<setup>.jsonl (the last result event), writes cost_old/cost_new back, and prints
+one line per pair: task, setup, old figure, new figure, basis. Logs that are missing leave the cost null and are listed.
+ACCEPTANCE: fixtures are the real result events from F01.E and F01.B copied verbatim. The E fixture prices to priceDeepSeek's figure for
+its tokens, not 0.7154. The B fixture keeps the replay path's Claude figure. A missing log gives null. --dry-run writes nothing. Whole suite green.
+TEST: bun test tests/forward-cost.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bw4jvmiu1</task-id>
+<tool-use-id>toolu_01Rgb1xPDpKFsFxZN6avAHBK</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T67/6debd535-e7b5-4766-95d0-8530a9335544/tasks/bw4jvmiu1.output</output-file>
+<status>killed</status>
+<summary>Background command "Run the whole test suite" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b4x2zjhbu</task-id>
+<tool-use-id>toolu_01PohpL5HsXJxZ4rVFSTr3iv</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T67/6debd535-e7b5-4766-95d0-8530a9335544/tasks/b4x2zjhbu.output</output-file>
+<status>killed</status>
+<summary>Background command "Run whole test suite in foreground" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
