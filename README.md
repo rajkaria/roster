@@ -77,7 +77,7 @@ The test was fixed in advance in [`experiments/PREREGISTRATION.md`](experiments/
 - The 40 forward tasks and their acceptance tests were frozen before the first review. The hashes are in [`experiments/FREEZE.txt`](experiments/FREEZE.txt).
 - Every change since then is a dated amendment, including two protocol deviations and the first review's weak evidence.
 
-**Status:** the forward run is complete: 39 pairs, of which 4 are excluded as environment failures (amendment 18; including them gives the same discordant counts) and 1 is excluded for a network outage (amendment 11). Exploratory secondary outcome (blind judge preference, not H1): see `reports/self/forward.json`.
+**Status:** the forward run is complete: 40 tasks, 39 recorded pairs. 4 pairs are excluded as environment failures (amendment 18; including them gives the same discordant counts), and F11 was excluded for a network outage (amendment 11). Exploratory secondary outcome (blind judge preference, not H1): see `reports/self/forward.json`.
 
 ## Roster caught its own silent mistakes
 
