@@ -22,6 +22,11 @@ export interface GradeResult {
   hiddenPass: boolean;
   /** null when the full suite was not run (phase "fast"). */
   suitePass: boolean | null;
+  /**
+   * When the suite failed: the test files still failing after the retry, or null when the run left no JUnit (killed,
+   * timed out or crashed). Undefined when the suite passed or did not run.
+   */
+  suiteFailing?: string[] | null;
   /** null when no typecheck ran. */
   typecheckPass?: boolean | null;
   /** The change's own new test files (fast phase); null when it added none. */
@@ -195,19 +200,24 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
     const scopeOk = violations.length === 0;
 
     let suitePass: boolean | null = null;
+    let suiteFailing: string[] | null | undefined;
     if (phase !== "fast") {
       suitePass = await run(work, testCmd + junit("suite.xml"), timeout, "suite");
       // A loaded machine fails the odd test on timing: re-run only the failing files, once. A run that left no JUnit
       // (killed, crashed, import errors bun drops) has nothing to retry and stays failed.
       const xml = join(out, "suite.xml");
+      const retryXml = join(out, "suite-retry.xml");
       if (!suitePass && isBun && existsSync(xml)) {
         const failing = failingTestFiles(readFileSync(xml, "utf8"));
+        suiteFailing = failing;
         if (failing.length > 0 && failing.length <= SUITE_RETRY_MAX_FILES) {
           suitePass = await run(work, `${testCmd} ${failing.map((f) => JSON.stringify(f)).join(" ")}${junit("suite-retry.xml")}`, timeout, "retry");
+          if (!suitePass) suiteFailing = existsSync(retryXml) ? failingTestFiles(readFileSync(retryXml, "utf8")) : null;
         }
-      }
+      } else if (!suitePass) suiteFailing = null;
+      if (suitePass) suiteFailing = undefined;
     }
-    if (phase === "suite") return { hiddenPass: true, suitePass, typecheckPass: null, scopeOk, violations, perTest: [] };
+    if (phase === "suite") return { hiddenPass: true, suitePass, suiteFailing, typecheckPass: null, scopeOk, violations, perTest: [] };
 
     const fileArgs = isBun || /^pytest\b/.test(testCmd);
     // In the fast phase the change's own new test files run separately from the hidden ones.
@@ -240,7 +250,7 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
       hiddenPass = runPass && perTest.every((t) => t.pass);
     } else if (hidden.length === 0) hiddenPass = true;
 
-    return { hiddenPass, suitePass, typecheckPass, ownPass, scopeOk, violations, perTest };
+    return { hiddenPass, suitePass, suiteFailing, typecheckPass, ownPass, scopeOk, violations, perTest };
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

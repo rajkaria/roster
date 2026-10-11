@@ -297,6 +297,15 @@ export interface SideGrade {
   scopeOk: boolean;
   /** The change's own new tests and the typecheck did not fail (acceptance not considered). */
   checksOk: boolean;
+  /** A failed suite's failing test files after the retry; null when it left no JUnit (killed, timed out or crashed). */
+  suiteFailing?: string[] | null;
+}
+
+/** Amendment 14: every failed suite is logged with what failed, so a load-induced failure can be told from a real one. */
+function logSuiteFailure(log: (line: string) => void, taskId: string, side: Side, g: SideGrade): void {
+  if (g.pass || g.suiteFailing === undefined) return;
+  const what = g.suiteFailing === null ? "no JUnit (killed, timed out or crashed)" : g.suiteFailing.length ? g.suiteFailing.join(", ") : "no failing test case (non-zero exit)";
+  log(`forward: ${taskId}: ${side} suite failed: ${what}`);
 }
 
 /**
@@ -338,7 +347,7 @@ async function gradeBranch(opts: {
     const checksOk = r.typecheckPass !== false && r.ownPass !== false;
     // Fast: acceptance AND scope. Typecheck and the side's own new tests only feed `checksOk` (amendment 8 candidacy), never H1.
     const pass = opts.phase === "suite" ? r.suitePass === true : r.hiddenPass && r.scopeOk;
-    return { pass, hiddenPass: r.hiddenPass, suitePass: r.suitePass, scopeOk: r.scopeOk, checksOk };
+    return { pass, hiddenPass: r.hiddenPass, suitePass: r.suitePass, scopeOk: r.scopeOk, checksOk, suiteFailing: r.suiteFailing };
   } finally {
     await destroySandbox(sandbox.path);
   }
@@ -577,8 +586,11 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
   const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL);
   const gradeFast = (task: BacklogTask, base: string, head: string, hidden: HiddenTest[], clock = new BusyClock()) =>
     grading.run(() => clock.time(() => gradeBranch({ repo, base, head, hidden, owns: task.owns, testCmd: opts.testCmd, scratch, phase: "fast", runner: opts.gradeRunner })));
-  const gradeSuite = async (task: BacklogTask, base: string, head: string, clock = new BusyClock()) =>
-    (await grading.run(() => clock.time(() => gradeBranch({ repo, base, head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch, phase: "suite", runner: opts.gradeRunner })))).pass;
+  const gradeSuite = async (task: BacklogTask, side: Side, base: string, head: string, clock = new BusyClock()) => {
+    const g = await grading.run(() => clock.time(() => gradeBranch({ repo, base, head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch, phase: "suite", runner: opts.gradeRunner })));
+    logSuiteFailure(log, task.id, side, g);
+    return g.pass;
+  };
 
   const runsDir = join(repo, ".roster", "runs");
   const agentDone =
@@ -655,7 +667,7 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
         old: { branch: o.branch, base, head: o.head, checksOk: fast[0].checksOk, scopeOk: fast[0].scopeOk },
         new: { branch: n.branch, base, head: n.head, checksOk: fast[1].checksOk, scopeOk: fast[1].scopeOk },
       },
-      (side) => gradeSuite(task, base, heads[side], clock),
+      (side) => gradeSuite(task, side, base, heads[side], clock),
     );
     const { pass, ...rest } = settled;
     return {
@@ -678,7 +690,7 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
     const base = await git.run(() => runGit(repo, ["rev-parse", "HEAD"]));
     const o = await startSide(task, "old", opts.pair.old, base);
     const fast = await gradeFast(task, base, o.head, loadAcceptance(acceptanceDir, task.id));
-    const passed = fast.pass && (await gradeSuite(task, base, o.head));
+    const passed = fast.pass && (await gradeSuite(task, "old", base, o.head));
     if (passed) await mergeBranch(ctx, task.id, o.branch, opts.pair.old);
     solo.add(task.id);
     soloOnOld.push(task.id);
@@ -745,6 +757,8 @@ export interface RemergeOptions {
   tasks?: string[];
   acceptanceDir?: string;
   gradeRunner?: StepRunner;
+  /** Branches graded at once across the re-merge (amendment 14). Default FORWARD_GRADE_PARALLEL. */
+  gradeParallel?: number;
 }
 
 export interface RemergeSummary {
@@ -763,13 +777,16 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
   const store = new ForwardStore(resolve(opts.db ?? DEFAULT_FORWARD_DB));
   const tasks = new Map(parseBacklog(opts.backlog).map((t) => [t.id, t]));
   const only = opts.tasks ? new Set(opts.tasks) : null;
-  const queue = store.pairs().filter((p) => p.merged === null && (!only || only.has(p.task_id)));
+  // A merged pair is revisited only when named for a regrade (amendment 14), and then for H1 alone.
+  const queue = store.pairs().filter((p) => (only ? only.has(p.task_id) && (p.merged === null || opts.regrade) : p.merged === null));
   const acceptanceDir = resolve(repo, opts.acceptanceDir ?? "experiments/acceptance");
   const git = new Mutex();
   const ctx: SettleContext = { repo, git, llm: opts.llm, log, buildMerge: true };
   const scratch = mkdtempSync(join(tmpdir(), "roster-remerge-"));
   const revisited: ForwardPair[] = [];
   const skipped: string[] = [];
+  // Amendment 14: a re-merge grades through slots like the queue, so its suites don't compete with each other.
+  const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL);
 
   const revisit = async (p: ForwardPair) => {
     const task = tasks.get(p.task_id);
@@ -794,7 +811,31 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
     }
     const hidden = opts.regrade ? loadAcceptance(acceptanceDir, task.id) : [];
     const grade = (r: { head: string; base: string }, phase: "fast" | "suite") =>
-      gradeBranch({ repo, base: r.base, head: r.head, hidden: phase === "fast" ? hidden : [], owns: task.owns, testCmd: opts.testCmd, scratch, phase, runner: opts.gradeRunner });
+      grading.run(() => gradeBranch({ repo, base: r.base, head: r.head, hidden: phase === "fast" ? hidden : [], owns: task.owns, testCmd: opts.testCmd, scratch, phase, runner: opts.gradeRunner }));
+    if (p.merged !== null) {
+      // Amendment 14: a merged pair is regraded for H1 only; its merge (build progress, amendment 8) stays as it is.
+      // A merged side branch meets HEAD at its own head, so both sides are graded from where the two branches meet.
+      const base = await git.run(() => runGit(repo, ["merge-base", refs.old!.branch, refs.new!.branch]));
+      const pass: Record<Side, boolean> = { old: false, new: false };
+      const suite: Record<Side, boolean | null> = { old: null, new: null };
+      await Promise.all(
+        (["old", "new"] as const).map(async (side) => {
+          const r = { head: refs[side]!.head, base };
+          if (!(await grade(r, "fast")).pass) return;
+          const g = await grade(r, "suite");
+          logSuiteFailure(log, task.id, side, g);
+          suite[side] = g.pass;
+          pass[side] = g.pass;
+        }),
+      );
+      const updated: ForwardPair = { ...p, pass_old: pass.old, pass_new: pass.new, suite_pass_old: suite.old, suite_pass_new: suite.new };
+      store.updateMerge(updated, true);
+      if (updated.pass_old !== p.pass_old || updated.pass_new !== p.pass_new) {
+        log(`forward: regrade ${p.task_id}: H1 old ${p.pass_old ? "pass" : "fail"} -> ${updated.pass_old ? "pass" : "fail"}, new ${p.pass_new ? "pass" : "fail"} -> ${updated.pass_new ? "pass" : "fail"} (merge kept: ${p.merged})`);
+      }
+      revisited.push(updated);
+      return;
+    }
     // Remerge keeps the recorded acceptance results; regrade re-runs them. Either way the fast checks (new tests,
     // typecheck) and scope are re-graded, then the suite: on candidates, and with regrade on every acceptance pass (H1).
     const sideOf = async (r: { branch: string; head: string; base: string }) => {
@@ -805,7 +846,11 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
     const acceptance = opts.regrade ? { old: o.acceptance, new: n.acceptance } : { old: p.pass_old, new: p.pass_new };
     const settled = await settle(
       ctx, task, p.seed, { old: p.setup_old, new: p.setup_new }, acceptance, { old: o.state, new: n.state },
-      async (side) => (await grade(side === "old" ? o.state : n.state, "suite")).pass,
+      async (side) => {
+        const g = await grade(side === "old" ? o.state : n.state, "suite");
+        logSuiteFailure(log, task.id, side, g);
+        return g.pass;
+      },
       !opts.regrade,
     );
     const { pass, ...rest } = settled;
