@@ -1,0 +1,23 @@
+[roster setup=E task=F38]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F38: llms.txt generator
+TASK F38 · llms.txt generator
+GOAL: Generate llms.txt so reviewers using an AI assistant get an accurate map of the repo.
+OWNS: scripts/llms.ts, tests/llms.test.ts
+INTERFACE: scripts/llms.ts function renderLlms(input: { readme: string; designHeadings: string[]; facts: string; repoUrl: string }): string
+BEHAVIOUR: Output starts with "# Roster", then the README's first blockquote line, a "## Docs" list linking docs/DESIGN.md,
+experiments/PREREGISTRATION.md and docs/FACTS.md with absolute GitHub URLs, a "## Design sections" list of the headings, and a "## Facts"
+section copied from FACTS lines (PENDING lines kept as PENDING).
