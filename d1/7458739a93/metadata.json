@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "d17458739a93",
+  "strategy": "manual-commit",
+  "branch": "forward/F18/new",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/microvm.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d1/7458739a93/0/metadata.json",
+      "transcript": "/d1/7458739a93/0/full.jsonl",
+      "compact_transcript": "/d1/7458739a93/0/transcript.jsonl",
+      "content_hash": "/d1/7458739a93/0/content_hash.txt",
+      "prompt": "/d1/7458739a93/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 37312,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1320832,
+    "output_tokens": 19606,
+    "api_call_count": 32
+  }
+}
