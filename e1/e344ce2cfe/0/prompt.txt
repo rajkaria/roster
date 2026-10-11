@@ -1,0 +1,44 @@
+[roster setup=E task=F17]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F17: Paste-a-repo API route
+TASK F17 · Paste-a-repo API route
+GOAL: Accept a GitHub repo URL from the public page, validate it, rate-limit, and serve cached reviews.
+OWNS: web/app/api/review/route.ts, web/lib/try.ts, tests/web-try.test.ts
+INTERFACE: web/lib/try.ts function parseRepoUrl(input: string): { owner: string; repo: string } | null; createLimiter(opts: { perMinute: number }): { take(key: string, now: number): boolean }
+BEHAVIOUR: Accepts https://github.com/<owner>/<repo>(.git)?(/)? and owner/repo; rejects other hosts, extra path segments, and names
+outside GitHub's allowed characters. Limiter is a per-key token bucket. Route: POST {repo} → 400 on invalid, 429 when limited, 200 with
+{cached: true, path} when public/data/r/<owner>/<repo>/review.json exists, else 202 {queued: true}.
+
+---
+
+<task-notification>
+<task-id>bwuce1a07</task-id>
+<tool-use-id>call_01_cuS0Y0rd9pr0CacRtRR58490</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F17/733bf97d-a7ad-4e9d-864f-199ade899801/tasks/bwuce1a07.output</output-file>
+<status>completed</status>
+<summary>Background command "Root typecheck" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bfeuinhtr</task-id>
+<tool-use-id>call_00_hFruAyi5fJ7kcss9x1Yu1953</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F17/733bf97d-a7ad-4e9d-864f-199ade899801/tasks/bfeuinhtr.output</output-file>
+<status>killed</status>
+<summary>Background command "Run full test suite" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
