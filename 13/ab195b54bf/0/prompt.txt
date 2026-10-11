@@ -1,0 +1,22 @@
+[roster setup=E task=F03]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+## F03: Open a pull request safely
+TASK F03 · Open a pull request safely
+GOAL: Open a PR only on repos that allow it, with a dry-run mode.
+OWNS: src/act/open-pr.ts, tests/open-pr.test.ts
+INTERFACE: src/act/open-pr.ts function openPr(opts: { repoPath: string; branch: string; title: string; body: string; dryRun?: boolean; allowRepo: (ownerRepo: string) => boolean; run?: (cmd: string[]) => Promise<{ code: number; stdout: string; stderr: string }> }): Promise<{ opened: boolean; url?: string; command: string[]; reason?: string }>
+BEHAVIOUR: Reads owner/repo from `git remote get-url origin` (https or ssh forms). If allowRepo returns false → opened false, reason
+"not opted in", no command run. dryRun → returns the `gh pr create --head <branch> --title … --body-file …` command without running.
+Non-zero exit → opened false with stderr as reason. Success → url parsed from stdout.
