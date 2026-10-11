@@ -1,0 +1,32 @@
+[roster setup=E task=F16]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F16: Book page
+TASK F16 · Book page
+GOAL: A public page showing the AI-workforce department and the hire-vs-scale scenario.
+OWNS: web/app/book/page.tsx, web/lib/book.ts, tests/web-book.test.ts
+INTERFACE: web/lib/book.ts function loadBook(json: unknown): { rows: { setup: string; label: string; monthly: string; perChange: string; unattended: string }[]; scenario: { hire: string; scale: string } | null; shareUrl: string | null }
+BEHAVIOUR: Money formatted "$1,234.56", null → "n/a", percent "42.0%". Reads public/data/self/book.json; absent → empty state. Shows a
+"View in cfo.ai" link only when shareUrl is an https URL on cfo.ai.
+
+---
+
+<task-notification>
+<task-id>belanugvt</task-id>
+<tool-use-id>call_00_77TvWZSLDO0Db5Y4c3zy1767</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F16/ae86387e-4e7e-4d08-9126-137f1991492a/tasks/belanugvt.output</output-file>
+<status>completed</status>
+<summary>Background command "Typecheck root and web" completed (exit code 0)</summary>
+</task-notification>

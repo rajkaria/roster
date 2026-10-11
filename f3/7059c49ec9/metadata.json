@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "f37059c49ec9",
+  "strategy": "manual-commit",
+  "branch": "forward/F16/new",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/web-book.test.ts",
+    "web/app/book/page.tsx",
+    "web/lib/book.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f3/7059c49ec9/0/metadata.json",
+      "transcript": "/f3/7059c49ec9/0/full.jsonl",
+      "compact_transcript": "/f3/7059c49ec9/0/transcript.jsonl",
+      "content_hash": "/f3/7059c49ec9/0/content_hash.txt",
+      "prompt": "/f3/7059c49ec9/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 48429,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2079744,
+    "output_tokens": 22498,
+    "api_call_count": 45
+  }
+}
