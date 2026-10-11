@@ -176,3 +176,20 @@ How it's handled:
   - `grade_ms` counts wall time with at least one of the pair's grading steps holding a slot. Time spent waiting for a slot isn't counted.
 - **Scope.** H1, the merge policy, the timeouts and the test commands are unchanged. The change applies identically to both sides and every pair. No B–D pair has been recorded under the fixed grader: F12 and F15 are being regraded under amendment 12, and F16/F17 had not finished grading when the queue was stopped at 17:54. The queue restarts from the same command, and F16/F17 resume from their branches.
 - **Side effect disclosed.** While stopping the queue at 17:54, the operator killed stray grading processes (`roster-grade-*/work`). A typecheck running in a concurrent re-merge sandbox may have been killed. A typecheck counts only toward amendment 8 merge candidacy, never H1, and any pair re-merged in that window whose result shows a typecheck failure gets its `--remerge --regrade` run again.
+
+### Amendment 14: 2026-10-11 21:05 IST, suites failed under machine overload; one final logged regrade for sides that passed acceptance and failed the suite
+- **What happened.** From 17:29 the build machine (8 GB) ran at load 105–291. Up to ~9 full test suites ran at once: the queue, two regrades with no grading slots, review-1b's replays, and E agents running the suite themselves. The full suite takes ~14 minutes at moderate load. Under this load it can pass the 45-minute step limit, and timing-sensitive tests fail. The grader didn't record why a suite failed. In this period, sides that passed acceptance and then failed the full suite are:
+  - F02 (both sides), F06 (both) and F15 (both), from the regrades;
+  - F19's old side (B), from the queue. F19 graded for 107 minutes and merged new.
+- **Diagnostic, disclosed.** At 19:05–19:20 (load ~89) the operator ran F15's E branch (`forward/F15/new`) through the full suite once, outside the grader, in a scratch copy, with the grader's command (`bun test --timeout 60000`). Result: 602 tests, 0 failures, 14.4 minutes. No other branch was run this way, and no recorded result was changed by it.
+- **Fixes** (ops commit, excluded from every comparison):
+  - **Failure logging.** Every failed suite is logged as `forward: <task>: <side> suite failed: <files>`, naming the test files still failing after the retry, or saying that the run left no JUnit (killed, timed out or crashed).
+  - **Regrade grading slots.** `roster forward --remerge` grades through the same grading slots as the queue: one branch at a time by default (`ROSTER_GRADE_PARALLEL`). Previously a regrade at `--parallel 2` could run four suites at once.
+  - **H1-only regrade of merged pairs.** A merged pair named with `--tasks` under `--regrade` has its H1 regraded. Both sides are graded from the commit where its two branches meet, and its merge is left as it is.
+- **Rule.**
+  - **Which sides.** Every side that passed acceptance and failed the full suite in a grading run without failure logging gets one more `--remerge --regrade` of its pair on this code. That's F02, F06, F15 and F19 so far, plus any such side the running queue records before it restarts on this code.
+  - **Final result.** That regrade's H1 is final for the pair, pass or fail, and it's recorded with its failure log.
+  - **Merges.** Merges stay as they are; they are build progress (amendment 8), not H1.
+  - **Other pairs.** A side that failed acceptance, or whose suite passed, keeps its result.
+  - **Fixed before results.** The rule was fixed before any of these regrades produced a result. An F02/F06 regrade started at 19:11 was stopped at 19:20 with nothing recorded, because it ran without slots at load 291.
+- **Scope.** H1 (acceptance + full suite + scope), the timeouts, the retry and the test commands are unchanged. Both sides of each pair are regraded identically.
