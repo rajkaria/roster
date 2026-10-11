@@ -1,0 +1,43 @@
+[roster setup=B task=F12]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F12: Attribution accuracy
+TASK F12 · Attribution accuracy
+GOAL: Measure how often attribution names the right session or setup.
+OWNS: src/attribution/evaluate.ts, tests/attribution-eval.test.ts
+INTERFACE: src/attribution/evaluate.ts function attributionAccuracy(pred: { id: string; predicted: string }[], key: { id: string; actual: string }[]): { correct: number; total: number; accuracy: number; missing: string[] }; tagAccuracy(rows: { inferredSetup: string | null; tag: string | null }[]): { correct: number; total: number; accuracy: number }
+BEHAVIOUR: total = key entries; a key id absent from pred is wrong and listed in missing; accuracy rounded to 4 decimals, 0 when total
+0. tagAccuracy counts only rows with a tag; inferred clusters are mapped to tags by majority vote first, then compared.
+
+---
+
+<task-notification>
+<task-id>bd85gx764</task-id>
+<tool-use-id>toolu_01YCaSXNuM1XyRjWfWSSHaUi</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F12/fccda097-689e-4fbc-9523-713fec80a4d7/tasks/bd85gx764.output</output-file>
+<status>killed</status>
+<summary>Background command "bun test tests/attribution-eval.test.ts 2&gt;&amp;1 | tail -8; bun test 2&gt;&amp;1 | tail -6; bun run typecheck 2&gt;&amp;1 | tail -5" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bf1rozv5y</task-id>
+<tool-use-id>toolu_01VQ675tEpT1xCMeZFeid5tr</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F12/fccda097-689e-4fbc-9523-713fec80a4d7/tasks/bf1rozv5y.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/attribution-eval.test.ts 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -5" completed (exit code 0)</summary>
+</task-notification>
