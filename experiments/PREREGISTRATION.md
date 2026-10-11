@@ -126,3 +126,19 @@ The amendment 3 block (T27–T42) is used up. Integration tasks T43 and up take 
 
 ### Amendment 9: 2026-10-11 14:05 IST, one guardrail line added for all sessions
 Twice now, a headless session ended without committing: T26 and T64 each started a background command and then waited for a notification that can't arrive. From now on the shared guardrails (`scripts/guardrails.txt`) include: "Never start a command in the background or wait for a notification … run tests and builds in the foreground, then commit." The line reaches both sides of every forward pair launched after this commit. Pairs F01–F05 ran without it.
+
+### Amendment 10: 2026-10-11 14:51 IST, waves B–D run as one queue; faster grading; T66 setup deviation; assignments T67 and up
+- **One queue instead of three waves.** The frozen backlog says tasks run in four waves and depend only on earlier waves. From F12 on, waves B–D run as one queue at `--parallel 4`, in frozen order, except that F13 (the book command) moves to the end because it uses F06 and F07. F07 and F14 start only after wave A is re-merged under amendment 8, so F06, F02 and F03 can be on `main`. The task blocks and their acceptance tests aren't changed (backlog sha256 unchanged: `ac682b23…3c63c7`).
+- **What this changes, and what it doesn't.** Both sides of a pair still start from the same `main` commit, so the pairing is unchanged. A later-wave task may now start before an earlier-wave task has merged, so it can see a different `main` than the wave plan intended. That holds equally for both sides.
+- **F08–F10** finish in the wave-A process (started 10:41), which grades with the pre-T65 grader. Their pairs are recorded with the same frozen acceptance tests and then re-merged under amendment 8. The queue writes to `.roster/forward.db`, seeded from `.roster/roster.db`. The F08–F10 pairs are copied into it when the wave-A process ends. Until then, the queue's stop rule doesn't count them.
+- **Grading (T66).** Every pair records each side's acceptance result, scope and typecheck. The full suite then runs only where it can change an outcome:
+  - On any side that passes acceptance, scope and typecheck. H1 keeps its registered definition: acceptance + full suite + scope.
+  - On the merge candidate, under amendment 8's build-only policy.
+  - A side whose suite isn't run is recorded as "not run" (null), never as a pass or a fail.
+  - Under amendment 8, when both sides fail acceptance, a side is a merge candidate if its own new tests and typecheck pass with scope OK. If both qualify, the blind judge's preferred side is tried first. A candidate merges only if its full suite passes; otherwise the next candidate is tried.
+- **Secondary outcome (exploratory; amendment 8), redefined before any pair is graded under it:** the blind judge's preference among sides whose own new tests and typecheck pass with scope OK. The full suite no longer runs on both sides, so it can't be the filter.
+- **Stop rule under parallelism.** When the rule triggers, up to 3 other pairs may still be in flight. They're recorded and counted like any other pair.
+- **Protocol deviation: T66.** Amendment 6 assigns T66 to B, but it was launched under D. It's analysed under D, the setup it actually ran under.
+- **Assignments T67 and up.** The amendment 6 pool ends at T66. Integration tasks T67 and up take setups from a fourth seeded shuffle (seed `20261013`, `random.Random(20261013).shuffle` over a balanced pool of 24), in order:
+  `T67=C T68=C T69=A T70=B T71=B T72=A T73=D T74=D T75=A T76=A T77=A T78=B T79=B T80=D T81=A T82=B T83=B T84=D T85=D T86=C T87=C T88=C T89=C T90=D`.
+- **Forward costs.** Forward pairs so far record each side's cost from Claude Code's own dollar figure, which prices setup E's DeepSeek tokens at Claude rates. Before any forward cost is reported (H2), every pair is re-priced from its token usage with the same pricing as the replay path (T67). Both figures are kept in the re-pricing log.
