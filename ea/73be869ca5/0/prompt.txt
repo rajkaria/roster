@@ -1,0 +1,30 @@
+[roster setup=A task=T65]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T65 · W5 · Forward harness: keep building when both sides fail the frozen acceptance tests
+GOAL: The first 3 forward pairs failed the frozen acceptance tests on both sides, mostly over exact-string details (for example
+"Stop …" vs "stop …"), so the harness merged nothing and the backlog's features don't land. The pre-registered metric stays as it is,
+but the build must keep moving, and a clearly labelled secondary outcome should be recorded (pre-registration amendment 8).
+READ: src/forward/index.ts (pair flow, merge choice, ForwardPair), src/forward/blind.ts, src/grade/index.ts, src/cli/forward.ts,
+experiments/PREREGISTRATION.md (amendment 8 once committed).
+OWNS: src/forward/index.ts, src/forward/blind.ts, src/cli/forward.ts, src/types.ts (only ForwardPair fields), tests/forward-merge.test.ts
+BUILD: (1) For each side record suite_pass and scope_ok alongside the acceptance result. (2) Merge policy: an acceptance pass beats a
+fail (unchanged). If both fail acceptance, merge the side that passes its full suite with scope ok. If both do, the blind diff-judge
+picks; if neither does, merge nothing. Record merged_reason. (3) Secondary outcome per pair: `secondary` = which side the blind
+judge prefers among sides with suite and scope ok (old/new/tie/none), labelled exploratory. (4) `roster forward --remerge` revisits
+recorded pairs with merged null, re-grades suite and scope on both branches, and applies the policy. (5) `--parallel` up to 4.
+ACCEPTANCE: tests with stub sides: both fail acceptance, only new passes suite → new merged with merged_reason; both fail everything
+→ nothing merged; --remerge on a recorded pair applies the policy; H1 fields (pass_old/pass_new) unchanged. Whole suite green.
+TEST: bun test tests/forward-merge.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
