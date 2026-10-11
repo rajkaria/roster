@@ -1,0 +1,73 @@
+{
+  "source": {
+    "review": "reports/rajkaria__roster/review.json",
+    "repo": "rajkaria/roster"
+  },
+  "period": {
+    "from": "2026-10-10T13:29:32.643Z",
+    "to": "2026-10-11T03:42:44.959Z",
+    "days": 0.5925036574074074
+  },
+  "promoted": {
+    "id": null,
+    "source": "E",
+    "note": "promoted setup E has no sessions in this review, so the scale scenario has no rate"
+  },
+  "department": [
+    {
+      "setup": "6a200cd990a7",
+      "label": "Claude Code · claude-opus-5-5",
+      "monthlySpendUsd": 965.23,
+      "survivingChangesPerMonth": 800.8725270153762,
+      "costPerSurvivingChangeUsd": 1.21,
+      "unattendedPct": 100
+    },
+    {
+      "setup": "97433f7b4446",
+      "label": "Claude Code · claude-sonnet-5-5 (rules 243fa2)",
+      "monthlySpendUsd": 194.36,
+      "survivingChangesPerMonth": 494.4650025282708,
+      "costPerSurvivingChangeUsd": 0.39,
+      "unattendedPct": 63.6
+    },
+    {
+      "setup": "a9544a002085",
+      "label": "Claude Code · claude-sonnet-5-5 (rules dabdd0)",
+      "monthlySpendUsd": 216.71,
+      "survivingChangesPerMonth": 850.4535765895904,
+      "costPerSurvivingChangeUsd": 0.25,
+      "unattendedPct": 100
+    },
+    {
+      "setup": "c8d6907735ec",
+      "label": "Claude Code · claude-haiku-5-5",
+      "monthlySpendUsd": 71.83,
+      "survivingChangesPerMonth": 692.03284116088,
+      "costPerSurvivingChangeUsd": 0.1,
+      "unattendedPct": 62.5
+    }
+  ],
+  "scenario": {
+    "hireMonthlyUsd": 12000,
+    "scaleMonthlyUsd": null,
+    "scaleSurvivingChangesPerMonth": null
+  },
+  "assumptions": {
+    "engineerMonthlyLoadedUsd": 12000,
+    "scaleSessionsPerWeek": 50
+  },
+  "assumptionLabels": {
+    "engineerMonthlyLoadedUsd": "assumption: one engineer's loaded monthly cost, in USD",
+    "scaleSessionsPerWeek": "assumption: sessions per week the promoted setup would run at scale"
+  },
+  "notes": [
+    "c8d6907735ec: spend is a lower bound (some sessions could not be fully priced)",
+    "promoted setup E has no sessions in this review, so the scale scenario has no rate"
+  ],
+  "shareUrl": null,
+  "cfo": {
+    "written": false,
+    "verified": false,
+    "error": "not attempted: run with --write"
+  }
+}
