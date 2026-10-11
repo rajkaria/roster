@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "ddb2d9ef0ba2",
+  "strategy": "manual-commit",
+  "branch": "task/T67",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "experiments/PREREGISTRATION.md",
+    "experiments/forward-queue-bcd.md",
+    "src/forward/index.ts",
+    "src/grade/index.ts",
+    "src/types.ts",
+    "tests/forward-grade-speed.test.ts",
+    "tests/forward-merge.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/dd/b2d9ef0ba2/0/metadata.json",
+      "transcript": "/dd/b2d9ef0ba2/0/full.jsonl",
+      "compact_transcript": "/dd/b2d9ef0ba2/0/transcript.jsonl",
+      "content_hash": "/dd/b2d9ef0ba2/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1834,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 456448,
+    "output_tokens": 2429,
+    "api_call_count": 6
+  }
+}
