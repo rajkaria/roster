@@ -1,0 +1,22 @@
+[roster setup=E task=F04]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+## F04: Detections D1–D4 over Roster's own records
+TASK F04 · Detections D1–D4 over Roster's own records
+GOAL: Flag Roster's own silent mistakes from replay and grade records.
+OWNS: src/obs/detections.ts, tests/detections.test.ts
+INTERFACE: src/obs/detections.ts function detect(input: { replays: { task: string; setup: string; suitePass: boolean; hiddenPass: boolean; scopeOk: boolean; costUsd: number | null; failureCodes: string[] }[]; incumbent: string; unmappedLineShare: Record<string, number> }): { id: 'D1' | 'D2' | 'D3' | 'D4'; setup?: string; task?: string; detail: string }[]
+BEHAVIOUR: D1 silent pass = suitePass && (!hiddenPass || !scopeOk). D2 = unmappedLineShare[setup] > 0.30. D3 = costUsd > 3 × median
+incumbent cost (ignore nulls; no incumbent costs → no D3). D4 = the same task has F6 for ≥ 2 distinct setups (one D4 per task).
+Output sorted by id, then setup, then task.
