@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "4c4ec5bd0b94",
+  "session_id": "43e5f93e-fdb7-4f1c-bfd7-cf995a936781",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T13:54:06.036136Z",
+  "branch": "forward/F21/new",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/readme-facts.ts",
+    "tests/readme-facts.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "deepseek-flash",
+  "turn_id": "612d347d23e8",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 39534,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1312384,
+    "output_tokens": 14190,
+    "api_call_count": 35
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T13:54:05.969267Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "total_lines_changed": 0,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 131,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "scripts/readme-facts.ts": 47,
+        "tests/readme-facts.test.ts": 84
+      }
+    }
+  ]
+}
