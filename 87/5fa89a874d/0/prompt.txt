@@ -1,0 +1,33 @@
+[roster setup=B task=T71]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T71 · W4 · /try page: paste a repo, get a level-A review
+GOAL: The site's paste-a-repo page. The API route (web/app/api/review/route.ts) and its helpers (web/lib/try.ts) are merged; there is
+no page yet. A visitor pastes a GitHub URL and either lands on the existing review or sees honest next steps.
+READ: web/app/api/review/route.ts, web/lib/try.ts (parseRepoUrl, createLimiter), web/lib/reviews.ts, web/components/Nav.tsx,
+web/app/r/page.tsx (style), src/sandbox/microvm.ts (only to describe what a live run needs).
+OWNS: web/app/try/page.tsx (new), web/components/TryForm.tsx (new, client component), web/components/Nav.tsx (add a "Try" link only),
+tests/web-try-page.test.ts
+BUILD: One input ("https://github.com/owner/repo"), a submit button, and states:
+- invalid URL: the API's message
+- rate-limited: "Try again in a minute"
+- cached: a link to /r/<owner>/<repo>
+- queued (202): "Not reviewed yet. Run it yourself: `bun src/cli.ts review https://github.com/<owner>/<repo> --observational`", with a
+  note that hosted runs on isolated sandboxes are coming
+Plain words, the same dark style, mobile-safe at 375px. Never claim a review ran when it didn't.
+ACCEPTANCE: tests/web-try-page.test.ts exercises the form's state mapping for each API status (pure function); `cd web && bun run
+build` succeeds.
+TEST: bun test tests/web-try-page.test.ts && (cd web && bun run build) && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
