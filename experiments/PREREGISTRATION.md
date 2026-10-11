@@ -142,3 +142,14 @@ Twice now, a headless session ended without committing: T26 and T64 each started
 - **Assignments T67 and up.** The amendment 6 pool ends at T66. Integration tasks T67 and up take setups from a fourth seeded shuffle (seed `20261013`, `random.Random(20261013).shuffle` over a balanced pool of 24), in order:
   `T67=C T68=C T69=A T70=B T71=B T72=A T73=D T74=D T75=A T76=A T77=A T78=B T79=B T80=D T81=A T82=B T83=B T84=D T85=D T86=C T87=C T88=C T89=C T90=D`.
 - **Forward costs.** Forward pairs so far record each side's cost from Claude Code's own dollar figure, which prices setup E's DeepSeek tokens at Claude rates. Before any forward cost is reported (H2), every pair is re-priced from its token usage with the same pricing as the replay path (T67). Both figures are kept in the re-pricing log.
+
+### Amendment 11: 2026-10-11 16:20 IST, F11 excluded (environment), not rerun
+F11 is excluded for both sides as an environment failure (F6), not rerun:
+- Both sides' sessions ended after 1 turn with "API Error: Can't reach the API server (ENOTFOUND)", a network outage on the run host.
+- The pair recorded $0 / $0 and both-fail.
+- Under the registered exclusion rule ("both setups fail for environment reasons (F6)"), F11 is excluded for both sides.
+
+How it's handled:
+- **Not rerun**, so there's no second attempt to choose between.
+- **Recorded** in `reports/self/forward-exclusions.json`, and left out of the paired analysis.
+- **If the product needs F11's module** (line-level attribution), it will be built as a separate, disclosed task outside the forward run.
