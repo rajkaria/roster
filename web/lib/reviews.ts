@@ -116,3 +116,23 @@ export function listReviews(dataDir: string = DATA): ReviewSummary[] {
   }
   return out.sort((a, b) => b.sessions - a.sessions || `${a.owner}/${a.repo}`.localeCompare(`${b.owner}/${b.repo}`));
 }
+
+/** Totals row of the corpus index (reports/corpus/index.json, written by scripts/corpus-index.ts). */
+export interface CorpusTotals {
+  repos: number;
+  sessions: number;
+  costUsd: number | null;
+}
+
+/** null when the index is missing or not the expected shape, so /r simply shows no totals row. */
+export function loadCorpusTotals(
+  file: string = join(process.cwd(), "..", "reports", "corpus", "index.json"),
+): CorpusTotals | null {
+  try {
+    const t = JSON.parse(readFileSync(file, "utf8"))?.data?.totals;
+    if (typeof t?.repos !== "number" || typeof t?.sessions !== "number") return null;
+    return { repos: t.repos, sessions: t.sessions, costUsd: typeof t.costUsd === "number" ? t.costUsd : null };
+  } catch {
+    return null;
+  }
+}
