@@ -1,0 +1,98 @@
+[
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "03ac4b80-b246-40cc-a8ed-b8708b85f633",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "322c865f-75a5-40bd-84b1-e5c69c55e6f1",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "37d60971-d17c-424c-87dc-f2dd4b7c53ab",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "3b7e1533-cc3a-4adb-a197-f7c337ab5586",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "3fe82180-7148-42b1-8ac2-dbc12ff66411",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "40edf221-0853-4de8-a946-84a3987424b7",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "6e2d8330-fb64-4310-948f-e53f1f40023e",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "B",
+    "task": "762637f3-a925-4ab9-9b01-c408be2f3341",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "03ac4b80-b246-40cc-a8ed-b8708b85f633",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "322c865f-75a5-40bd-84b1-e5c69c55e6f1",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "37d60971-d17c-424c-87dc-f2dd4b7c53ab",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "3fe82180-7148-42b1-8ac2-dbc12ff66411",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "40edf221-0853-4de8-a946-84a3987424b7",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "6e2d8330-fb64-4310-948f-e53f1f40023e",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "762637f3-a925-4ab9-9b01-c408be2f3341",
+    "detail": "visible suite passed but hidden tests failed"
+  },
+  {
+    "id": "D1",
+    "setup": "E",
+    "task": "8d77769a-b6f0-44cb-b3d4-928acc638e1b",
+    "detail": "visible suite passed but hidden tests failed and scope guard failed"
+  }
+]
