@@ -64,8 +64,8 @@ describe("forward grading speed", () => {
     const p = summary.completed[0]!;
     expect(p.merged).not.toBeNull();
     const other = p.merged === "old" ? "new" : "old";
-    expect(p[`suite_${p.merged!}`]).toBe(true);
-    expect(p[`suite_${other}`]).toBeNull();
+    expect(p[`suite_pass_${p.merged!}`]).toBe(true);
+    expect(p[`suite_pass_${other}`]).toBeNull();
     for (const k of ["agent_old_ms", "agent_new_ms", "grade_ms"] as const) {
       expect(typeof p[k]).toBe("number");
       expect(p[k]!).toBeGreaterThanOrEqual(0);

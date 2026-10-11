@@ -24,6 +24,8 @@ export interface GradeResult {
   suitePass: boolean | null;
   /** null when no typecheck ran. */
   typecheckPass?: boolean | null;
+  /** The change's own new test files (fast phase); null when it added none. */
+  ownPass?: boolean | null;
   scopeOk: boolean;
   violations: Violation[];
   perTest: PerTest[];
@@ -51,7 +53,7 @@ export interface GradeInput {
   runner?: StepRunner;
 }
 
-export type StepKind = "suite" | "hidden" | "typecheck";
+export type StepKind = "suite" | "hidden" | "own" | "typecheck";
 export type StepRunner = (cwd: string, cmd: string, timeoutMs: number, kind: StepKind) => boolean;
 
 /** Test command by project markers: bun, pnpm, npm, pytest, go test. */
@@ -163,15 +165,16 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
     if (phase === "suite") return { hiddenPass: true, suitePass, typecheckPass: null, scopeOk, violations, perTest: [] };
 
     const fileArgs = isBun || /^pytest\b/.test(testCmd);
-    // In the fast phase the change's own new test files ride along with the hidden run.
-    const own = phase === "fast" && fileArgs ? changed.filter((p) => isTestFile(p) && !preexistingTests.includes(p) && !hidden.some((h) => h.path === p) && existsSync(join(work, p))) : [];
+    // In the fast phase the change's own new test files run separately from the hidden ones.
+    const own =phase === "fast" && fileArgs ? changed.filter((p) => isTestFile(p) && !preexistingTests.includes(p) && !hidden.some((h) => h.path === p) && existsSync(join(work, p))) : [];
     for (const h of hidden) {
       mkdirSync(dirname(join(work, h.path)), { recursive: true });
       writeFileSync(join(work, h.path), h.content);
     }
-    const files = [...hidden.map((h) => h.path), ...own].map((p) => JSON.stringify(p)).join(" ");
+    const files = hidden.map((h) => JSON.stringify(h.path)).join(" ");
     const skipRun = phase === "fast" && fileArgs && files === "";
     const runPass = skipRun || run(work, `${testCmd}${fileArgs ? " " + files : ""}${junit("hidden.xml")}`, timeout, "hidden");
+    const ownPass: boolean | null = own.length ? run(work, `${testCmd} ${own.map((p) => JSON.stringify(p)).join(" ")}${junit("own.xml")}`, timeout, "own") : null;
 
     let typecheckPass: boolean | null = null;
     if (phase === "fast" && isBun && hasTypecheck(work)) typecheckPass = run(work, "bun run typecheck", timeout, "typecheck");
@@ -192,7 +195,7 @@ export async function grade(input: GradeInput): Promise<GradeResult> {
       hiddenPass = runPass && perTest.every((t) => t.pass);
     } else if (hidden.length === 0) hiddenPass = true;
 
-    return { hiddenPass, suitePass, typecheckPass, scopeOk, violations, perTest };
+    return { hiddenPass, suitePass, typecheckPass, ownPass, scopeOk, violations, perTest };
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
