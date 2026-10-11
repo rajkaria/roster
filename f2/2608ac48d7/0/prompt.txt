@@ -1,0 +1,33 @@
+[roster setup=B task=F16]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F16: Book page
+TASK F16 · Book page
+GOAL: A public page showing the AI-workforce department and the hire-vs-scale scenario.
+OWNS: web/app/book/page.tsx, web/lib/book.ts, tests/web-book.test.ts
+INTERFACE: web/lib/book.ts function loadBook(json: unknown): { rows: { setup: string; label: string; monthly: string; perChange: string; unattended: string }[]; scenario: { hire: string; scale: string } | null; shareUrl: string | null }
+BEHAVIOUR: Money formatted "$1,234.56", null → "n/a", percent "42.0%". Reads public/data/self/book.json; absent → empty state. Shows a
+"View in cfo.ai" link only when shareUrl is an https URL on cfo.ai.
+
+---
+
+<task-notification>
+<task-id>bh32mj1yi</task-id>
+<tool-use-id>toolu_018VUXPwMfrqwpGTsKyQjmuQ</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F16/ad4ccfb6-d293-4963-986c-2f04211f4e25/tasks/bh32mj1yi.output</output-file>
+<status>killed</status>
+<summary>Background command "bun test tests/web-book.test.ts 2&gt;&amp;1 | tail -8; bun test 2&gt;&amp;1 | tail -5; bun run typecheck 2&gt;&amp;1 | tail -5" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
