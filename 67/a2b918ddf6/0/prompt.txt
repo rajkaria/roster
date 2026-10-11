@@ -1,0 +1,22 @@
+[roster setup=E task=F05]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+## F05: Summarise a trace into failure context
+TASK F05 · Summarise a trace into failure context
+GOAL: Give the coordinator focused context about a run instead of a raw trace.
+OWNS: src/obs/summary.ts, tests/obs-summary.test.ts
+INTERFACE: src/obs/summary.ts type SpanNode = { name: string; kind: string; status: 'ok' | 'error'; attributes: Record<string, unknown>; durationMs: number; children: SpanNode[] }; summariseTrace(root: SpanNode): { toolCalls: number; errors: { name: string; message?: string }[]; retries: number; costUsd: number | null; slowest: { name: string; durationMs: number } | null; oneLine: string }
+BEHAVIOUR: toolCalls counts kind TOOL; errors lists spans with status error (message from attributes['error.message']); retries =
+count of spans whose attributes['roster.attempt'] > 1; costUsd = sum of attributes['roster.cost_usd'] numbers or null if none;
+slowest = longest TOOL span; oneLine like "14 tool calls, 2 errors (install, test), 1 retry, $0.21".
