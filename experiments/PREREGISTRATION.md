@@ -108,7 +108,7 @@ Under amendment 3, D's rules were written to `CLAUDE.local.md`. Sessions ran wit
 The amendment 3 block (T27–T42) is used up. Integration tasks T43 and up take setups from a third seeded shuffle (seed `20261012`, a balanced pool of 24), in order:
 `T43=D T44=B T45=D T46=B T47=A T48=C T49=A T50=D T51=D T52=C T53=A T54=D T55=C T56=A T57=C T58=D T59=C T60=A T61=B T62=B T63=C T64=B T65=A T66=B`.
 
-### Amendment 7: 2026-10-11 10:50 IST, the first review's decision, disclosed before the forward run
+### Amendment 7: 2026-10-11 10:40 IST, the first review's decision, disclosed before the forward run
 - **The decision.** Review 1 (`reports/self/review-1/`, 10:39 IST) found no level-A suspect (OR 4.23, 95% CI 0.40–45.2, p = 1). The coordinator compared incumbent B (Claude Code + Sonnet 5.5) with candidates E and F on 12 of B's past tasks. The gate promoted **E** (Claude Code on DeepSeek Flash).
 - **Why the gate promoted E.** E and B tied on hidden tests. Each passed the same 2 tasks, which have no hidden tests, and failed all 10 tasks that do. So the tie-break applied: cheaper wins, $0.44 against $2.52.
 - **What that means.** The level-B evidence for this promotion carries **no quality signal**. Even the incumbent passed 0 of 10 hidden-test tasks when replaying its own work, so the replay's hidden-test measure is degenerate. The likely cause is a replay bug (the original session's helper files aren't copied with the hidden tests). It's being fixed for future reviews.
