@@ -82,7 +82,7 @@
       "old": true,
       "new": true,
       "costOld": 0.16560470000000002,
-      "costNew": 2.3027469999999997,
+      "costNew": 0.034106262,
       "merged": "new"
     },
     {
@@ -90,7 +90,7 @@
       "old": true,
       "new": true,
       "costOld": 0.1288618,
-      "costNew": 2.170482,
+      "costNew": 0.031188671999999997,
       "merged": "new"
     },
     {
@@ -255,7 +255,7 @@
     "neither": 3,
     "p": 0.031250000000000014,
     "claim": true,
-    "costP": 0.001636345474263834,
+    "costP": 0.000008803669768964184,
     "wording": "6 vs 0 passed, p = 0.031"
   },
   "pairs": {
@@ -271,7 +271,7 @@
     "p": 0.031250000000000014
   },
   "wording": "6 vs 0 passed, p = 0.031",
-  "cost_p": 0.001636345474263834,
+  "cost_p": 0.000008803669768964184,
   "sensitivity": {
     "n": 30,
     "excludedCount": 0,
@@ -281,7 +281,7 @@
     "neither": 7,
     "p": 0.031250000000000014,
     "claim": true,
-    "costP": 0.000373230585908102,
+    "costP": 0.0000018253714564320234,
     "wording": "6 vs 0 passed, p = 0.031"
   },
   "secondary": {
