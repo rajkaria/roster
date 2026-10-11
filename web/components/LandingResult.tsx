@@ -1,7 +1,21 @@
-import type { Result } from "@/lib/result";
+import { formatP, summariseReasons, type Result } from "@/lib/result";
 import { GITHUB } from "./LandingData";
 
 const PREREG_URL = `${GITHUB}/blob/main/experiments/PREREGISTRATION.md`;
+
+function Why({ reasons }: { reasons: string[] }) {
+  return (
+    <>
+      {summariseReasons(reasons)}
+      {reasons.length > 0 && (
+        <details>
+          <summary>raw reasons</summary>
+          {reasons.join("; ")}
+        </details>
+      )}
+    </>
+  );
+}
 
 export function LandingResult({ result }: { result: Result }) {
   const { forward: f, v1, v2 } = result;
@@ -19,7 +33,7 @@ export function LandingResult({ result }: { result: Result }) {
                 <tr><td>Both passed</td><td className="num">{f.both}</td></tr>
                 <tr><td>Neither passed</td><td className="num">{f.neither}</td></tr>
                 <tr><td>Valid pairs</td><td className="num">{f.n}</td></tr>
-                <tr><td>McNemar exact p</td><td className="num">{f.p}</td></tr>
+                <tr><td>McNemar exact test</td><td className="num">{formatP(f.p)}</td></tr>
               </tbody>
             </table>
           </div>
@@ -36,13 +50,13 @@ export function LandingResult({ result }: { result: Result }) {
             <tr>
               <td>Original gate (v1)</td>
               <td>{v1 ? v1.verdict : "unavailable"}</td>
-              <td>{v1 ? v1.reasons.join("; ") : ""}</td>
+              <td>{v1 ? <Why reasons={v1.reasons} /> : ""}</td>
             </tr>
             <tr>
               <td>Revised gate (v2), same tasks</td>
               <td>{v2 ? v2.verdict : "unavailable"}</td>
               <td>
-                {v2 ? v2.reasons.join("; ") : ""}
+                {v2 ? <Why reasons={v2.reasons} /> : ""}
                 {v2?.hiddenPass
                   ? ` (hidden tests passed: incumbent ${v2.hiddenPass.incumbent}, candidate ${v2.hiddenPass.candidate})`
                   : ""}
