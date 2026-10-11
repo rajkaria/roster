@@ -1,0 +1,23 @@
+[roster setup=E task=F28]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F28: JUnit results with load failures counted
+TASK F28 · JUnit results with load failures counted
+GOAL: Read per-test results from JUnit XML and never lose a hidden test file that failed to load.
+OWNS: src/grade/junit.ts, tests/junit.test.ts
+INTERFACE: src/grade/junit.ts function parseJunit(xml: string, expectedFiles: string[]): { tests: { file: string; name: string; pass: boolean }[]; loadFailures: string[] }
+BEHAVIOUR: Parses testsuite/testcase elements (file from the testcase or testsuite `file` attribute, else the suite name); a testcase
+with <failure> or <error> fails; <skipped> is excluded. Every expected file with zero testcases gets one synthetic failing test named
+"0 tests collected: load error" and is listed in loadFailures. No XML dependency beyond the standard library.
