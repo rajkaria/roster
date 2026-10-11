@@ -1,0 +1,23 @@
+[roster setup=E task=F18]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F18: MicroVM runner adapter
+TASK F18 · MicroVM runner adapter
+GOAL: Run a command for a public repo inside an isolated sandbox VM, never on the host.
+OWNS: src/sandbox/microvm.ts, tests/microvm.test.ts
+INTERFACE: src/sandbox/microvm.ts function runInMicroVm(opts: { repoUrl: string; command: string[]; timeoutMs: number; files?: Record<string, string> }, client: { create(): Promise<{ id: string }>; exec(id: string, cmd: string[], timeoutMs: number): Promise<{ code: number; stdout: string; stderr: string }>; write(id: string, path: string, content: string): Promise<void>; stop(id: string): Promise<void> }): Promise<{ code: number; stdout: string; stderr: string; timedOut: boolean }>
+BEHAVIOUR: create → write files → exec `git clone --filter=blob:none <repoUrl> /work` then the command in /work → stop. stop is always
+called, including after errors and timeouts. A timeout returns timedOut true and code 124. Rejects non-https repo URLs before creating
+anything.
