@@ -1,0 +1,32 @@
+[roster setup=B task=F33]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F33: Cost statistics per setup
+TASK F33 · Cost statistics per setup
+GOAL: Per-setup cost totals and spread for the business plan's unit economics.
+OWNS: src/report/costs.ts, tests/costs.test.ts
+INTERFACE: src/report/costs.ts function costStats(rows: { setup: string; costUsd: number | null }[]): { setup: string; n: number; nullCount: number; totalUsd: number; meanUsd: number | null; p50Usd: number | null; p90Usd: number | null }[]
+BEHAVIOUR: Nulls excluded from stats but counted in nullCount. Percentiles by nearest-rank on sorted non-null values. Money rounded to
+4 decimals. Output sorted by setup.
+
+---
+
+<task-notification>
+<task-id>b2gvop3xi</task-id>
+<tool-use-id>toolu_014svB1J6iEUYQXr7xqkm7Ds</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F33/5edf86db-a225-4b3b-a891-1de0cdf56aed/tasks/b2gvop3xi.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/costs.test.ts 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -3; bun test 2&gt;&amp;1 | tail -6" completed (exit code 0)</summary>
+</task-notification>
