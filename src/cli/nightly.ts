@@ -1,6 +1,6 @@
 // `roster nightly`: the comment Roster posts after each nightly review, saying what changed since the last one.
-// The rows are the output of the review diff (one row per setup and metric, see DESIGN.md §"Compare two reviews");
-// this module only renders them, so nightlyComment is pure over its arguments and can be tested without a database.
+// The rows are the output of the review diff (one row per setup and metric); this module only renders them, so
+// nightlyComment is pure over its arguments and can be tested without a database.
 
 /** One changed metric: a setup's `field` moved from `before` to `after` by `delta` (null when a side is missing). */
 export interface NightlyRow {
