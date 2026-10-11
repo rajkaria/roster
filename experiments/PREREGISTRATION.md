@@ -226,3 +226,23 @@ How it's handled:
   4. If both pass, it's merged to main as `F06: build-only merge (B), H1 unchanged`.
 - **What doesn't change.** F06's recorded H1, its merged field (null) and every other recorded field stay as they are. The merge is build progress like amendment 8's, excluded from every comparison. It is on main before F07, F14 or F13 start, so both sides of those pairs start from the same main.
 - **If the suite or typecheck fails,** nothing merges, and F07 and F13 move to the end of the queue under the next amendment.
+
+### Amendment 18: 2026-10-12 03:15 IST, wave A's base-test failure: F6 exclusion with a sensitivity analysis; build-only merges of F04, F05, F08 and F09
+- **Finding.** In the final logged regrades on `1462ae4`, every remaining wave-A suite failure names one file, `tests/agent-backend.test.ts`:
+  - F04, F05, F06 and F08: both sides, and it's their only failing file.
+  - F09: the new side; the old side failed acceptance.
+
+  Wave A's branches sit on the 10:40 base `bd90b27`, from before that test was fixed (T63/T64). On current main the test passes 12/12, and F06-old passed it once main was merged in (amendment 17). The failure is inherited by both sides from the base, not caused by either side's change.
+- **H1, primary.** The registered exclusion rule ("both setups fail for environment reasons (F6)") applies to F04, F05, F06 and F08, where both sides' only failure is this base test. They're excluded from the paired analysis, like F11 (amendment 11), and recorded in `reports/self/forward-exclusions.json`.
+- **H1, sensitivity, reported alongside.** The same analysis including F04, F05, F06 and F08 as recorded (both fail).
+  - All four are concordant both-fail pairs, so the discordant counts the H1 test uses are identical in both analyses; only pass rates differ.
+  - F09 isn't excluded, because its old side failed acceptance (a task result). It stays both-fail, and the report notes that F09-new's only suite failure was this base test.
+- **Build-only merges, like amendment 17.**
+  - **Why.** F04 (detections, used by T70), F05 (summary), F08 (compare) and F09 (forward analysis, used by T72) are merged to main as build progress. Later tasks and the integration work then build on them.
+  - **Which side**, decided by rule, in order:
+    1. the secondary-preferred side;
+    2. otherwise the side that passed acceptance;
+    3. otherwise the side whose own new tests and typecheck pass;
+    4. otherwise old.
+  - **Procedure.** Current main is merged into that branch (any conflict fix is a `human:` commit). The full suite and typecheck must pass. It's then merged as `Fxx: build-only merge (side), H1 unchanged`.
+  - **What stays.** Recorded H1 and merge fields are unchanged, and these merges are excluded from every comparison. If a branch isn't green, it isn't merged, and that's noted.
