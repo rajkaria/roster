@@ -162,6 +162,28 @@ export interface ForwardPair {
   /** Blind label assignment, e.g. { X: "old", Y: "new" }. */
   blind_labels: Record<string, "old" | "new">;
   seed: number;
+  /** Per-step timings in milliseconds. */
+  agent_old_ms?: number | null;
+  agent_new_ms?: number | null;
+  grade_ms?: number | null;
+  /** Each side's full suite and scope guard; a suite is null when it did not run (only merge candidates run it) or on rows recorded before it was kept. */
+  suite_pass_old?: boolean | null;
+  suite_pass_new?: boolean | null;
+  scope_ok_old?: boolean | null;
+  scope_ok_new?: boolean | null;
+  /** Why `merged` is what it is. The suite_scope* reasons are amendment 8's build-only policy for both-fail pairs. */
+  merged_reason?:
+    | "pass_beats_fail"
+    | "judge"
+    | "random_tie"
+    | "suite_scope"
+    | "suite_scope_judge"
+    | "suite_scope_random_tie"
+    | "both_failed"
+    | "merge_failed"
+    | null;
+  /** Exploratory secondary outcome (amendment 8), never H1: the blind judge's preference among sides whose suite and scope pass. */
+  secondary?: "old" | "new" | "tie" | "none" | null;
 }
 
 export type ReviewLabel = "suspect" | "no_suspect" | "insufficient_data";

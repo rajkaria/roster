@@ -126,3 +126,123 @@ The amendment 3 block (T27–T42) is used up. Integration tasks T43 and up take 
 
 ### Amendment 9: 2026-10-11 14:05 IST, one guardrail line added for all sessions
 Twice now, a headless session ended without committing: T26 and T64 each started a background command and then waited for a notification that can't arrive. From now on the shared guardrails (`scripts/guardrails.txt`) include: "Never start a command in the background or wait for a notification … run tests and builds in the foreground, then commit." The line reaches both sides of every forward pair launched after this commit. Pairs F01–F05 ran without it.
+
+### Amendment 10: 2026-10-11 14:51 IST, waves B–D run as one queue; faster grading; T66 setup deviation; assignments T67 and up
+- **One queue instead of three waves.** The frozen backlog says tasks run in four waves and depend only on earlier waves. From F12 on, waves B–D run as one queue at `--parallel 4`, in frozen order, except that F13 (the book command) moves to the end because it uses F06 and F07. F07 and F14 start only after wave A is re-merged under amendment 8, so F06, F02 and F03 can be on `main`. The task blocks and their acceptance tests aren't changed (backlog sha256 unchanged: `ac682b23…3c63c7`).
+- **What this changes, and what it doesn't.** Both sides of a pair still start from the same `main` commit, so the pairing is unchanged. A later-wave task may now start before an earlier-wave task has merged, so it can see a different `main` than the wave plan intended. That holds equally for both sides.
+- **F08–F10** finish in the wave-A process (started 10:41), which grades with the pre-T65 grader. Their pairs are recorded with the same frozen acceptance tests and then re-merged under amendment 8. The queue writes to `.roster/forward.db`. *(Corrected 15:41 IST: it started empty at 15:39, instead of seeded. The wave-A session copies all ten wave-A pairs into it after its re-merge. Until then, the queue's stop rule counts only B–D pairs. Every wave-A pair so far is a both-fail, so none of them is discordant.)*
+- **Grading (T66).** Every pair records each side's acceptance result, scope and typecheck. The full suite then runs only where it can change an outcome:
+  - On any side that passes acceptance with scope OK. H1 keeps its registered definition: acceptance + full suite + scope. Typecheck and a side's own new tests never change H1. *(Corrected 15:05 IST, before any pair was graded under this amendment: the 14:51 text also required typecheck here, which would have changed H1.)*
+  - On the merge candidate, under amendment 8's build-only policy.
+  - A side whose suite isn't run is recorded as "not run" (null), never as a pass or a fail.
+  - Under amendment 8, when both sides fail acceptance, a side is a merge candidate if its own new tests and typecheck pass with scope OK. If both qualify, the blind judge's preferred side is tried first. A candidate merges only if its full suite passes; otherwise the next candidate is tried.
+- **Secondary outcome (exploratory; amendment 8), redefined before any pair is graded under it:** the blind judge's preference among sides whose own new tests and typecheck pass with scope OK. The full suite no longer runs on both sides, so it can't be the filter.
+- **Stop rule under parallelism.** When the rule triggers, up to 3 other pairs may still be in flight. They're recorded and counted like any other pair.
+- **Protocol deviation: T66.** Amendment 6 assigns T66 to B, but it was launched under D. It's analysed under D, the setup it actually ran under.
+- **Assignments T67 and up.** The amendment 6 pool ends at T66. Integration tasks T67 and up take setups from a fourth seeded shuffle (seed `20261013`, `random.Random(20261013).shuffle` over a balanced pool of 24), in order:
+  `T67=C T68=C T69=A T70=B T71=B T72=A T73=D T74=D T75=A T76=A T77=A T78=B T79=B T80=D T81=A T82=B T83=B T84=D T85=D T86=C T87=C T88=C T89=C T90=D`.
+- **Forward costs.** Forward pairs so far record each side's cost from Claude Code's own dollar figure, which prices setup E's DeepSeek tokens at Claude rates. Before any forward cost is reported (H2), every pair is re-priced from its token usage with the same pricing as the replay path (T67). Both figures are kept in the re-pricing log.
+
+### Amendment 11: 2026-10-11 16:20 IST, F11 excluded (environment), not rerun
+F11 is excluded for both sides as an environment failure (F6), not rerun:
+- Both sides' sessions ended after 1 turn with "API Error: Can't reach the API server (ENOTFOUND)", a network outage on the run host.
+- The pair recorded $0 / $0 and both-fail.
+- Under the registered exclusion rule ("both setups fail for environment reasons (F6)"), F11 is excluded for both sides.
+
+How it's handled:
+- **Not rerun**, so there's no second attempt to choose between.
+- **Recorded** in `reports/self/forward-exclusions.json`, and left out of the paired analysis.
+- **If the product needs F11's module** (line-level attribution), it will be built as a separate, disclosed task outside the forward run.
+
+### Amendment 12: 2026-10-11 17:35 IST, the forward grader timed out every full-suite run; fixes, regrade, resume
+- **What was wrong.**
+  - **Suite timeout.** Every grading step ran under the grader's default 5-minute timeout. The full suite takes about 15 minutes on the loaded build machine, so every full-suite run in the forward run was recorded as a failure. That covers wave A under the original grader and the B–D pairs F12 and F15. H1 needs the full suite, so no side could pass H1, whatever its acceptance result.
+  - **Grading copy.** The copy added in T66 ran `tar` without pipefail and packed macOS extended attributes. A failed copy went unnoticed and later broke grading with "bad object". That crashed the wave-A re-merge and the B–D queue (17:26).
+- **Fixes** (ops commit `cee4921`, excluded from every comparison):
+  - each grading step gets a 45-minute timeout
+  - forward grading gives bun a 60-second per-test timeout (bun's 5-second default fails tests on timing alone under this load)
+  - the copy runs with pipefail and without extended attributes, and is retried once
+  - a failing suite re-runs only its failing files (at most 5), once, and passes only if they all pass
+  - one pair's error no longer ends a run or a re-merge
+  - the forward database waits for a lock instead of failing
+- **Regrade.** Every pair recorded before the fix is regraded with `roster forward --remerge --regrade` and the fixed grader. That's wave A (F01–F10 without F11, which amendment 11 excludes) plus F12 and F15. On each agent's recorded branch, the acceptance tests and the full suite run again, pass_old/pass_new are recomputed, and the merge policy is applied. Agents aren't re-run. Each change to H1 is logged as old → new. The H1 definition (acceptance + full suite + scope) is unchanged. The per-test timeout and the one-shot retry change how the suite is run, not what H1 means. They apply identically to both sides and to every pair, and they were set before any regraded result was seen.
+- **Resume.** The restarted queue grades F16 and F17, whose two agents had both finished before the crash, from their branches without re-running them. F18's agents were about 12 minutes in. They were stopped, and F18 restarts clean from the current `main`.
+
+### Amendment 13: 2026-10-11 18:00 IST, grading no longer stalls the queue; one branch grades at a time
+- **What was wrong.** Grading steps ran as blocking child processes, so while one pair graded (a suite step runs up to 45 minutes) the whole B–D queue process was frozen. No other pair could launch or reap its agents. After the 17:29 restart, F18 and F19 never started while F16 graded. An agent orphaned by the 17:26 crash (F19, setup E) was still writing in F19's worktree. The operator stopped it, and F19 restarts clean.
+- **Fixes** (ops commits, excluded from every comparison):
+  - `6faa6cc`: grading steps run asynchronously, with the same command and the same 45-minute limit.
+  - this commit: every branch the queue grades goes through grading slots. One branch at a time by default (`ROSTER_GRADE_PARALLEL`), which is how grading effectively ran when each step blocked, so suites don't compete with each other for the 45-minute limit. Agents keep launching and finishing while a pair grades.
+  - `grade_ms` counts wall time with at least one of the pair's grading steps holding a slot. Time spent waiting for a slot isn't counted.
+- **Scope.** H1, the merge policy, the timeouts and the test commands are unchanged. The change applies identically to both sides and every pair. No B–D pair has been recorded under the fixed grader: F12 and F15 are being regraded under amendment 12, and F16/F17 had not finished grading when the queue was stopped at 17:54. The queue restarts from the same command, and F16/F17 resume from their branches.
+- **Side effect disclosed.** While stopping the queue at 17:54, the operator killed stray grading processes (`roster-grade-*/work`). A typecheck running in a concurrent re-merge sandbox may have been killed. A typecheck counts only toward amendment 8 merge candidacy, never H1, and any pair re-merged in that window whose result shows a typecheck failure gets its `--remerge --regrade` run again.
+
+### Amendment 14: 2026-10-11 21:05 IST, suites failed under machine overload; one final logged regrade for sides that passed acceptance and failed the suite
+- **What happened.** From 17:29 the build machine (8 GB) ran at load 105–291. Up to ~9 full test suites ran at once: the queue, two regrades with no grading slots, review-1b's replays, and E agents running the suite themselves. The full suite takes ~14 minutes at moderate load. Under this load it can pass the 45-minute step limit, and timing-sensitive tests fail. The grader didn't record why a suite failed. In this period, sides that passed acceptance and then failed the full suite are:
+  - F02 (both sides), F06 (both) and F15 (both), from the regrades;
+  - F19's old side (B), from the queue. F19 graded for 107 minutes and merged new.
+- **Diagnostic, disclosed.** At 19:05–19:20 (load ~89) the operator ran F15's E branch (`forward/F15/new`) through the full suite once, outside the grader, in a scratch copy, with the grader's command (`bun test --timeout 60000`). Result: 602 tests, 0 failures, 14.4 minutes. No other branch was run this way, and no recorded result was changed by it.
+- **Fixes** (ops commit, excluded from every comparison):
+  - **Failure logging.** Every failed suite is logged as `forward: <task>: <side> suite failed: <files>`, naming the test files still failing after the retry, or saying that the run left no JUnit (killed, timed out or crashed).
+  - **Regrade grading slots.** `roster forward --remerge` grades through the same grading slots as the queue: one branch at a time by default (`ROSTER_GRADE_PARALLEL`). Previously a regrade at `--parallel 2` could run four suites at once.
+  - **H1-only regrade of merged pairs.** A merged pair named with `--tasks` under `--regrade` has its H1 regraded. Both sides are graded from the commit where its two branches meet, and its merge is left as it is.
+- **Rule.**
+  - **Which sides.** Every side that passed acceptance and failed the full suite in a grading run without failure logging gets one more `--remerge --regrade` of its pair on this code. That's F02, F06, F15 and F19 so far, plus any such side the running queue records before it restarts on this code.
+  - **Final result.** That regrade's H1 is final for the pair, pass or fail, and it's recorded with its failure log.
+  - **Merges.** Merges stay as they are; they are build progress (amendment 8), not H1.
+  - **Other pairs.** A side that failed acceptance, or whose suite passed, keeps its result.
+  - **Fixed before results.** The rule was fixed before any of these regrades produced a result. An F02/F06 regrade started at 19:11 was stopped at 19:20 with nothing recorded, because it ran without slots at load 291.
+- **Scope.** H1 (acceptance + full suite + scope), the timeouts, the retry and the test commands are unchanged. Both sides of each pair are regraded identically.
+
+### Amendment 15: 2026-10-11 23:20 IST, suites still killed at the 45-minute limit; 90-minute limit, machine-wide grading slot, one regrade for every suite that left no JUnit
+- **What happened.** With amendment 14's failure logging in place, the queue logged `F20: new suite failed: no JUnit (killed, timed out or crashed)` at about 45 minutes. F20 then recorded old pass, new fail and merged old. At that time the machine (load 110–240) was running the queue's grading, the F02/F06 regrade's grading (a separate process with its own slot), and the agents' own test runs. The suite takes ~14 minutes at moderate load, so this was the step limit, not the change.
+- **Fixes** (ops commit, excluded from every comparison):
+  - **Step limit.** Each grading step's limit goes from 45 to 90 minutes (`ROSTER_GRADE_TIMEOUT_MS`).
+  - **One slot machine-wide.** `roster forward` and `roster forward --remerge` share their grading slots through a lock directory (`ROSTER_GRADE_LOCK_DIR`, default `$TMPDIR/roster-grade-slots`). The queue and every regrade together grade one branch at a time, where before each process had its own slot. A slot whose holder process is gone is taken over.
+- **Rule.**
+  - **Which pairs.** Every pair with a side whose suite left no JUnit under the 45-minute limit gets one more `--remerge --regrade` on this code, and that regrade is final. That's F20 so far, plus any such side logged before the queue and the running regrades restart on this code.
+  - **Merges.** A merged pair (F20) gets an H1-only regrade, and its merge stays (amendment 14).
+  - **Overrides amendment 14.** A suite that leaves no JUnit is not a measurement, so it doesn't count as amendment 14's final regrade; that pair gets one more under this rule.
+  - **Fixed before results.** The rule was fixed after seeing F20's logged failure and before any regrade under it.
+- **Scope.** H1, the retry and the test commands are unchanged. The rule applies to both sides and every pair.
+
+### Amendment 16: 2026-10-12 01:13 IST, fair turns at the shared grading slot; two slots
+- **What happened.** After amendment 15 the queue held the single machine-wide grading slot from 23:18 to 01:10. Each time it released the slot it took it straight back for its next step, before any other process polled. So the regrades under amendments 14 and 15 (F06, F01/F04/F05/F08/F09/F10, F02, F15/F19/F20) graded nothing in that time. Load was down to 8–40.
+- **Fixes** (ops commit, excluded from every comparison):
+  - **Fair turns.** Waiters for the shared slots take tickets and are served first come, first served across processes. A ticket left by a process that is gone is dropped.
+  - **Two slots.** Grading slots go from 1 to 2 (`ROSTER_GRADE_PARALLEL`). With the 90-minute step limit (amendment 15), two concurrent suites fit comfortably at the current load, and a single slot made grading the bottleneck of the whole run.
+- **Scope.**
+  - H1, the step limit, the retry, the test commands and amendments 14–15's regrade rules are unchanged.
+  - Every failed suite is still logged. A suite that leaves no JUnit under the 90-minute limit is recorded as logged and is final.
+- **Restarts.** The queue and all regrades restart on this code. Only F28's agents, started minutes earlier, are re-run. F25–F27 resume from their branches.
+
+### Amendment 17: 2026-10-12 02:08 IST, F06 build-only merge (H1 unchanged)
+- **F06's final logged regrade** (amendments 14 and 15) failed the full suite on both sides, each at `tests/agent-backend.test.ts`. F06's branches sit on the 10:40 base, before that test was fixed (T63/T64); it passes on current main. A real file was named, so the result stands and is final: both sides fail H1, and nothing merges under the registered policy.
+- **Why merge anyway.** F07 and F13 build on F06's Book type. Without F06 on main, both sides of those pairs would start without a dependency the frozen backlog assumes.
+- **The build-only merge.**
+  1. The operator takes F06's secondary-preferred side (old, B).
+  2. Current main is merged into that branch, with a `human:` commit for any conflict resolution.
+  3. The full suite and the typecheck are run on the result.
+  4. If both pass, it's merged to main as `F06: build-only merge (B), H1 unchanged`.
+- **What doesn't change.** F06's recorded H1, its merged field (null) and every other recorded field stay as they are. The merge is build progress like amendment 8's, excluded from every comparison. It is on main before F07, F14 or F13 start, so both sides of those pairs start from the same main.
+- **If the suite or typecheck fails,** nothing merges, and F07 and F13 move to the end of the queue under the next amendment.
+
+### Amendment 18: 2026-10-12 03:15 IST, wave A's base-test failure: F6 exclusion with a sensitivity analysis; build-only merges of F04, F05, F08 and F09
+- **Finding.** In the final logged regrades on `1462ae4`, every remaining wave-A suite failure names one file, `tests/agent-backend.test.ts`:
+  - F04, F05, F06 and F08: both sides, and it's their only failing file.
+  - F09: the new side; the old side failed acceptance.
+
+  Wave A's branches sit on the 10:40 base `bd90b27`, from before that test was fixed (T63/T64). On current main the test passes 12/12, and F06-old passed it once main was merged in (amendment 17). The failure is inherited by both sides from the base, not caused by either side's change.
+- **H1, primary.** The registered exclusion rule ("both setups fail for environment reasons (F6)") applies to F04, F05, F06 and F08, where both sides' only failure is this base test. They're excluded from the paired analysis, like F11 (amendment 11), and recorded in `reports/self/forward-exclusions.json`.
+- **H1, sensitivity, reported alongside.** The same analysis including F04, F05, F06 and F08 as recorded (both fail).
+  - All four are concordant both-fail pairs, so the discordant counts the H1 test uses are identical in both analyses; only pass rates differ.
+  - F09 isn't excluded, because its old side failed acceptance (a task result). It stays both-fail, and the report notes that F09-new's only suite failure was this base test.
+- **Build-only merges, like amendment 17.**
+  - **Why.** F04 (detections, used by T70), F05 (summary), F08 (compare) and F09 (forward analysis, used by T72) are merged to main as build progress. Later tasks and the integration work then build on them.
+  - **Which side**, decided by rule, in order:
+    1. the secondary-preferred side;
+    2. otherwise the side that passed acceptance;
+    3. otherwise the side whose own new tests and typecheck pass;
+    4. otherwise old.
+  - **Procedure.** Current main is merged into that branch (any conflict fix is a `human:` commit). The full suite and typecheck must pass. It's then merged as `Fxx: build-only merge (side), H1 unchanged`.
+  - **What stays.** Recorded H1 and merge fields are unchanged, and these merges are excluded from every comparison. If a branch isn't green, it isn't merged, and that's noted.
