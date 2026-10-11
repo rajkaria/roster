@@ -193,3 +193,15 @@ How it's handled:
   - **Other pairs.** A side that failed acceptance, or whose suite passed, keeps its result.
   - **Fixed before results.** The rule was fixed before any of these regrades produced a result. An F02/F06 regrade started at 19:11 was stopped at 19:20 with nothing recorded, because it ran without slots at load 291.
 - **Scope.** H1 (acceptance + full suite + scope), the timeouts, the retry and the test commands are unchanged. Both sides of each pair are regraded identically.
+
+### Amendment 15: 2026-10-11 23:20 IST, suites still killed at the 45-minute limit; 90-minute limit, machine-wide grading slot, one regrade for every suite that left no JUnit
+- **What happened.** With amendment 14's failure logging in place, the queue logged `F20: new suite failed: no JUnit (killed, timed out or crashed)` at about 45 minutes. F20 then recorded old pass, new fail and merged old. At that time the machine (load 110–240) was running the queue's grading, the F02/F06 regrade's grading (a separate process with its own slot), and the agents' own test runs. The suite takes ~14 minutes at moderate load, so this was the step limit, not the change.
+- **Fixes** (ops commit, excluded from every comparison):
+  - **Step limit.** Each grading step's limit goes from 45 to 90 minutes (`ROSTER_GRADE_TIMEOUT_MS`).
+  - **One slot machine-wide.** `roster forward` and `roster forward --remerge` share their grading slots through a lock directory (`ROSTER_GRADE_LOCK_DIR`, default `$TMPDIR/roster-grade-slots`). The queue and every regrade together grade one branch at a time, where before each process had its own slot. A slot whose holder process is gone is taken over.
+- **Rule.**
+  - **Which pairs.** Every pair with a side whose suite left no JUnit under the 45-minute limit gets one more `--remerge --regrade` on this code, and that regrade is final. That's F20 so far, plus any such side logged before the queue and the running regrades restart on this code.
+  - **Merges.** A merged pair (F20) gets an H1-only regrade, and its merge stays (amendment 14).
+  - **Overrides amendment 14.** A suite that leaves no JUnit is not a measurement, so it doesn't count as amendment 14's final regrade; that pair gets one more under this rule.
+  - **Fixed before results.** The rule was fixed after seeing F20's logged failure and before any regrade under it.
+- **Scope.** H1, the retry and the test commands are unchanged. The rule applies to both sides and every pair.

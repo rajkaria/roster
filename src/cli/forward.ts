@@ -1,6 +1,7 @@
 // `roster forward --backlog <file> --pair OLD,NEW --parallel 4`: paired runs with blind grading (DESIGN.md §"Forward run").
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import type { Command } from "../cli.ts";
 import { deepseekClient } from "../llm/client.ts";
 import { DEFAULT_FORWARD_DB, MAX_PARALLEL, remergeForward, runForward } from "../forward/index.ts";
@@ -102,6 +103,9 @@ export function secondaryLine(pairs: ForwardPair[]): string | null {
   return parts.length ? `forward: secondary outcome (exploratory, not H1): ${parts.join(", ")}` : null;
 }
 
+/** Grading slots shared by the queue and every regrade on this machine (amendment 15). */
+const GRADE_LOCK_DIR = process.env.ROSTER_GRADE_LOCK_DIR ?? join(tmpdir(), "roster-grade-slots");
+
 export const forwardCommand: Command = {
   name: "forward",
   summary: "run backlog tasks through two setups, grade blind, merge the winner",
@@ -120,7 +124,7 @@ export const forwardCommand: Command = {
     if (a.remerge) {
       const res = await remergeForward({
         repo: process.cwd(), backlog, llm: deepseekClient(), db: a.db, parallel: a.parallel, log,
-        regrade: a.regrade, tasks: a.tasks, acceptanceDir: a.acceptance,
+        regrade: a.regrade, tasks: a.tasks, acceptanceDir: a.acceptance, gradeLockDir: GRADE_LOCK_DIR,
       });
       const merged = res.revisited.filter((p) => p.merged).length;
       console.log(`forward: ${a.regrade ? "regrade" : "remerge"} revisited ${res.revisited.length} unmerged pairs, merged ${merged}, skipped ${res.skipped.length}`);
@@ -139,6 +143,7 @@ export const forwardCommand: Command = {
       seed: a.seed,
       log,
       buildMerge: true,
+      gradeLockDir: GRADE_LOCK_DIR,
     });
     const { stop } = res;
     console.log(
