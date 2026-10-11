@@ -1,0 +1,32 @@
+[roster setup=E task=F35]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F35: Display formatting for numbers and p-values
+TASK F35 · Display formatting for numbers and p-values
+GOAL: One place that formats money, percentages and statistical results for every page.
+OWNS: web/lib/format.ts, tests/web-format.test.ts
+INTERFACE: web/lib/format.ts function usd(n: number | null): string; pct(share: number | null, digits?: number): string; pValue(p: number, n: number): string
+BEHAVIOUR: usd → "$1,234.56", negative "−$3.00", null "n/a". pct(0.4213) → "42.1%". pValue: p < 0.001 → "p < 0.001"; else "p = 0.031"
+(3 decimals); appends " (not significant at n = N)" when p ≥ 0.05.
+
+---
+
+<task-notification>
+<task-id>b6l6k6yjz</task-id>
+<tool-use-id>call_00_ET_pyiz2RQtfGR0kXOhtpqa0301</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F35/498a7b2f-fe09-4ec2-992a-e6833d6fffe3/tasks/b6l6k6yjz.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full test suite" completed (exit code 0)</summary>
+</task-notification>
