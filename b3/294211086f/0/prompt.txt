@@ -1,0 +1,31 @@
+[roster setup=A task=T72]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T72 · W5 · Export the forward run for /experiment and FACTS
+GOAL: /experiment says "The forward run has not started" and FACTS shows FORWARD_* as PENDING, although most pairs are recorded. Export the
+forward run from its databases into the report files the page (web/lib/forward.ts) and FACTS (scripts/facts.ts) read.
+READ: src/forward/analysis.ts (forwardSummary, mcnemarExact, wilcoxonSignedRank), web/lib/forward.ts (loadForward: expected shape),
+web/app/experiment/page.tsx, scripts/facts.ts (FORWARD_* specs), src/forward/index.ts (ForwardPair columns), experiments/FREEZE.txt,
+reports/self/forward-exclusions.json, experiments/PREREGISTRATION.md (amendments 8, 10, 11, 14–17).
+OWNS: scripts/forward-export.ts (new), tests/forward-export.test.ts, reports/self/forward.json and reports/self/prereg.json (generated)
+BUILD: Read .roster/forward.db (all pairs; wave-A rows carry seq < 0) read-only. Apply exclusions from reports/self/forward-exclusions.json.
+Compute forwardSummary over the H1 fields (pass_old/pass_new) with re-priced costs (cost_old/cost_new as stored). Also report the
+exploratory secondary outcome counts separately, and the count of build-only merges (merged_reason containing "build-only", if present). Write
+reports/self/forward.json in the shape loadForward expects (rows + summary; each row with task, old, new, costOld, costNew, excluded,
+merged) and reports/self/prereg.json ({backlogSha256, acceptanceSha256} parsed from experiments/FREEZE.txt). Never open the DB for write.
+ACCEPTANCE: tests on a fixture SQLite file with 5 pairs (one excluded, one discordant each way) produce the expected summary and files;
+loadForward parses the output; facts.ts fills FORWARD_*. Whole suite unaffected.
+TEST: bun test tests/forward-export.test.ts && bun run typecheck
+DO NOT TOUCH: anything outside OWNS; never write to .roster/*.db.
