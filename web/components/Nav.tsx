@@ -3,6 +3,7 @@ import { GITHUB } from "./LandingData";
 
 const LINKS: { href: string; label: string; external?: boolean }[] = [
   { href: "/r", label: "Reviews" },
+  { href: "/try", label: "Try" },
   { href: "/experiment", label: "Experiment" },
   { href: GITHUB, label: "GitHub", external: true },
 ];
