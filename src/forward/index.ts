@@ -11,6 +11,7 @@ import { createSandbox, destroySandbox, runGit } from "../sandbox/index.ts";
 import type { ForwardPair } from "../types.ts";
 import { assignLabels, blindJudge, chooseMerge, pairSeed, rng, secondaryOutcome } from "./blind.ts";
 import type { MergeChoice, MergeReason, Side } from "./blind.ts";
+import { priceRunLog, runLogPath } from "./cost.ts";
 
 export * from "./blind.ts";
 
@@ -184,16 +185,9 @@ export function runSetupHarness(repo: string): Harness {
     };
     const proc = Bun.spawn(["bash", join(repo, "scripts", "run-setup.sh"), req.setup, req.task.id], { cwd: repo, env, stdout: "pipe", stderr: "pipe" });
     await proc.exited;
-    const log = join(repo, ".roster", "runs", `${req.task.id}.${req.setup}.jsonl`);
-    let costUsd: number | null = null;
-    try {
-      const line = readFileSync(log, "utf8").split("\n").filter((l) => l.includes('"type":"result"')).at(-1);
-      const c = line ? JSON.parse(line).total_cost_usd : null;
-      costUsd = typeof c === "number" ? c : null;
-    } catch {
-      /* no log: cost stays unknown, never a guess */
-    }
-    return { costUsd };
+    // Priced from the run's tokens, not Claude Code's total_cost_usd (which prices DeepSeek at Claude rates).
+    const { usd } = priceRunLog(runLogPath(join(repo, ".roster", "runs"), req.task.id, req.setup), new Date());
+    return { costUsd: usd };
   };
 }
 
