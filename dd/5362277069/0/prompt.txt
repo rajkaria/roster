@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bar18uch5</task-id>
+<tool-use-id>call_00_ET_gfzjghxBIDluFE6BG1qg2275</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-new-F20/686c6c6c-ae82-42a8-8dd8-c2b3cafffab3/tasks/bar18uch5.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the whole test suite" completed (exit code 0)</summary>
+</task-notification>
