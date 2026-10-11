@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "fc97de564ede",
+  "strategy": "manual-commit",
+  "branch": "task/T65",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/forward-merge.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/fc/97de564ede/0/metadata.json",
+      "transcript": "/fc/97de564ede/0/full.jsonl",
+      "compact_transcript": "/fc/97de564ede/0/transcript.jsonl",
+      "content_hash": "/fc/97de564ede/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 9702,
+    "cache_read_tokens": 226264,
+    "output_tokens": 7343,
+    "api_call_count": 3
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "fc97de564ede",
+  "session_id": "30df5b76-0c4b-44c5-bf75-37e3c9b00254",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T06:17:43.107361Z",
+  "branch": "task/T65",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/forward-merge.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "1af911278c3f",
+  "checkpoint_transcript_start": 147,
+  "transcript_lines_at_start": 147,
+  "compact_transcript_start": 27,
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 9702,
+    "cache_read_tokens": 226264,
+    "output_tokens": 7343,
+    "api_call_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T06:17:43.054268Z",
+    "agent_lines": 270,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 270,
+    "total_lines_changed": 270,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
