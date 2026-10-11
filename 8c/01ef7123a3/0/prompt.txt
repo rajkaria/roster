@@ -1,0 +1,32 @@
+[roster setup=C task=T59]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T59 · W2 · `roster review` runs difficulty and the suspect test
+GOAL: Every review says "insufficient data", because src/cli/review.ts hard-codes label "insufficient_data" and suspect null with the
+note "the difficulty-matched Mantel–Haenszel test is not part of this command yet". src/difficulty (difficulty, terciles,
+reviewDifficulty) and src/review/suspect.ts (suspect) are built and tested but never called. Wire them in.
+READ: src/cli/review.ts (the Review object near `label: "insufficient_data"` and the TIMED stages), src/difficulty/index.ts
+(reviewDifficulty, difficulty, terciles), src/review/suspect.ts (suspect, labels, MIN_MATURE_SESSIONS), src/types.ts (Outcome.difficulty,
+Outcome.tercile, Review), docs/DESIGN.md §"Difficulty and review".
+OWNS: src/cli/review.ts, tests/review-suspect.test.ts, and any assertion in tests/cli-review.test.ts, tests/review-contract.test.ts or
+tests/review-unattended-labels.test.ts that encodes the hard-coded label or the "not part of this command" note (you may modify those;
+say which)
+BUILD: After scoring, run the difficulty stage (timed as "difficulty"), set each outcome's difficulty and tercile, then call suspect()
+on mature outcomes with setup ids, and put its label (mapped to the Review label enum), suspect setup id, odds ratio, CI and p into
+review.json. Remove the "not part of this command" note; keep notes that explain the result in plain words (for example "no setup
+has ≥ 8 mature sessions" for insufficient data). Difficulty failures fall back as src/difficulty documents and never fail the review.
+ACCEPTANCE: tests on fixtures: the confound scenario gives "no suspect" (or insufficient) rather than flagging X; a true-effect fixture
+gives a suspect with p < 0.05 in review.json; difficulty appears in the timing line. Whole suite green, typecheck clean.
+TEST: bun test tests/review-suspect.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
