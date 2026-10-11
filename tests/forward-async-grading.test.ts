@@ -63,7 +63,7 @@ describe("forward queue with asynchronous grading", () => {
     const order: string[] = [];
     const summary = await runForward({
       repo: w.repo, backlog: w.backlog, pair: { old: "A", new: "B" }, parallel: 2, llm,
-      db: join(w.root, "s.db"), wtRoot: join(w.root, "wt"), acceptanceDir: w.acceptanceDir, testCmd: "sh suite.sh", seed: 1,
+      db: join(w.root, "s.db"), wtRoot: join(w.root, "wt"), acceptanceDir: w.acceptanceDir, testCmd: "sh suite.sh", seed: 1, gradeParallel: 1,
       // T2's agents only run once T1 is grading; T1's first grading step only returns once T2's agents are done.
       // A blocking grading step would deadlock here.
       harness: harnessWith(async (id) => {
@@ -179,6 +179,32 @@ describe("machine-wide grading slots (amendment 15)", () => {
     const dead = Bun.spawnSync(["bash", "-c", "echo $$"]).stdout.toString().trim();
     writeFileSync(join(dir, "slot-0", "pid"), dead);
     expect(await new Slots(1, dir).run(() => 42)).toBe(42);
+  }, 30_000);
+
+  test("waiters across processes are served first come, first served (amendment 16)", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "roster-gradelock-")), "slots");
+    const a = new Slots(1, dir);
+    const b = new Slots(1, dir);
+    const order: string[] = [];
+    const job = (name: string, ms: number) => async () => {
+      order.push(name);
+      await Bun.sleep(ms);
+    };
+    // a holds the slot; b queues while it does; a's next step queues after b. Before tickets, a took it straight back.
+    const a1 = a.run(job("a1", 300));
+    await Bun.sleep(30);
+    const b1 = b.run(job("b1", 10));
+    const a2 = a.run(job("a2", 10));
+    await Promise.all([a1, b1, a2]);
+    expect(order).toEqual(["a1", "b1", "a2"]);
+  }, 30_000);
+
+  test("a ticket left by a process that is gone does not block the line", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "roster-gradelock-")), "slots");
+    const dead = Bun.spawnSync(["bash", "-c", "echo $$"]).stdout.toString().trim();
+    mkdirSync(join(dir, "tickets"), { recursive: true });
+    writeFileSync(join(dir, "tickets", `000000000000001-${dead}-zzz`), dead);
+    expect(await new Slots(1, dir).run(() => "ok")).toBe("ok");
   }, 30_000);
 
   test("a slot held by a live process is waited for, and freed when the function throws", async () => {
