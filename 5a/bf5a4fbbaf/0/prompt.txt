@@ -1,0 +1,50 @@
+[roster setup=B task=T70]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T70 · W4 · Detections D1–D4 on every run: decisions, trace and review page
+GOAL: Every `roster run` evaluates detections D1–D4 (src/obs/detections.ts, merged) over its replays and records them where a judge sees
+them: decisions.json, the neatlogs trace (span attributes) and the review page.
+READ: src/obs/detections.ts (detect), src/agent/coordinator.ts (end of run, decisions.json), src/agent/backend.ts (replay rows),
+src/obs/index.ts (withSpan, attributes), web/app/r/[owner]/[repo]/page.tsx, reports/self/review-1b/replays.json (real rows to test with).
+OWNS: src/agent/coordinator.ts (end-of-run block only), web/components/Detections.tsx (new), web/app/r/[owner]/[repo]/page.tsx (render the
+component only), scripts/experiments/detections-review-1b.ts (new: runs detect over reports/self/review-1b/replays.json and writes
+reports/self/review-1b/detections.json), tests/run-detections.test.ts
+BUILD: At the end of a run, call detect() with the run's replays (incumbent = the plan's suspect) and add `detections` to decisions.json.
+Emit one GUARDRAIL span per detection with roster.* attributes. The review page shows a Detections section when a decisions.json with
+detections exists. The script applies the same to review 1b's saved replays.
+ACCEPTANCE: a scripted run with a silent pass (suite ok, hidden fail) has D1 in decisions.json; the script writes detections.json for
+review 1b; `cd web && bun run build` succeeds.
+TEST: bun test tests/run-detections.test.ts && (cd web && bun run build) && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>bonrtz4ui</task-id>
+<tool-use-id>toolu_01RSwhBZajoxtmu1xtq1nsZg</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T70/16935ee0-4e42-43e8-b250-d4bb3254006e/tasks/bonrtz4ui.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test --cwd /Users/Shared/roster-wt/T70 2&gt;&amp;1 | tail -8" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bkt427j3h</task-id>
+<tool-use-id>toolu_01L6C7eEmDYooAmVHj3ZCsmc</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T70/16935ee0-4e42-43e8-b250-d4bb3254006e/tasks/bkt427j3h.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test --cwd /Users/Shared/roster-wt/T70 2&gt;&amp;1 | tail -12" completed (exit code 0)</summary>
+</task-notification>

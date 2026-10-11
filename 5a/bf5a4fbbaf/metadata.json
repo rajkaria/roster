@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "5abf5a4fbbaf",
+  "strategy": "manual-commit",
+  "branch": "task/T70",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/experiments/detections-review-1b.ts",
+    "src/agent/coordinator.ts",
+    "tests/run-detections.test.ts",
+    "web/app/r/[owner]/[repo]/page.tsx",
+    "web/components/Detections.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/5a/bf5a4fbbaf/0/metadata.json",
+      "transcript": "/5a/bf5a4fbbaf/0/full.jsonl",
+      "compact_transcript": "/5a/bf5a4fbbaf/0/transcript.jsonl",
+      "content_hash": "/5a/bf5a4fbbaf/0/content_hash.txt",
+      "prompt": "/5a/bf5a4fbbaf/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 50,
+    "cache_creation_tokens": 47559,
+    "cache_read_tokens": 1194263,
+    "output_tokens": 14943,
+    "api_call_count": 25
+  }
+}

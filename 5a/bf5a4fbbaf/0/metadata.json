@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "5abf5a4fbbaf",
+  "session_id": "16935ee0-4e42-43e8-b250-d4bb3254006e",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T23:11:55.797496Z",
+  "branch": "task/T70",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/experiments/detections-review-1b.ts",
+    "src/agent/coordinator.ts",
+    "tests/run-detections.test.ts",
+    "web/app/r/[owner]/[repo]/page.tsx",
+    "web/components/Detections.tsx"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "a1026cfe8632",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 50,
+    "cache_creation_tokens": 47559,
+    "cache_read_tokens": 1194263,
+    "output_tokens": 14943,
+    "api_call_count": 25
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T23:11:55.777332Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 4,
+    "total_committed": 0,
+    "total_lines_changed": 4,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 318,
+      "user_lines_removed": 4,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "reports/self/review-1b/detections.json": 98,
+        "scripts/experiments/detections-review-1b.ts": 11,
+        "src/agent/coordinator.ts": 41,
+        "tests/run-detections.test.ts": 104,
+        "web/app/r/[owner]/[repo]/page.tsx": 3,
+        "web/components/Detections.tsx": 61
+      },
+      "user_removed_per_file": {
+        "src/agent/coordinator.ts": 3,
+        "web/app/r/[owner]/[repo]/page.tsx": 1
+      }
+    }
+  ]
+}
