@@ -1,0 +1,138 @@
+[roster setup=C task=T63]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T63 · W3 · Replays: hidden tests arrive without their helpers, and a 0–0 tie must not promote
+GOAL: In the first review, every setup (including the incumbent replaying its own work) failed all 10 tasks that have hidden tests.
+The hidden test files are copied into the grading copy without the non-test files the original session also added and those tests
+import (fixture builders, sample data, helpers under tests/). Also the gate promoted a candidate on a 0–0 tie by cost, which carries no
+quality signal.
+READ: src/grade/hidden.ts (hiddenTestsForCommits), src/grade/index.ts (grade: how hidden files are written), src/gate/index.ts (gate,
+ties), src/replay/run.ts, tests/fixtures/ (examples of helpers tests import).
+OWNS: src/grade/hidden.ts, src/gate/index.ts, tests/hidden-helpers.test.ts, tests/gate-signal.test.ts, and any assertion in
+tests/gate.test.ts that encodes "ties go to the cheaper candidate even at zero passes" (you may modify those; say which)
+BUILD: (1) Hidden tests come with their support files: files the session added or modified under the test directories (tests/,
+test/, __tests__/, fixtures/), plus any repo-relative module a hidden test imports that the session added; all at the session's own
+version. (2) Gate: if the incumbent's hidden-test pass count on tests-track tasks is 0 and there are at least 3 such tasks, the verdict
+is "no_signal" with the reason "the incumbent fails its own tasks: the replay measure has no signal", and nothing is promoted.
+ACCEPTANCE: tests: a session that added tests/x.test.ts importing tests/fixtures/make.ts gets both files; the incumbent replay of a
+correct patch passes; the gate returns no_signal on a 0/3 incumbent. Whole suite green.
+TEST: bun test tests/hidden-helpers.test.ts tests/gate-signal.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>b17jvccur</task-id>
+<tool-use-id>toolu_01PNVgMcN51TE98hjBUcJfqq</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/b17jvccur.output</output-file>
+<status>completed</status>
+<summary>Monitor "Brief pause before checking suite output" ended without producing output (exit 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnzu135ro</task-id>
+<tool-use-id>toolu_015vWM3hRJc7LhTrMNwCNL7v</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/bnzu135ro.output</output-file>
+<status>failed</status>
+<summary>Background command "Run whole suite and typecheck" failed with exit code 1</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bk3hqo21a</task-id>
+<tool-use-id>toolu_01Nrn4sCrbXZ11uZ52Gsm5Vg</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/bk3hqo21a.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for full suite result summary" stream ended</summary>
+<event>569 pass
+1 fail
+Ran 572 tests across 63 files. [295.02s]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b9z58mreq</task-id>
+<tool-use-id>toolu_013WENrs3UMFFzfKpFLhCH5o</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/b9z58mreq.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for full suite to finish" stream ended</summary>
+<event>[fetch] ls-remote: attempt 1/3
+[fetch] clone: attempt 1/3
+[fetch] fetch branch: attempt 1/3
+[1/4] fetch: backend=branch head=cdbae9f14e1c
+[2/4] parse: 4 sessions
+[3/4] identify: 3 setups, tag accuracy 100.0%
+[4/4] score: 4 mature, 0 too young
+wrote /var/folders/h2/6sglbb193fj0pnyn081_v2cm0000gn/T/roster-run-bootstrap-W9wrRX/reports/fixture/review.json, /var/folders/h2/6sglbb193fj0pnyn081_v2cm0000gn/T/roster-run-bootstrap-W9wrRX/reports/fixture/sessions.json, /var/folders/h2/6sglbb193fj0pnyn081_v2cm0000gn/T/roster-run-bootstrap-W9wrRX/reports/fixture/outcomes.json, /var/folders/h2/6sglbb193fj0pnyn081_v2cm0000gn/T/roster-run-bootstrap-W9wrRX/reports/fixture/review.md
+label insufficient_data · evidence level A
+time: fetch 0.21s · parse 0.32s · identify 0.05s · score 0.13s · difficulty 0.36s · export 0.00s · total 1.08s
+[roster] neatlogs: 5 spans exported, unknown dropped
+[roster] neatlogs trace trace-abc
+[fetch] ls-remote: attempt 1/3
+[fetch] cache hit 1e277c6538d169022e02bc56
+[fetch] ls-remote: attempt 1/3
+[fetch] cache hit 1e277c6538d169022e02bc56
+[roster] neatlogs: 0 spans exported, unknown dropped
+tests/obs-reliability.test.ts:
+[roster] neatlogs: 0 spans exported, unknown dropped (flush failed)
+[roster] neatlogs: 1 spans exported, unknown dropped
+569 pass
+2 skip
+1 fail
+2189 expect() calls
+Ran 572 tests across 63 files. [295.02s]
+(eval):1: == not found
+[exited with code 1]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bn6xmasea</task-id>
+<tool-use-id>toolu_01NqiBVQDCQ4AeccvcJrNLJT</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/bn6xmasea.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for full suite to complete" stream ended</summary>
+<event>569 pass
+1 fail
+Ran 572 tests across 63 files. [295.02s]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b6p9qgem8</task-id>
+<tool-use-id>toolu_01L5aQesawqZFGef3X2BZafL</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/b6p9qgem8.output</output-file>
+<status>completed</status>
+<summary>Monitor "Wait for full suite completion summary" stream ended</summary>
+<event>569 pass
+1 fail
+Ran 572 tests across 63 files. [295.02s]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b7g71mwks</task-id>
+<tool-use-id>toolu_013o3rKAHqhktmiZD2pQLmbQ</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T63/8dd7b762-fcec-4319-b8df-862a07469dad/tasks/b7g71mwks.output</output-file>
+<status>completed</status>
+<summary>Monitor "Second hold while suite runs" stream ended</summary>
+<event>tick2</event>
+</task-notification>
