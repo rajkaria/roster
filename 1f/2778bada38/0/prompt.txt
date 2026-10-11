@@ -1,0 +1,42 @@
+[roster setup=B task=T83]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T83 · W1 · Review prices DeepSeek sessions
+GOAL: This repo's review now has a "Claude Code · deepseek-flash" setup with 40 sessions and spend_usd null, because session pricing only
+knows Anthropic rows. DeepSeek pricing exists (src/price/deepseek.ts: priceDeepSeek with peak/off-peak by timestamp) but the review path
+doesn't use it.
+READ: src/price/index.ts (priceSession, model normalisation), src/price/deepseek.ts (priceDeepSeek), src/score/index.ts (sessionCost),
+src/cli/review.ts (where session cost is computed), reports/rajkaria__roster/sessions.json (real deepseek-flash token shapes; Entire
+reports cache read/creation tokens and input tokens).
+OWNS: src/price/index.ts, src/score/index.ts (sessionCost only), tests/price-review-deepseek.test.ts, and any assertion in
+tests/price*.test.ts that encodes "deepseek models are unknown" (you may modify those; say which)
+BUILD: priceSession(model, tokens, at?) routes deepseek-flash and deepseek-v4-pro (including "[1m]" suffixes) to priceDeepSeek, using the
+session's started_at or created_at for peak/off-peak. Cache-read tokens are cache hits; input plus cache-creation tokens are misses.
+sessionCost passes the session timestamp.
+ACCEPTANCE: a deepseek-flash session with the real token shape prices to a positive number that matches priceDeepSeek at its timestamp;
+Anthropic models are unchanged; the review of this repo shows a non-null spend for the deepseek setup (run it and paste the line in your
+final message).
+TEST: bun test tests/price-review-deepseek.test.ts && bun test tests/price*.test.ts && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>b6h4y3iue</task-id>
+<tool-use-id>toolu_018rknhrau9xfGT2XRDuQV4A</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T83/b87cccf0-8652-4504-88d1-1c84aceb6593/tasks/b6h4y3iue.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test 2&gt;&amp;1 | tail -6; grep -n "review" package.json | head; grep -n "spend" src/cli/review.ts | head" completed (exit code 0)</summary>
+</task-notification>

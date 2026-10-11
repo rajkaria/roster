@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "1f2778bada38",
+  "strategy": "manual-commit",
+  "branch": "task/T83",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/price/index.ts",
+    "src/score/index.ts",
+    "tests/price-review-deepseek.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1f/2778bada38/0/metadata.json",
+      "transcript": "/1f/2778bada38/0/full.jsonl",
+      "compact_transcript": "/1f/2778bada38/0/transcript.jsonl",
+      "content_hash": "/1f/2778bada38/0/content_hash.txt",
+      "prompt": "/1f/2778bada38/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 31748,
+    "cache_read_tokens": 714522,
+    "output_tokens": 7853,
+    "api_call_count": 19
+  }
+}
