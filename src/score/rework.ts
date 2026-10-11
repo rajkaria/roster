@@ -32,6 +32,22 @@ export interface GitResult {
   ok: boolean;
   out: string;
   err: string;
+  /** The call was killed (or abandoned) at its timeout. */
+  timedOut?: boolean;
+  /** The call was refused because the review's scoring budget ran out. */
+  budget?: boolean;
+}
+
+/** Longest one git call may run. */
+export const GIT_TIMEOUT_MS = 30_000;
+/** What a session reports when the scoring budget ran out before it was scored. */
+export const BUDGET_MESSAGE = "not_scored: time budget";
+
+/** The Error for a failed `GitResult`, saying whether it timed out or ran out of budget. */
+export function gitFailure(r: GitResult, what: string): Error {
+  if (r.budget) return new Error(BUDGET_MESSAGE);
+  if (r.timedOut) return new Error(`${what} timed out`);
+  return new Error(`${what} failed: ${r.err.trim()}`);
 }
 
 /** Runs `git <args>` in `repo`. Injectable so tests can count the commands a review spawns. */
@@ -42,17 +58,36 @@ export const GIT_PARALLEL = 8;
 
 /** Spawns one git process and collects its output. */
 export const spawnGit: GitRunner = async (repo, args, stdin) => {
-  const p = Bun.spawn(["git", ...args], { cwd: repo, stdin: stdin === undefined ? "ignore" : "pipe", stdout: "pipe", stderr: "pipe" });
+  const p = Bun.spawn(["git", ...args], {
+    cwd: repo,
+    stdin: stdin === undefined ? "ignore" : "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: GIT_TIMEOUT_MS,
+    killSignal: "SIGKILL",
+  });
   if (stdin !== undefined && p.stdin) {
     p.stdin.write(stdin);
     p.stdin.end();
   }
   const [out, err, code] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text(), p.exited]);
-  return { ok: code === 0, out, err };
+  return { ok: code === 0, out, err, ...(p.signalCode === "SIGKILL" ? { timedOut: true } : {}) };
 };
 
-/** Wraps `run` so that at most `limit` commands are in flight. */
-export function gitPool(run: GitRunner = spawnGit, limit: number = GIT_PARALLEL): GitRunner {
+/** Wraps `run` so that a call that has not answered after `ms` comes back as timed out. */
+export function withTimeout(run: GitRunner, ms: number = GIT_TIMEOUT_MS): GitRunner {
+  return (repo, args, stdin) => {
+    let timer: ReturnType<typeof setTimeout>;
+    const expired = new Promise<GitResult>((done) => {
+      timer = setTimeout(() => done({ ok: false, out: "", err: `timed out after ${ms} ms`, timedOut: true }), ms);
+    });
+    return Promise.race([run(repo, args, stdin), expired]).finally(() => clearTimeout(timer));
+  };
+}
+
+/** Wraps `run` so that at most `limit` commands are in flight, each cut off after `timeoutMs`. */
+export function gitPool(run: GitRunner = spawnGit, limit: number = GIT_PARALLEL, timeoutMs: number = GIT_TIMEOUT_MS): GitRunner {
+  run = withTimeout(run, timeoutMs);
   let active = 0;
   const waiting: (() => void)[] = [];
   return async (repo, args, stdin) => {
@@ -70,12 +105,13 @@ export function gitPool(run: GitRunner = spawnGit, limit: number = GIT_PARALLEL)
 /** Like `git` below, through a runner. */
 async function gitAsync(run: GitRunner, repo: string, args: string[], stdin?: string): Promise<string> {
   const r = await run(repo, args, stdin);
-  if (!r.ok) throw new Error(`git ${args.join(" ")} failed: ${r.err.trim()}`);
+  if (!r.ok) throw gitFailure(r, `git ${args.join(" ")}`);
   return r.out;
 }
 
 function git(repo: string, args: string[]): string {
-  const p = Bun.spawnSync(["git", ...args], { cwd: repo, stdout: "pipe", stderr: "pipe" });
+  const p = Bun.spawnSync(["git", ...args], { cwd: repo, stdout: "pipe", stderr: "pipe", timeout: GIT_TIMEOUT_MS, killSignal: "SIGKILL" });
+  if (p.exitedDueToTimeout) throw new Error(`git ${args.join(" ")} timed out`);
   if (p.exitCode !== 0) throw new Error(`git ${args.join(" ")} failed: ${p.stderr.toString().trim()}`);
   return p.stdout.toString();
 }

@@ -1,13 +1,41 @@
 // Score: survival (DESIGN.md §"Score: survival"). Share of the lines a session's commit(s) added that
 // `git blame -w -M -C HEAD` still attributes to those commits.
 
-import { gitPool, type GitRunner } from "./rework.ts";
+import { GIT_TIMEOUT_MS, gitFailure, gitPool, type GitRunner } from "./rework.ts";
 
 export interface Survival {
   added: number;
   surviving: number;
   /** surviving ÷ added; 1 when nothing was added (nothing to lose). */
   ratio: number;
+  /** Files left out of the counts because blame was skipped, with why. */
+  skipped?: { file: string; reason: string }[];
+}
+
+/** Files longer than this are not blamed. */
+export const MAX_BLAME_LINES = 5000;
+/** Data files (`.json`) larger than this are not blamed. */
+export const MAX_DATA_BYTES = 1024 * 1024;
+
+const SKIP_PATH: [RegExp, string][] = [
+  [/(^|\/)(dist|build|vendor|node_modules)\//, "generated or vendored path"],
+  [/\.min\.[^/]*$/, "minified file"],
+  [/\.lock$|(^|\/)(package-lock\.json|pnpm-lock\.yaml|bun\.lockb|go\.sum)$/, "lockfile"],
+  [/\.ipynb$/, "notebook"],
+  [/\.csv$/, "data file"],
+];
+
+/** Why a file is not blamed judging by its path alone, or null. */
+export function skipReason(path: string): string | null {
+  return SKIP_PATH.find(([re]) => re.test(path))?.[1] ?? null;
+}
+
+/** Why a file with this content is not blamed, or null. */
+function contentSkipReason(path: string, blob: string, bytes: number): string | null {
+  if (blob.slice(0, 8000).includes("\0")) return "binary file";
+  if (/\.json$/.test(path) && bytes > MAX_DATA_BYTES) return "data file over 1 MB";
+  const lines = blob.split("\n").length - 1;
+  return lines > MAX_BLAME_LINES ? `over ${MAX_BLAME_LINES} lines (${lines})` : null;
 }
 
 const GENERATED = [
@@ -26,7 +54,10 @@ function git(repo: string, args: string[]): { ok: boolean; out: string } {
     stdout: "pipe",
     stderr: "pipe",
     maxBuffer: 256 * 1024 * 1024,
+    timeout: GIT_TIMEOUT_MS,
+    killSignal: "SIGKILL",
   });
+  if (r.exitedDueToTimeout) throw new Error(`git ${args[0]} timed out`);
   return { ok: r.exitCode === 0, out: r.stdout.toString() };
 }
 
@@ -134,6 +165,7 @@ export async function survivalMany(
   head: string,
   run: GitRunner = gitPool(),
   cache: BlameCache = new Map(),
+  onSet: (index: number) => void = () => {},
 ): Promise<(Survival | Error)[]> {
   const quoted = (args: string[]) => ["-c", "core.quotepath=off", ...args];
   const shows = new Map<string, Promise<Map<string, number>>>();
@@ -141,7 +173,7 @@ export async function survivalMany(
     let p = shows.get(sha);
     if (!p) {
       p = run(repoPath, quoted([...SHOW, sha])).then((res) => {
-        if (!res.ok) throw new Error(`git show ${sha} failed in ${repoPath}`);
+        if (!res.ok) throw gitFailure(res, `git show ${sha}`);
         return parseAdded(res.out);
       });
       shows.set(sha, p);
@@ -152,25 +184,59 @@ export async function survivalMany(
     const key = `${repoPath}\0${head}\0${file}`;
     let p = cache.get(key);
     if (!p) {
-      p = run(repoPath, quoted([...BLAME, head, "--", file])).then(parseBlame);
+      p = run(repoPath, quoted([...BLAME, head, "--", file])).then((res) => {
+        if (res.timedOut || res.budget) throw gitFailure(res, `git blame ${file}`);
+        return parseBlame(res);
+      });
       cache.set(key, p);
+    }
+    return p;
+  };
+  // Why a file is not blamed (null: blame it). A file gone at HEAD has no blob and is left to blame.
+  const skips = new Map<string, Promise<string | null>>();
+  const skipOf = (file: string) => {
+    let p = skips.get(file);
+    if (!p) {
+      const byPath = skipReason(file);
+      p =
+        byPath !== null
+          ? Promise.resolve(byPath)
+          : run(repoPath, ["cat-file", "blob", `${head}:${file}`]).then((res) => {
+              if (res.timedOut || res.budget) throw gitFailure(res, `git cat-file ${file}`);
+              return res.ok ? contentSkipReason(file, res.out, res.out.length) : null;
+            });
+      skips.set(file, p);
     }
     return p;
   };
 
   return Promise.all(
-    sets.map(async (set) => {
+    sets.map(async (set, index) => {
       try {
         const shas = new Set(set);
         const added = new Map<string, number>();
         for (const perFile of await Promise.all([...shas].map(addedOf))) {
           for (const [file, n] of perFile) added.set(file, (added.get(file) ?? 0) + n);
         }
+        const skipped: { file: string; reason: string }[] = [];
+        for (const file of [...added.keys()]) {
+          const reason = await skipOf(file);
+          if (reason !== null) {
+            skipped.push({ file, reason });
+            added.delete(file);
+          }
+        }
+        if (added.size === 0 && skipped.length > 0) {
+          throw new Error(`not_scored: every changed file was skipped (${skipped.map((s) => `${s.file}: ${s.reason}`).join("; ")})`);
+        }
         const files = [...added.keys()];
         const blamed = new Map((await Promise.all(files.map(blameOf))).map((c, i) => [files[i]!, c]));
-        return tally(added, shas, (file) => blamed.get(file)!);
+        const result = tally(added, shas, (file) => blamed.get(file)!);
+        return skipped.length > 0 ? { ...result, skipped } : result;
       } catch (err) {
         return err instanceof Error ? err : new Error(String(err));
+      } finally {
+        onSet(index);
       }
     }),
   );

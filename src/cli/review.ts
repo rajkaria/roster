@@ -11,7 +11,7 @@ import { type ParsedSession, parseCheckpoints } from "../ingest/parse.ts";
 import { type Identity, identify, inferenceAccuracy } from "../identity/index.ts";
 import { survival, survivalMany } from "../score/survival.ts";
 import { isReverted, reverted } from "../score/revert.ts";
-import { gitPool, type GitRunner, rework, reworkShares, trackMany } from "../score/rework.ts";
+import { BUDGET_MESSAGE, gitFailure, gitPool, type GitResult, type GitRunner, rework, reworkShares, trackMany } from "../score/rework.ts";
 import { buildSetupRows, buildTags, repoSlug, type ReviewReport, slugDir, writeReview } from "../review/export.ts";
 import type { Outcome, Review, Session } from "../types.ts";
 
@@ -80,6 +80,16 @@ function git(repo: string, args: string[]): string {
   return p.stdout.toString();
 }
 
+/** Wall time the whole scoring pass may take before the remaining sessions are marked not scored. */
+export const SCORE_BUDGET_MS = 120_000;
+const PROGRESS_EVERY = 10;
+
+export interface ScoreOptions {
+  budgetMs?: number;
+  /** Called with a line like `score: 10/50 sessions, 12.3 s` at every 10th session. */
+  onProgress?: (line: string) => void;
+}
+
 interface ScoreContext {
   repo: string;
   head: string;
@@ -134,10 +144,26 @@ export function scoreSession(session: ParsedSession, ctx: ScoreContext): Outcome
  * of GIT_PARALLEL processes by default): blame runs once per (file, HEAD) and rework and reverts share
  * one history pass. Each entry is the session's Outcome, or the Error that stopped it.
  */
-export async function scoreAll(sessions: ParsedSession[], ctx: ScoreContext, run: GitRunner = gitPool()): Promise<(Outcome | Error)[]> {
+export async function scoreAll(
+  sessions: ParsedSession[],
+  ctx: ScoreContext,
+  inner: GitRunner = gitPool(),
+  opts: ScoreOptions = {},
+): Promise<(Outcome | Error)[]> {
+  const started = performance.now();
+  const budgetMs = opts.budgetMs ?? SCORE_BUDGET_MS;
+  // Past the budget every git call is refused, so the sessions still waiting come back not scored.
+  const run: GitRunner = (repo, args, stdin) => {
+    const left = budgetMs - (performance.now() - started);
+    const refused: GitResult = { ok: false, out: "", err: BUDGET_MESSAGE, budget: true };
+    if (left <= 0) return Promise.resolve(refused);
+    let timer: ReturnType<typeof setTimeout>;
+    const expired = new Promise<GitResult>((done) => (timer = setTimeout(() => done(refused), left)));
+    return Promise.race([inner(repo, args, stdin), expired]).finally(() => clearTimeout(timer));
+  };
   const out = async (args: string[]) => {
     const r = await run(ctx.repo, ["-c", "core.quotepath=off", ...args]);
-    if (!r.ok) throw new Error(`git ${args[0]} failed: ${r.err.trim()}`);
+    if (!r.ok) throw gitFailure(r, `git ${args[0]}`);
     return r.out;
   };
   const asError = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
@@ -167,9 +193,26 @@ export async function scoreAll(sessions: ParsedSession[], ctx: ScoreContext, run
   } catch {
     head = new Error(`cannot resolve ${ctx.head} in ${ctx.repo}`);
   }
+  // Progress counts sessions: those already settled (too young, no commit, failed) plus each mature
+  // commit's sessions as its survival lands. A line goes out at every 10th.
+  const sessionsOf = new Map<string, number>();
+  maturity.forEach((m) => typeof m === "string" && sessionsOf.set(m, (sessionsOf.get(m) ?? 0) + 1));
+  let done = sessions.length - [...sessionsOf.values()].reduce((a, b) => a + b, 0);
+  let reported = 0;
+  const advance = (n: number) => {
+    done += n;
+    for (; (reported + 1) * PROGRESS_EVERY <= done; reported++) {
+      const secs = ((performance.now() - started) / 1000).toFixed(1);
+      opts.onProgress?.(`score: ${(reported + 1) * PROGRESS_EVERY}/${sessions.length} sessions, ${secs} s`);
+    }
+  };
+  advance(0);
+  const failAll = (err: unknown) => new Map(mature.map((sha) => [sha, asError(err)] as const));
   const [surv, tracked] = await Promise.all([
-    typeof head === "string" ? survivalMany(ctx.repo, mature.map((sha) => [sha]), head, run) : mature.map(() => head as Error),
-    trackMany(ctx.repo, mature, run),
+    typeof head === "string"
+      ? survivalMany(ctx.repo, mature.map((sha) => [sha]), head, run, new Map(), (i) => advance(sessionsOf.get(mature[i]!) ?? 0))
+      : mature.map(() => head as Error),
+    trackMany(ctx.repo, mature, run).catch(failAll),
   ]);
   const survOf = new Map(mature.map((sha, i) => [sha, surv[i]!]));
 
@@ -278,7 +321,7 @@ export async function runReview(args: ReviewArgs): Promise<number> {
         const out: Session[] = [];
         const outcomes: Outcome[] = [];
         const failed: string[] = [];
-        const scoredAll = await scoreAll(sessions, ctx);
+        const scoredAll = await scoreAll(sessions, ctx, undefined, { onProgress: (l) => console.log(l) });
         sessions.forEach((s, i) => {
           const id = identities[i]!;
           const cost = priceSession(s.model, {
