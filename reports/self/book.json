@@ -5,8 +5,8 @@
   },
   "period": {
     "from": "2026-10-10T13:29:32.643Z",
-    "to": "2026-10-11T03:42:44.959Z",
-    "days": 0.5925036574074074
+    "to": "2026-10-11T23:16:35.233Z",
+    "days": 1.4076688657407408
   },
   "promoted": {
     "id": null,
@@ -17,33 +17,41 @@
     {
       "setup": "6a200cd990a7",
       "label": "Claude Code · claude-opus-5-5",
-      "monthlySpendUsd": 965.23,
-      "survivingChangesPerMonth": 800.8725270153762,
-      "costPerSurvivingChangeUsd": 1.21,
+      "monthlySpendUsd": 501.69,
+      "survivingChangesPerMonth": 376.2578086861251,
+      "costPerSurvivingChangeUsd": 1.33,
       "unattendedPct": 100
     },
     {
       "setup": "97433f7b4446",
       "label": "Claude Code · claude-sonnet-5-5 (rules 243fa2)",
-      "monthlySpendUsd": 194.36,
-      "survivingChangesPerMonth": 494.4650025282708,
-      "costPerSurvivingChangeUsd": 0.39,
-      "unattendedPct": 63.6
+      "monthlySpendUsd": 130.93,
+      "survivingChangesPerMonth": 244.21676924534705,
+      "costPerSurvivingChangeUsd": 0.54,
+      "unattendedPct": 57.1
     },
     {
       "setup": "a9544a002085",
       "label": "Claude Code · claude-sonnet-5-5 (rules dabdd0)",
-      "monthlySpendUsd": 216.71,
-      "survivingChangesPerMonth": 850.4535765895904,
-      "costPerSurvivingChangeUsd": 0.25,
-      "unattendedPct": 100
+      "monthlySpendUsd": 225.05,
+      "survivingChangesPerMonth": 588.0389127700824,
+      "costPerSurvivingChangeUsd": 0.38,
+      "unattendedPct": 59.3
     },
     {
       "setup": "c8d6907735ec",
       "label": "Claude Code · claude-haiku-5-5",
-      "monthlySpendUsd": 71.83,
-      "survivingChangesPerMonth": 692.03284116088,
-      "costPerSurvivingChangeUsd": 0.1,
+      "monthlySpendUsd": 44.19,
+      "survivingChangesPerMonth": 375.0428975604799,
+      "costPerSurvivingChangeUsd": 0.12,
+      "unattendedPct": 55.6
+    },
+    {
+      "setup": "f656e13e2af0",
+      "label": "Claude Code · deepseek-flash",
+      "monthlySpendUsd": null,
+      "survivingChangesPerMonth": 234.43013341518215,
+      "costPerSurvivingChangeUsd": null,
       "unattendedPct": 62.5
     }
   ],
