@@ -1,0 +1,30 @@
+[roster setup=D task=T73]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T73 · W5 · Corpus index in reports and a totals row on /r
+GOAL: The public-repo reviews already on disk (reports/<owner>__<repo>/review.json) become one corpus index with totals that add up, and
+the /r page shows a totals row from it. The corpus runner (scripts/corpus-run.ts) and table builder (src/review/corpus-table.ts) are merged.
+READ: scripts/corpus-run.ts (runCorpus), src/review/corpus-table.ts (buildCorpusTable), web/app/r/page.tsx, web/lib/reviews.ts,
+scripts/sumcheck.ts, scripts/facts.ts (CORPUS_* facts).
+OWNS: scripts/corpus-index.ts (new), web/app/r/page.tsx (totals row only), web/lib/reviews.ts (only to read reports/corpus/index.json),
+tests/corpus-index.test.ts
+BUILD: `bun scripts/corpus-index.ts` reads every reports/<owner>__<repo>/review.json except rajkaria__roster and _sample, maps each to
+buildCorpusTable's row shape (repo, sessions, setups, costUsd, suspect, replayed 0, promoted null), and writes reports/corpus/index.json
+({schemaVersion: 1, generatedAt, data: {rows, totals}}). /r shows a totals row (repos, sessions, spend). scripts/sumcheck.ts must pass on
+the output (add nothing to sumcheck; if it doesn't already cover the file, say so).
+ACCEPTANCE: tests on a fixture reports dir: index built, totals equal row sums, our own repo and _sample excluded; `cd web && bun run
+build` succeeds.
+TEST: bun test tests/corpus-index.test.ts && (cd web && bun run build) && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
