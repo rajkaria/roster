@@ -1,0 +1,33 @@
+[roster setup=B task=F25]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F25: Stratified task sampler
+TASK F25 · Stratified task sampler
+GOAL: Pick replay tasks across difficulty terciles, deterministically.
+OWNS: src/replay/sample.ts, tests/sample.test.ts
+INTERFACE: src/replay/sample.ts function sampleTasks(tasks: { id: string; tercile: 1 | 2 | 3; eligible: boolean }[], opts: { max: number; seed: number }): string[]
+BEHAVIOUR: Only eligible tasks. Allocates max as evenly as possible across terciles (remainder to the highest terciles first), fills a
+short tercile's leftover from the others, picks within a tercile by seeded shuffle. Same input + seed → same output; output sorted by id.
+
+---
+
+<task-notification>
+<task-id>bitrp3don</task-id>
+<tool-use-id>toolu_0181SkWqo3V9eJdsseQ7CVwE</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F25/17d8e069-83af-4592-a016-4fb8cfd12399/tasks/bitrp3don.output</output-file>
+<status>killed</status>
+<summary>Background command "bun test tests/sample.test.ts 2&gt;&amp;1 | tail -15; bun run typecheck 2&gt;&amp;1 | tail -5; bun test 2&gt;&amp;1 | tail -6" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
