@@ -253,3 +253,21 @@ describe("forward run robustness", () => {
     expect(lines.some((l) => l.includes("remerge T1: error, left as recorded: grader blew up"))).toBe(true);
   }, 90_000);
 });
+
+describe("grading does not block the event loop", () => {
+  test("the default step runner is async: timers keep firing while a step runs", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "roster-async-"));
+    writeFileSync(join(repo, "x.txt"), "x\n");
+    runGit(repo, ["init", "-q", "-b", "main"]);
+    runGit(repo, ["add", "-A"]);
+    commit(repo, "base");
+    const sandbox = await createSandbox(repo, runGit(repo, ["rev-parse", "HEAD"]), { root: mkdtempSync(join(tmpdir(), "roster-sb-")) });
+    let ticks = 0;
+    const timer = setInterval(() => ticks++, 50);
+    const r = await grade({ sandbox, hidden: [], preexistingTests: [], testCmd: "sleep 1.5", phase: "suite" });
+    clearInterval(timer);
+    expect(r.suitePass).toBe(true);
+    // A blocking spawnSync would starve the timer for the whole 1.5 s.
+    expect(ticks).toBeGreaterThanOrEqual(10);
+  }, 30_000);
+});
