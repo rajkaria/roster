@@ -1,0 +1,52 @@
+[roster setup=D task=T66]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T66 · W5 · Forward grading is the bottleneck: make a pair cost minutes, not half an hour
+GOAL: In the forward run, both agents finished F01–F05 by 11:17, but by 13:55 only 5 pairs were graded and recorded. Each side's grading
+copies the repo and runs the full suite twice (suite, then acceptance), which takes minutes per run on a loaded machine; with 2 pairs in
+flight the run would need about 20 hours for 40 pairs.
+READ: src/forward/index.ts (gradeBranch, pair flow, parallelism), src/grade/index.ts (grade: copy, suite run, hidden run),
+src/cli/forward.ts.
+OWNS: src/forward/index.ts (grading path only; T65 owns the merge policy, so keep your change to gradeBranch and parallelism),
+src/grade/index.ts, tests/forward-grade-speed.test.ts
+BUILD: (1) The grading copy symlinks node_modules (and web/node_modules) instead of copying them. (2) Per side: run the acceptance tests
+and the task's own new test files plus `bun run typecheck` first. Run the full suite only for the side that would be merged, and
+record the suite result for the other side as "not run" (null). (3) Grade the two sides concurrently. (4) Per-step timings in the
+pair record (agent_old_ms, agent_new_ms, grade_ms).
+ACCEPTANCE: tests with stub sides confirm node_modules is a symlink in the grading copy, the full suite runs once per pair (counted
+through an injectable runner), and timings are recorded. Whole suite green.
+TEST: bun test tests/forward-grade-speed.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
+
+---
+
+<task-notification>
+<task-id>beg67xjkw</task-id>
+<tool-use-id>toolu_01HR1kbNbo4zx5S4cWUS5Y4A</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/beg67xjkw.output</output-file>
+<status>killed</status>
+<summary>Background command "bun test tests/forward-grade-speed.test.ts 2&gt;&amp;1 | tail -8; bun test 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -3" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bo5eppv24</task-id>
+<tool-use-id>toolu_018Di25AWJgHfRGTrDWPYETN</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/bo5eppv24.output</output-file>
+<status>killed</status>
+<summary>Background command "until grep -q "typecheck\|error TS" /private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/beg67xjkw.output || ! pgrep -f "bun test" &gt;/dev/null; do sleep 10; done; tail -25 /private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/beg67xjkw.output" was stopped after reaching its background time limit</summary>
+<note>If the work in progress still needs it, start it again with `run_in_background` and a longer `timeout`. If it already had the longest `timeout` allowed, do not restart it. Either way, report that it was stopped.</note>
+</task-notification>
