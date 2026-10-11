@@ -206,7 +206,7 @@ How it's handled:
   - **Fixed before results.** The rule was fixed after seeing F20's logged failure and before any regrade under it.
 - **Scope.** H1, the retry and the test commands are unchanged. The rule applies to both sides and every pair.
 
-### Amendment 16: 2026-10-12 01:25 IST, fair turns at the shared grading slot; two slots
+### Amendment 16: 2026-10-12 01:13 IST, fair turns at the shared grading slot; two slots
 - **What happened.** After amendment 15 the queue held the single machine-wide grading slot from 23:18 to 01:10. Each time it released the slot it took it straight back for its next step, before any other process polled. So the regrades under amendments 14 and 15 (F06, F01/F04/F05/F08/F09/F10, F02, F15/F19/F20) graded nothing in that time. Load was down to 8–40.
 - **Fixes** (ops commit, excluded from every comparison):
   - **Fair turns.** Waiters for the shared slots take tickets and are served first come, first served across processes. A ticket left by a process that is gone is dropped.
@@ -214,4 +214,4 @@ How it's handled:
 - **Scope.**
   - H1, the step limit, the retry, the test commands and amendments 14–15's regrade rules are unchanged.
   - Every failed suite is still logged. A suite that leaves no JUnit under the 90-minute limit is recorded as logged and is final.
-- **Restarts.** The queue and all regrades restart on this code. Only F28's agents, started two minutes earlier, are re-run. F25–F27 resume from their branches.
+- **Restarts.** The queue and all regrades restart on this code. Only F28's agents, started minutes earlier, are re-run. F25–F27 resume from their branches.
