@@ -1,0 +1,51 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "436679ad4249",
+  "session_id": "33aca578-625f-4a14-8fb8-8ee2a502686f",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T10:52:02.637315Z",
+  "branch": "forward/F15/new",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/web-forward.test.ts",
+    "web/app/experiment/page.tsx",
+    "web/lib/forward.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "deepseek-flash",
+  "turn_id": "6c3c721803e7",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 55779,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1444736,
+    "output_tokens": 21739,
+    "api_call_count": 28
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T10:52:01.992727Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "total_lines_changed": 0,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 415,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "tests/web-forward.test.ts": 202,
+        "web/app/experiment/page.tsx": 91,
+        "web/lib/forward.ts": 122
+      }
+    }
+  ]
+}
