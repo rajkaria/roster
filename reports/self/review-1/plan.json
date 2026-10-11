@@ -1,0 +1,40 @@
+{
+  "suspect": "a9544a002085",
+  "tasks": [
+    "5cf39bd3-4670-4c2d-a70b-23631ca659ee",
+    "3b7e1533-cc3a-4adb-a197-f7c337ab5586",
+    "762637f3-a925-4ab9-9b01-c408be2f3341",
+    "40edf221-0853-4de8-a946-84a3987424b7",
+    "6e2d8330-fb64-4310-948f-e53f1f40023e",
+    "322c865f-75a5-40bd-84b1-e5c69c55e6f1",
+    "deef7b55-f78a-4204-89ff-71ff3eb68be7",
+    "3fe82180-7148-42b1-8ac2-dbc12ff66411",
+    "03ac4b80-b246-40cc-a8ed-b8708b85f633",
+    "37d60971-d17c-424c-87dc-f2dd4b7c53ab",
+    "ea846f90-734e-4fb0-bd01-0ce8658c6b0c",
+    "8d77769a-b6f0-44cb-b3d4-928acc638e1b"
+  ],
+  "candidates": [
+    "E",
+    "F"
+  ],
+  "budget_usd": 15,
+  "stop_rules": [
+    "promote the first candidate the gate approves",
+    "at most 3 candidates per iteration and 2 iterations",
+    "stop at budget_usd (LLM cost plus replay cost)",
+    "if no candidate passes the gate, the result is \"no better setup found\""
+  ],
+  "rationale": "The scorecard flags no suspect (label \"no_suspect\", odds ratio 4.23, p=1), so no incumbent Claude Code setup is clearly underperforming; the real question is whether the two candidate setups E/F (Claude Code on DeepSeek) can beat a solid Claude Code baseline on the same tasks. I'll use the highest-evidence, fully-attended, lowest-cost-per-surviving-change Claude setup, a9544a002085 (claude-sonnet-5-5, rules dabdd0, 17 mature sessions, survival 0.988, cost/surviving change 0.255), as the control/incumbent, and replay E and F against it. The 12 tasks are drawn evenly across the four existing setups and mix the \"tests\" track with the \"judge-only\" track so we sample both graded and judged behaviors; terciles are null in list_tasks, so the spread across setups/tracks is the stratifier.",
+  "run_id": "review-1",
+  "revision": 1,
+  "iteration": 1,
+  "history": [
+    {
+      "revision": 1,
+      "iteration": 1,
+      "created_at": "2026-10-11T03:50:06.506Z",
+      "reason": "Initial plan: no suspect in the scorecard, so evaluate the two DeepSeek candidates against the strongest Claude Code incumbent."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "run_id": "review-1",
+  "repo": ".",
+  "outcome": "promoted",
+  "promoted": "E",
+  "summary": "the gate approved E and it was promoted",
+  "budget_usd": 15,
+  "spent": {
+    "llm_usd": 0.006735864000000001,
+    "replay_usd": 4.812946878,
+    "total_usd": 4.819682742,
+    "unpriced_llm_calls": 0
+  },
+  "turns": 8,
+  "excluded_tasks": [],
+  "decisions": [
+    {
+      "id": "review-1-p1:E",
+      "plan_id": "review-1-p1",
+      "candidate": "E",
+      "verdict": "promote",
+      "reasons": [
+        "tie on hidden_pass 0; candidate cheaper $0.4385 < $2.5181"
+      ],
+      "failed_tasks": [],
+      "trace_url": null
+    }
+  ]
+}
