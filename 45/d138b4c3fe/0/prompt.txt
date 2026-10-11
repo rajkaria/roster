@@ -1,0 +1,25 @@
+[roster setup=B task=T61]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+
+TASK T61 · W2 · Update the review-perf tests now that review runs difficulty
+GOAL: After T59 wired difficulty and the suspect test into `roster review`, two tests in tests/review-perf.test.ts encode the old
+behaviour and fail: (1) "outcomes.json equals the per-session scorer's outcomes", but the review now also sets difficulty and tercile on
+each outcome; (2) "ends with the wall time of every stage" expects "difficulty not run", but difficulty now runs.
+READ: tests/review-perf.test.ts (around lines 140–160), src/cli/review.ts (the difficulty stage and timing line), src/score/index.ts.
+OWNS: tests/review-perf.test.ts (this task explicitly allows modifying these assertions)
+BUILD: (1) Compare outcomes ignoring the difficulty and tercile fields, and assert those two fields separately (difficulty is a number
+or null, tercile is 1|2|3 or null). (2) The timing regex expects "difficulty <n>.<nn>s". Don't change any other assertion.
+ACCEPTANCE: whole suite green, typecheck clean.
+TEST: bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
