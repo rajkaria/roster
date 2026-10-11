@@ -1,0 +1,35 @@
+Decisions:
+1. Keep the single-suite saving. Change T65's two tests in tests/forward-merge.test.ts to the new expectations: in the both-fail case, candidates come from fast checks + scope, the judge ranks two candidates, the suite confirms, and a suite that didn't run is null. You may modify those two assertions. Don't change any other test.
+2. One correctness fix for H1 (pass_old/pass_new), which must stay the registered definition: acceptance AND scope AND full suite. Typecheck and the side's own new tests must NOT affect pass_* (they only gate amendment 8's build-merge candidacy in the both-fail case). So run the full suite on EVERY side that passes acceptance with scope ok, both sides if both do, and set pass_* from that. Right now, when both pass acceptance and the first candidate passes its suite, the loop breaks and the other side stays pass=true with its suite never run. That's wrong. Reuse a suite result already computed instead of running it twice. Merge order is unchanged: H1-pass sides first (the judge picks between two), then, only if neither passes H1, amendment 8 candidates (own tests + typecheck + scope ok, judge-ranked, suite-confirmed).
+3. Add a test: both sides pass acceptance, and the judge's pick passes its suite while the other fails its suite. Expect the pick merged, the other pass=false with suite_pass false, and the suite run exactly twice.
+Then run bun test tests/forward-merge.test.ts tests/forward-grade-speed.test.ts tests/forward.test.ts tests/agent-backend.test.ts && bun run typecheck, commit with the T66: prefix, and stop.
+
+---
+
+<task-notification>
+<task-id>b0kkb96k8</task-id>
+<tool-use-id>toolu_013rNrQ7NBcW9eebwD1X63sK</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/b0kkb96k8.output</output-file>
+<status>completed</status>
+<summary>Background command "bun run typecheck 2&gt;&amp;1 | tail -5; bun test tests/forward-merge.test.ts tests/forward-grade-speed.test.ts tests/forward.test.ts tests/agent-backend.test.ts --timeout 120000 2&gt;&amp;1 | grep -E "^\(fail\)|^ *[0-9]+ (pass|fail)|error:|Expected|Received"" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b7d8ml5ii</task-id>
+<tool-use-id>toolu_01Jw1d18d1mdhfVfAGNHLbSX</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/b7d8ml5ii.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/forward.test.ts -t "stop rule fires" --timeout 1500000 2&gt;&amp;1 | grep -E "^\(fail\)|^\(pass\)|^ *[0-9]+ (pass|fail)|error:|Expected|Received|Ran "" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bmnn7j7zn</task-id>
+<tool-use-id>toolu_01CL8WDacPQumdFVcAuTWeGU</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-T66/d4689aad-5ee5-474c-8f9b-9803533ee664/tasks/bmnn7j7zn.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/forward-merge.test.ts tests/forward-grade-speed.test.ts tests/forward.test.ts tests/agent-backend.test.ts --timeout 600000 2&gt;&amp;1 | grep -E "^\(fail\)|^ *[0-9]+ (pass|fail)|error:|Ran "; bun run typecheck 2&gt;&amp;1 | tail -2" completed (exit code 0)</summary>
+</task-notification>
