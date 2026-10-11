@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "effce9995342",
+  "session_id": "f2667641-109f-48f7-8779-c0caa9582b5d",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T12:48:35.767902Z",
+  "branch": "forward/F18/new",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/sandbox/microvm.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "deepseek-flash",
+  "turn_id": "5c37d7520726",
+  "checkpoint_transcript_start": 186,
+  "transcript_lines_at_start": 186,
+  "compact_transcript_start": 36,
+  "token_usage": {
+    "input_tokens": 2787,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 669440,
+    "output_tokens": 3628,
+    "api_call_count": 12
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T12:48:35.679851Z",
+    "agent_lines": 7,
+    "agent_removed": 10,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 7,
+    "total_lines_changed": 17,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
