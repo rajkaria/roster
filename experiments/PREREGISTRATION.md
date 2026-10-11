@@ -215,3 +215,14 @@ How it's handled:
   - H1, the step limit, the retry, the test commands and amendments 14–15's regrade rules are unchanged.
   - Every failed suite is still logged. A suite that leaves no JUnit under the 90-minute limit is recorded as logged and is final.
 - **Restarts.** The queue and all regrades restart on this code. Only F28's agents, started minutes earlier, are re-run. F25–F27 resume from their branches.
+
+### Amendment 17: 2026-10-12 02:08 IST, F06 build-only merge (H1 unchanged)
+- **F06's final logged regrade** (amendments 14 and 15) failed the full suite on both sides, each at `tests/agent-backend.test.ts`. F06's branches sit on the 10:40 base, before that test was fixed (T63/T64); it passes on current main. A real file was named, so the result stands and is final: both sides fail H1, and nothing merges under the registered policy.
+- **Why merge anyway.** F07 and F13 build on F06's Book type. Without F06 on main, both sides of those pairs would start without a dependency the frozen backlog assumes.
+- **The build-only merge.**
+  1. The operator takes F06's secondary-preferred side (old, B).
+  2. Current main is merged into that branch, with a `human:` commit for any conflict resolution.
+  3. The full suite and the typecheck are run on the result.
+  4. If both pass, it's merged to main as `F06: build-only merge (B), H1 unchanged`.
+- **What doesn't change.** F06's recorded H1, its merged field (null) and every other recorded field stay as they are. The merge is build progress like amendment 8's, excluded from every comparison. It is on main before F07, F14 or F13 start, so both sides of those pairs start from the same main.
+- **If the suite or typecheck fails,** nothing merges, and F07 and F13 move to the end of the queue under the next amendment.
