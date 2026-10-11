@@ -1,0 +1,28 @@
+[roster setup=B task=T82]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T82 · W4 · Landing result: readable numbers and reasons
+GOAL: The home page's result section prints "McNemar exact p 0.031250000000000014" and gate reasons full of raw session UUIDs ("1
+regression(s) after reruns: ea846f90-…"). Make both readable without changing what they say.
+READ: web/components/LandingResult.tsx, web/lib/result.ts, web/lib/forward.ts, web/lib/format.ts (if it exists; otherwise add a local
+helper), web/app/experiment/page.tsx (it prints the same p).
+OWNS: web/components/LandingResult.tsx, web/lib/result.ts, web/app/experiment/page.tsx (p display only), tests/web-landing-readable.test.ts
+BUILD: p-values print to 3 decimals ("p = 0.031"); "p < 0.001" below 0.001. Gate reasons are summarised in plain words, counts kept
+("fewer hidden-test passes than the incumbent (0 vs 1); 1 regression; 1 scope violation"), with the raw reasons in a <details> element.
+Costs print as dollars with 2 decimals. No number is changed, only formatted.
+ACCEPTANCE: tests: 0.031250000000000014 → "0.031"; 8.8e-6 → "< 0.001"; a reason string with UUIDs becomes the plain summary with the same
+counts. `cd web && bun run build` succeeds.
+TEST: bun test tests/web-landing-readable.test.ts && (cd web && bun run build) && bun run typecheck
+DO NOT TOUCH: anything outside OWNS.
