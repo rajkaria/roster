@@ -107,18 +107,15 @@ export async function runInMicroVm(
   }
 
   const { id } = await client.create();
-  let result: MicroVmRunResult | undefined;
-  let failure: unknown;
-  try {
-    result = await runOnce(client, id, opts);
-  } catch (error) {
-    failure = error;
-  }
+  const outcome = await runOnce(client, id, opts).then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
 
-  if (failure !== undefined) {
+  if (!outcome.ok) {
     await stopIgnoringFailure(client, id);
-    throw failure;
+    throw outcome.error;
   }
   await client.stop(id);
-  return result as MicroVmRunResult;
+  return outcome.value;
 }
