@@ -9,8 +9,8 @@ import type { HiddenTest } from "../grade/index.ts";
 import type { LlmClient } from "../llm/types.ts";
 import { createSandbox, destroySandbox, runGit } from "../sandbox/index.ts";
 import type { ForwardPair } from "../types.ts";
-import { assignLabels, blindJudge, chooseMerge, pairSeed, rng } from "./blind.ts";
-import type { MergeChoice, Side } from "./blind.ts";
+import { assignLabels, blindJudge, chooseMerge, pairSeed, rng, secondaryOutcome } from "./blind.ts";
+import type { MergeChoice, MergeReason, Side } from "./blind.ts";
 
 export * from "./blind.ts";
 
@@ -49,6 +49,13 @@ export function taggedBlock(task: BacklogTask, setup: string): string {
 
 // ---- state ----
 
+const EXTRA_COLUMNS = { suite_old: "INTEGER", suite_new: "INTEGER", scope_old: "INTEGER", scope_new: "INTEGER", merged_reason: "TEXT", secondary: "TEXT" };
+
+const extraValues = (p: ForwardPair) => {
+  const int = (b: boolean | null | undefined) => (b === null || b === undefined ? null : +b);
+  return [int(p.suite_pass_old), int(p.suite_pass_new), int(p.scope_ok_old), int(p.scope_ok_new), p.merged_reason ?? null, p.secondary ?? null] as const;
+};
+
 export class ForwardStore {
   readonly db: Database;
   constructor(path: string) {
@@ -58,10 +65,14 @@ export class ForwardStore {
       task_id TEXT PRIMARY KEY, setup_old TEXT NOT NULL, setup_new TEXT NOT NULL, pass_old INTEGER NOT NULL, pass_new INTEGER NOT NULL,
       cost_old REAL, cost_new REAL, merged TEXT, blind_labels TEXT NOT NULL, seed INTEGER NOT NULL, seq INTEGER NOT NULL)`);
     this.db.exec("CREATE TABLE IF NOT EXISTS forward_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    // Columns added by amendment 8; databases from earlier runs gain them as NULL.
+    const have = new Set((this.db.query("PRAGMA table_info(forward_pairs)").all() as { name: string }[]).map((c) => c.name));
+    for (const [col, type] of Object.entries(EXTRA_COLUMNS)) if (!have.has(col)) this.db.exec(`ALTER TABLE forward_pairs ADD COLUMN ${col} ${type}`);
   }
 
   pairs(): ForwardPair[] {
     const rows = this.db.query("SELECT * FROM forward_pairs ORDER BY seq").all() as Record<string, unknown>[];
+    const bool = (v: unknown) => (v === null || v === undefined ? null : v === 1);
     return rows.map((r) => ({
       task_id: r.task_id as string,
       setup_old: r.setup_old as string,
@@ -73,14 +84,30 @@ export class ForwardStore {
       merged: r.merged as "old" | "new" | null,
       blind_labels: JSON.parse(r.blind_labels as string),
       seed: r.seed as number,
+      suite_pass_old: bool(r.suite_old),
+      suite_pass_new: bool(r.suite_new),
+      scope_ok_old: bool(r.scope_old),
+      scope_ok_new: bool(r.scope_new),
+      merged_reason: (r.merged_reason ?? null) as ForwardPair["merged_reason"],
+      secondary: (r.secondary ?? null) as ForwardPair["secondary"],
     }));
   }
 
   addPair(p: ForwardPair): void {
     const seq = (this.db.query("SELECT COUNT(*) AS n FROM forward_pairs").get() as { n: number }).n;
     this.db
-      .query("INSERT OR REPLACE INTO forward_pairs VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-      .run(p.task_id, p.setup_old, p.setup_new, +p.pass_old, +p.pass_new, p.cost_old, p.cost_new, p.merged, JSON.stringify(p.blind_labels), p.seed, seq);
+      .query(
+        `INSERT OR REPLACE INTO forward_pairs (task_id, setup_old, setup_new, pass_old, pass_new, cost_old, cost_new, merged, blind_labels, seed, seq,
+          suite_old, suite_new, scope_old, scope_new, merged_reason, secondary) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+      .run(p.task_id, p.setup_old, p.setup_new, +p.pass_old, +p.pass_new, p.cost_old, p.cost_new, p.merged, JSON.stringify(p.blind_labels), p.seed, seq, ...extraValues(p));
+  }
+
+  /** Rewrites a recorded pair's merge outcome (remerge). The H1 fields, costs and seq are left as recorded. */
+  updateMerge(p: ForwardPair): void {
+    this.db
+      .query("UPDATE forward_pairs SET suite_old=?, suite_new=?, scope_old=?, scope_new=?, merged_reason=?, secondary=?, merged=?, blind_labels=? WHERE task_id=?")
+      .run(...extraValues(p), p.merged, JSON.stringify(p.blind_labels), p.task_id);
   }
 
   getState(key: string): string | null {
@@ -237,6 +264,90 @@ async function gradeBranch(opts: {
   }
 }
 
+// ---- merge decision ----
+
+interface SettleContext {
+  repo: string;
+  git: Mutex;
+  llm: LlmClient;
+  log: (line: string) => void;
+  /** Amendment 8's build-only policy and the exploratory secondary outcome. */
+  buildMerge: boolean;
+}
+
+interface SideState {
+  branch: string;
+  /** The commit the side's branch started from, and its tip. */
+  base: string;
+  head: string;
+  suitePass: boolean;
+  scopeOk: boolean;
+}
+
+function mergeBranch(ctx: SettleContext, taskId: string, branch: string, setup: string): Promise<boolean> {
+  return ctx.git.run(() => {
+    const r = Bun.spawnSync(["git", "merge", "--no-ff", "-m", `${taskId}: merge forward winner (${setup})`, branch], { cwd: ctx.repo, env: { ...process.env, GIT_EDITOR: "true" } });
+    if (r.exitCode !== 0) {
+      Bun.spawnSync(["git", "merge", "--abort"], { cwd: ctx.repo });
+      ctx.log(`forward: ${taskId}: merge of ${branch} failed, left unmerged: ${r.stderr.toString().trim()}`);
+      return false;
+    }
+    return true;
+  });
+}
+
+type Settled = Pick<ForwardPair, "blind_labels" | "merged" | "merged_reason" | "secondary" | "suite_pass_old" | "suite_pass_new" | "scope_ok_old" | "scope_ok_new">;
+
+/** Runs the blind judge when the policy needs it, picks the side to merge, merges it, and records why. */
+async function settle(
+  ctx: SettleContext,
+  task: BacklogTask,
+  seed: number,
+  setups: Record<Side, string>,
+  pass: Record<Side, boolean>,
+  sides: Record<Side, SideState>,
+): Promise<Settled> {
+  const random = rng(seed);
+  let labels = assignLabels(random);
+  const eligible = { old: sides.old.suitePass && sides.old.scopeOk, new: sides.new.suitePass && sides.new.scopeOk };
+  // Without amendment 8 the judge only breaks both-pass ties; with it, it also ranks two suite+scope-ok sides.
+  const judgeOn = ctx.buildMerge ? eligible : pass;
+  let preferred: Side | null = null;
+  if (judgeOn.old && judgeOn.new) {
+    const diffs = {
+      old: runGit(ctx.repo, ["diff", sides.old.base, sides.old.head]),
+      new: runGit(ctx.repo, ["diff", sides.new.base, sides.new.head]),
+    };
+    // A fresh stream from the same seed draws the same labels as above, so the logged seed reproduces them.
+    const judged = await blindJudge(ctx.llm, task.body, diffs, rng(seed), [setups.old, setups.new]);
+    labels = judged.labels;
+    preferred = judged.preferred;
+    ctx.log(`forward: ${task.id}: judge ${judged.verdict} (X=${labels.X}, Y=${labels.Y})`);
+  }
+  const choice: MergeChoice = chooseMerge(pass, preferred, random, ctx.buildMerge ? eligible : undefined);
+  let merged = choice.merged;
+  let reason: MergeReason = choice.reason;
+  if (merged && !(await mergeBranch(ctx, task.id, sides[merged].branch, setups[merged]))) {
+    merged = null;
+    reason = "merge_failed";
+  }
+  const secondary = ctx.buildMerge ? secondaryOutcome(eligible, preferred) : null;
+  ctx.log(
+    `forward: ${task.id}: old ${pass.old ? "pass" : "fail"}, new ${pass.new ? "pass" : "fail"}, ${choice.reason}, merged ${merged ?? "none"}, seed ${seed}` +
+      (secondary ? `; secondary (exploratory) ${secondary}` : ""),
+  );
+  return {
+    blind_labels: labels,
+    merged,
+    merged_reason: reason,
+    secondary,
+    suite_pass_old: sides.old.suitePass,
+    suite_pass_new: sides.new.suitePass,
+    scope_ok_old: sides.old.scopeOk,
+    scope_ok_new: sides.new.scopeOk,
+  };
+}
+
 // ---- the run ----
 
 export interface ForwardOptions {
@@ -256,7 +367,16 @@ export interface ForwardOptions {
   seed?: number;
   openRevertPr?: (req: RevertRequest) => Promise<RevertOutcome>;
   log?: (line: string) => void;
+  /**
+   * Pre-registration amendment 8, build only: when both sides fail acceptance, merge the side whose suite passes with
+   * scope ok (the blind judge picks between two), and record the exploratory secondary outcome. pass_old/pass_new (H1)
+   * are unaffected. Off by default so the registered policy stays the library's; `roster forward` turns it on.
+   */
+  buildMerge?: boolean;
 }
+
+/** Most tasks in flight at once. */
+export const MAX_PARALLEL = 4;
 
 export interface ForwardSummary {
   completed: ForwardPair[];
@@ -313,48 +433,21 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
     return { branch, head, costUsd: res.costUsd };
   };
 
-  const mergeBranch = (task: BacklogTask, branch: string, setup: string) =>
-    git.run(() => {
-      const r = Bun.spawnSync(["git", "merge", "--no-ff", "-m", `${task.id}: merge forward winner (${setup})`, branch], { cwd: repo, env: { ...process.env, GIT_EDITOR: "true" } });
-      if (r.exitCode !== 0) {
-        Bun.spawnSync(["git", "merge", "--abort"], { cwd: repo });
-        log(`forward: ${task.id}: merge of ${branch} failed, left unmerged: ${r.stderr.toString().trim()}`);
-        return false;
-      }
-      return true;
-    });
+  const ctx: SettleContext = { repo, git, llm: opts.llm, log, buildMerge: opts.buildMerge ?? false };
 
   const runPair = async (task: BacklogTask): Promise<ForwardPair> => {
     const base = await git.run(() => runGit(repo, ["rev-parse", "HEAD"]));
     const seed = pairSeed(runSeed, task.id);
-    const random = rng(seed);
     const [o, n] = await Promise.all([startSide(task, "old", opts.pair.old, base), startSide(task, "new", opts.pair.new, base)]);
     const hidden = loadAcceptance(acceptanceDir, task.id);
     const gradeSide = (s: { head: string }) => gradeBranch({ repo, base, head: s.head, hidden, owns: task.owns, testCmd: opts.testCmd, scratch });
     const [go, gn] = await Promise.all([gradeSide(o), gradeSide(n)]);
     const pass = { old: go.pass, new: gn.pass };
-
-    let labels = assignLabels(random);
-    let preferred: Side | null = null;
-    if (pass.old && pass.new) {
-      const diffs = {
-        old: runGit(repo, ["diff", base, o.head]),
-        new: runGit(repo, ["diff", base, n.head]),
-      };
-      // A fresh stream from the same seed draws the same labels as above, so the logged seed reproduces them.
-      const judged = await blindJudge(opts.llm, task.body, diffs, rng(seed), [opts.pair.old, opts.pair.new]);
-      labels = judged.labels;
-      preferred = judged.preferred;
-      log(`forward: ${task.id}: judge ${judged.verdict} (X=${labels.X}, Y=${labels.Y})`);
-    }
-    const choice: MergeChoice = chooseMerge(pass, preferred, random);
-    let merged = choice.merged;
-    if (merged) {
-      const w = merged === "old" ? o : n;
-      if (!(await mergeBranch(task, w.branch, opts.pair[merged]))) merged = null;
-    }
-    log(`forward: ${task.id}: old ${pass.old ? "pass" : "fail"}, new ${pass.new ? "pass" : "fail"}, ${choice.reason}, merged ${merged ?? "none"}, seed ${seed}`);
-    const pair: ForwardPair = {
+    const settled = await settle(ctx, task, seed, opts.pair, pass, {
+      old: { branch: o.branch, base, head: o.head, suitePass: go.suitePass, scopeOk: go.scopeOk },
+      new: { branch: n.branch, base, head: n.head, suitePass: gn.suitePass, scopeOk: gn.scopeOk },
+    });
+    return {
       task_id: task.id,
       setup_old: opts.pair.old,
       setup_new: opts.pair.new,
@@ -362,18 +455,16 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
       pass_new: pass.new,
       cost_old: o.costUsd,
       cost_new: n.costUsd,
-      merged,
-      blind_labels: labels,
       seed,
+      ...settled,
     };
-    return pair;
   };
 
   const runSolo = async (task: BacklogTask) => {
     const base = await git.run(() => runGit(repo, ["rev-parse", "HEAD"]));
     const o = await startSide(task, "old", opts.pair.old, base);
     const g = await gradeBranch({ repo, base, head: o.head, hidden: loadAcceptance(acceptanceDir, task.id), owns: task.owns, testCmd: opts.testCmd, scratch });
-    if (g.pass) await mergeBranch(task, o.branch, opts.pair.old);
+    if (g.pass) await mergeBranch(ctx, task.id, o.branch, opts.pair.old);
     solo.add(task.id);
     soloOnOld.push(task.id);
     store.setState("solo", JSON.stringify([...solo]));
@@ -400,11 +491,94 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
     }
   };
   try {
-    await Promise.all(Array.from({ length: Math.max(1, opts.parallel ?? 4) }, worker));
+    await Promise.all(Array.from({ length: clampParallel(opts.parallel) }, worker));
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
   const stop = evaluateStopRule(store.pairs());
   store.close();
   return { completed, skipped, soloOnOld, stop, reverted, seed: runSeed };
+}
+
+function clampParallel(n: number | undefined): number {
+  return Math.min(MAX_PARALLEL, Math.max(1, n ?? MAX_PARALLEL));
+}
+
+// ---- remerge ----
+
+export interface RemergeOptions {
+  repo: string;
+  /** The backlog the pairs came from: task text for the judge and OWNS for the scope guard. */
+  backlog: string;
+  llm: LlmClient;
+  db?: string;
+  testCmd?: string;
+  parallel?: number;
+  log?: (line: string) => void;
+}
+
+export interface RemergeSummary {
+  revisited: ForwardPair[];
+  /** Unmerged pairs that could not be revisited: task missing from the backlog, or a side branch gone. */
+  skipped: string[];
+}
+
+/**
+ * `roster forward --remerge`: for every recorded pair with nothing merged, re-grades the full suite and the scope guard on
+ * both side branches and applies the amendment 8 merge policy. Acceptance results (H1) are kept as recorded, never re-run.
+ */
+export async function remergeForward(opts: RemergeOptions): Promise<RemergeSummary> {
+  const log = opts.log ?? (() => undefined);
+  const repo = resolve(opts.repo);
+  const store = new ForwardStore(resolve(opts.db ?? DEFAULT_FORWARD_DB));
+  const tasks = new Map(parseBacklog(opts.backlog).map((t) => [t.id, t]));
+  const queue = store.pairs().filter((p) => p.merged === null);
+  const git = new Mutex();
+  const ctx: SettleContext = { repo, git, llm: opts.llm, log, buildMerge: true };
+  const scratch = mkdtempSync(join(tmpdir(), "roster-remerge-"));
+  const revisited: ForwardPair[] = [];
+  const skipped: string[] = [];
+
+  const revisit = async (p: ForwardPair) => {
+    const task = tasks.get(p.task_id);
+    if (!task) {
+      log(`forward: remerge ${p.task_id}: not in the backlog, skipped`);
+      return skipped.push(p.task_id);
+    }
+    const refs = await git.run(() => {
+      const out: Partial<Record<Side, { branch: string; head: string; base: string }>> = {};
+      for (const side of ["old", "new"] as const) {
+        const branch = `forward/${p.task_id}/${side}`;
+        const r = Bun.spawnSync(["git", "rev-parse", "--verify", "-q", branch], { cwd: repo });
+        if (r.exitCode !== 0) continue;
+        // The side branch was cut from the pair's base commit, which is where it meets the current HEAD.
+        out[side] = { branch, head: r.stdout.toString().trim(), base: runGit(repo, ["merge-base", "HEAD", branch]) };
+      }
+      return out;
+    });
+    if (!refs.old || !refs.new) {
+      log(`forward: remerge ${p.task_id}: side branch missing, skipped`);
+      return skipped.push(p.task_id);
+    }
+    const sideOf = async (r: { branch: string; head: string; base: string }): Promise<SideState> => {
+      const g = await gradeBranch({ repo, base: r.base, head: r.head, hidden: [], owns: task.owns, testCmd: opts.testCmd, scratch });
+      return { ...r, suitePass: g.suitePass, scopeOk: g.scopeOk };
+    };
+    const [o, n] = await Promise.all([sideOf(refs.old), sideOf(refs.new)]);
+    const settled = await settle(ctx, task, p.seed, { old: p.setup_old, new: p.setup_new }, { old: p.pass_old, new: p.pass_new }, { old: o, new: n });
+    const updated: ForwardPair = { ...p, ...settled };
+    store.updateMerge(updated);
+    revisited.push(updated);
+  };
+
+  const worker = async () => {
+    for (let p = queue.shift(); p; p = queue.shift()) await revisit(p);
+  };
+  try {
+    await Promise.all(Array.from({ length: clampParallel(opts.parallel) }, worker));
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+    store.close();
+  }
+  return { revisited, skipped };
 }
