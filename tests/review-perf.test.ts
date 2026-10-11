@@ -148,12 +148,17 @@ describe("roster review on the T01 fixture", () => {
 
   test("outcomes.json equals the per-session scorer's outcomes", () => {
     const written = JSON.parse(readFileSync(join(dir, "outcomes.json"), "utf8")) as Outcome[];
-    expect(written).toEqual(before(f) as Outcome[]);
+    const strip = (rows: Outcome[]) => rows.map(({ difficulty: _d, tercile: _t, ...rest }) => rest);
+    expect(strip(written)).toEqual(strip(before(f) as Outcome[]));
+    for (const o of written) {
+      expect(o.difficulty === null || typeof o.difficulty === "number").toBe(true);
+      expect([1, 2, 3, null]).toContain(o.tercile);
+    }
   });
 
   test("ends with the wall time of every stage", () => {
     const line = out.trim().split("\n").at(-1)!;
-    expect(line).toMatch(/^time: fetch \d+\.\d\ds · parse \d+\.\d\ds · identify \d+\.\d\ds · score \d+\.\d\ds · difficulty not run · export \d+\.\d\ds · total \d+\.\d\ds$/);
+    expect(line).toMatch(/^time: fetch \d+\.\d\ds · parse \d+\.\d\ds · identify \d+\.\d\ds · score \d+\.\d\ds · difficulty \d+\.\d\ds · export \d+\.\d\ds · total \d+\.\d\ds$/);
   });
 });
 
