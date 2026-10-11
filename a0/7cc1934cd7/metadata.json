@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.11.4",
+  "checkpoint_id": "a07cc1934cd7",
+  "strategy": "manual-commit",
+  "branch": "forward/F27/old",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/grade/judge.ts",
+    "tests/judge.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a0/7cc1934cd7/0/metadata.json",
+      "transcript": "/a0/7cc1934cd7/0/full.jsonl",
+      "compact_transcript": "/a0/7cc1934cd7/0/transcript.jsonl",
+      "content_hash": "/a0/7cc1934cd7/0/content_hash.txt",
+      "prompt": "/a0/7cc1934cd7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 14087,
+    "cache_read_tokens": 158928,
+    "output_tokens": 6710,
+    "api_call_count": 7
+  }
+}
