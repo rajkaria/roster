@@ -1,0 +1,32 @@
+[roster setup=B task=F34]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+## F34: Collect all run costs into one file
+TASK F34 · Collect all run costs into one file
+GOAL: Write reports/costs.json from every report so plans use measured costs only.
+OWNS: scripts/costs.ts, tests/costs-script.test.ts
+INTERFACE: scripts/costs.ts function collectCosts(files: { path: string; json: unknown }[]): { reviewRuns: number; replayRuns: number; forwardRuns: number; rows: { source: string; setup: string; costUsd: number | null }[] }
+BEHAVIOUR: Reads cost fields from replays.json (data[].costUsd with setup), forward.json (data.pairs[] costOld/costNew with the pair's
+setups) and review.json (data.setups[].costUsd); counts each kind; unknown files ignored; malformed entries skipped and not counted.
+
+---
+
+<task-notification>
+<task-id>bdjbmcwsg</task-id>
+<tool-use-id>toolu_01DYhiSpkNGhPcCMfgvSmcop</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-Shared-roster-wt-forward-old-F34/feb32f0c-fba0-4c66-a544-95d28377bedd/tasks/bdjbmcwsg.output</output-file>
+<status>completed</status>
+<summary>Background command "bun test tests/costs-script.test.ts 2&gt;&amp;1 | tail -8; bun run typecheck 2&gt;&amp;1 | tail -5; bun test 2&gt;&amp;1 | tail -6" completed (exit code 0)</summary>
+</task-notification>
