@@ -17,10 +17,10 @@ export * from "./blind.ts";
 
 export const DEFAULT_FORWARD_DB = ".roster/roster.db";
 /**
- * Every grading step's time limit. The full suite takes about 15 minutes on the loaded build machine; grade()'s
- * 5-minute default timed every forward suite run out, so no side could pass H1 (amendment 12).
+ * Every grading step's time limit. grade()'s 5-minute default timed every forward suite run out (amendment 12), and
+ * 45 minutes still killed suites while the machine ran agents, the queue and a regrade at once (amendment 15).
  */
-export const FORWARD_STEP_TIMEOUT_MS = Number(process.env.ROSTER_GRADE_TIMEOUT_MS ?? 45 * 60_000);
+export const FORWARD_STEP_TIMEOUT_MS = Number(process.env.ROSTER_GRADE_TIMEOUT_MS ?? 90 * 60_000);
 /** Per-test timeout for bun in forward grading: bun's 5 s default fails tests on timing alone under load. */
 export const FORWARD_BUN_TEST_TIMEOUT_MS = 60_000;
 /**
@@ -240,23 +240,68 @@ class Mutex {
   }
 }
 
-/** At most `n` of the functions it runs in flight at once; the rest wait their turn in order. */
+/**
+ * At most `n` of the functions it runs in flight at once; the rest wait their turn in order. With `lockDir`, the `n`
+ * slots are shared by every process using that directory (amendment 15): the queue and each regrade grade one branch
+ * at a time machine-wide, not one each.
+ */
 export class Slots {
   private free: number;
   private waiting: (() => void)[] = [];
-  constructor(n: number) {
-    this.free = Math.max(1, Math.floor(n) || 1);
+  private readonly n: number;
+  constructor(n: number, private readonly lockDir?: string) {
+    this.n = Math.max(1, Math.floor(n) || 1);
+    this.free = this.n;
   }
   async run<T>(fn: () => Promise<T> | T): Promise<T> {
     if (this.free > 0) this.free--;
     else await new Promise<void>((r) => this.waiting.push(r));
+    let release = () => {};
     try {
+      if (this.lockDir) release = await acquireFileSlot(this.lockDir, this.n);
       return await fn();
     } finally {
+      release();
       const next = this.waiting.shift();
       if (next) next();
       else this.free++;
     }
+  }
+}
+
+const alive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "EPERM";
+  }
+};
+
+/** One of `n` slot directories under `dir`, created atomically; a slot whose holder process is gone is taken over. */
+async function acquireFileSlot(dir: string, n: number, pollMs = 2_000): Promise<() => void> {
+  mkdirSync(dir, { recursive: true });
+  for (;;) {
+    for (let i = 0; i < n; i++) {
+      const slot = join(dir, `slot-${i}`);
+      try {
+        mkdirSync(slot);
+      } catch {
+        let holder = NaN;
+        try {
+          holder = Number(readFileSync(join(slot, "pid"), "utf8"));
+        } catch {
+          // Just created by another process, pid not written yet: treat as held.
+          continue;
+        }
+        if (!Number.isFinite(holder) || alive(holder)) continue;
+        rmSync(slot, { recursive: true, force: true });
+        continue;
+      }
+      writeFileSync(join(slot, "pid"), String(process.pid));
+      return () => rmSync(slot, { recursive: true, force: true });
+    }
+    await Bun.sleep(pollMs);
   }
 }
 
@@ -499,6 +544,8 @@ export interface ForwardOptions {
   gradeRunner?: StepRunner;
   /** Branches graded at once across the queue. Default FORWARD_GRADE_PARALLEL. */
   gradeParallel?: number;
+  /** Shares the grading slots with every process using this directory (amendment 15). Default: this process only. */
+  gradeLockDir?: string;
   openRevertPr?: (req: RevertRequest) => Promise<RevertOutcome>;
   log?: (line: string) => void;
   /**
@@ -583,7 +630,7 @@ export async function runForward(opts: ForwardOptions): Promise<ForwardSummary> 
     return { v, ms: Date.now() - t0 };
   };
   // Every branch grades through the queue's grading slots; a pair's clock counts only its time holding one.
-  const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL);
+  const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL, opts.gradeLockDir);
   const gradeFast = (task: BacklogTask, base: string, head: string, hidden: HiddenTest[], clock = new BusyClock()) =>
     grading.run(() => clock.time(() => gradeBranch({ repo, base, head, hidden, owns: task.owns, testCmd: opts.testCmd, scratch, phase: "fast", runner: opts.gradeRunner })));
   const gradeSuite = async (task: BacklogTask, side: Side, base: string, head: string, clock = new BusyClock()) => {
@@ -759,6 +806,8 @@ export interface RemergeOptions {
   gradeRunner?: StepRunner;
   /** Branches graded at once across the re-merge (amendment 14). Default FORWARD_GRADE_PARALLEL. */
   gradeParallel?: number;
+  /** Shares the grading slots with every process using this directory (amendment 15). Default: this process only. */
+  gradeLockDir?: string;
 }
 
 export interface RemergeSummary {
@@ -786,7 +835,7 @@ export async function remergeForward(opts: RemergeOptions): Promise<RemergeSumma
   const revisited: ForwardPair[] = [];
   const skipped: string[] = [];
   // Amendment 14: a re-merge grades through slots like the queue, so its suites don't compete with each other.
-  const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL);
+  const grading = new Slots(opts.gradeParallel ?? FORWARD_GRADE_PARALLEL, opts.gradeLockDir);
 
   const revisit = async (p: ForwardPair) => {
     const task = tasks.get(p.task_id);

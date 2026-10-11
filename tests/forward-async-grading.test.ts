@@ -154,3 +154,45 @@ describe("grading slots and the pair's grading clock", () => {
     expect(overlap.ms).toBeLessThan(190);
   });
 });
+
+describe("machine-wide grading slots (amendment 15)", () => {
+  test("two Slots sharing a lock directory never run more than n at once between them", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "roster-gradelock-")), "slots");
+    const a = new Slots(1, dir);
+    const b = new Slots(1, dir);
+    let inFlight = 0;
+    let most = 0;
+    const job = async () => {
+      most = Math.max(most, ++inFlight);
+      await Bun.sleep(50);
+      inFlight--;
+    };
+    await Promise.all([a.run(job), b.run(job), a.run(job), b.run(job)]);
+    expect(most).toBe(1);
+    expect(existsSync(join(dir, "slot-0"))).toBe(false);
+  }, 30_000);
+
+  test("a slot held by a process that is gone is taken over", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "roster-gradelock-")), "slots");
+    mkdirSync(join(dir, "slot-0"), { recursive: true });
+    // A pid that is not running.
+    const dead = Bun.spawnSync(["bash", "-c", "echo $$"]).stdout.toString().trim();
+    writeFileSync(join(dir, "slot-0", "pid"), dead);
+    expect(await new Slots(1, dir).run(() => 42)).toBe(42);
+  }, 30_000);
+
+  test("a slot held by a live process is waited for, and freed when the function throws", async () => {
+    const dir = join(mkdtempSync(join(tmpdir(), "roster-gradelock-")), "slots");
+    const holder = new Slots(1, dir);
+    let released = false;
+    const held = holder.run(async () => {
+      await Bun.sleep(300);
+      released = true;
+      throw new Error("boom");
+    });
+    await Bun.sleep(20);
+    const waiter = new Slots(1, dir).run(() => released);
+    await expect(held).rejects.toThrow("boom");
+    expect(await waiter).toBe(true);
+  }, 30_000);
+});
