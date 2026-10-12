@@ -1,7 +1,8 @@
 // Books this repo's AI team. Reads the published review (reports/rajkaria__roster/review.json and its
 // sessions.json), builds the AI-workforce book with src/cfo/book.ts and writes reports/self/book.json for the
 // /book page. With --write it also writes the book into cfo.ai through the MCP bridge (src/cfo/client.ts),
-// reads it back, and records the outcome under `cfo`.
+// reads it back, and records the outcome under `cfo`. The book's read-only share link comes from
+// reports/self/cfo-plan.json `shareUrls.book`, created in cfo.ai's Share panel.
 //
 //   bun scripts/book-self.ts [--write]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -100,12 +101,26 @@ function promotedOf(review: Review, promotion: { promoted?: unknown } | null, de
   };
 }
 
+/** The book's share link from cfo-plan.json, kept only when it is an https URL on cfo.ai (as /book requires). */
+export function shareUrlFromPlan(plan: unknown): string | null {
+  const v = (plan as { shareUrls?: { book?: unknown } } | null)?.shareUrls?.book;
+  if (typeof v !== "string") return null;
+  try {
+    const url = new URL(v);
+    const host = url.hostname.toLowerCase();
+    return url.protocol === "https:" && (host === "cfo.ai" || host.endsWith(".cfo.ai")) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 export function bookFromReview(
   review: Review,
   sessions: Session[],
   promotion: { promoted?: unknown } | null,
   reviewPath: string,
   definitions: Definition[] = [],
+  shareUrl: string | null = null,
 ): BookFile {
   const period = sessionPeriod(sessions);
   if (period.days <= 0) throw new Error("the review's sessions span no time");
@@ -134,7 +149,7 @@ export function bookFromReview(
     ...book,
     assumptionLabels: { ...ASSUMPTION_LABELS },
     notes,
-    shareUrl: null,
+    shareUrl,
     cfo: { written: false, verified: false, error: "not attempted: run with --write" },
   };
 }
@@ -154,6 +169,17 @@ export async function writeToCfo(file: BookFile, client: CfoClient): Promise<Cfo
 
 const readJson = (p: string): unknown => JSON.parse(readFileSync(p, "utf8"));
 
+/**
+ * Without --write, an earlier cfo.ai outcome in book.json still holds only if the book it wrote is unchanged.
+ * A changed book (or no earlier file) is "not attempted" until the next --write.
+ */
+export function carriedCfo(previous: unknown, file: BookFile): CfoOutcome | null {
+  const prev = previous as Partial<BookFile> | null;
+  if (!prev?.cfo || !prev.department || !prev.scenario || !prev.assumptions) return null;
+  const same = JSON.stringify(bookOnly(prev as BookFile)) === JSON.stringify(bookOnly(file));
+  return same ? prev.cfo : null;
+}
+
 export async function main(
   argv: string[],
   opts: { root?: string; out?: string; client?: CfoClient } = {},
@@ -165,10 +191,14 @@ export async function main(
   const promotionPath = join(root, "reports/self/review-1/promotion.json");
   const promotion = existsSync(promotionPath) ? (readJson(promotionPath) as { promoted?: unknown }) : null;
 
-  const file = bookFromReview(review, sessions, promotion, reviewRel, loadSetups(root, {}));
-  if (argv.includes("--write")) file.cfo = await writeToCfo(file, opts.client ?? createCfoClient());
+  const planPath = join(root, "reports/self/cfo-plan.json");
+  const shareUrl = existsSync(planPath) ? shareUrlFromPlan(readJson(planPath)) : null;
 
+  const file = bookFromReview(review, sessions, promotion, reviewRel, loadSetups(root, {}), shareUrl);
   const out = opts.out ?? join(root, "reports/self/book.json");
+  if (argv.includes("--write")) file.cfo = await writeToCfo(file, opts.client ?? createCfoClient());
+  else if (existsSync(out)) file.cfo = carriedCfo(readJson(out), file) ?? file.cfo;
+
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, `${JSON.stringify(file, null, 2)}\n`);
   return file;

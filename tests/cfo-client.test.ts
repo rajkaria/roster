@@ -132,8 +132,9 @@ describe("scripts/book-self.ts", () => {
       expect(row.unattended).toMatch(/%$/);
     }
     expect(book.scenario?.hire).toBe("$12,000.00");
-    expect(book.shareUrl).toBeNull();
-    expect(json.shareUrl).toBeNull();
+    const plan = JSON.parse(readFileSync(join(ROOT, "reports/self/cfo-plan.json"), "utf8"));
+    expect(json.shareUrl).toBe(plan.shareUrls?.book ?? null);
+    expect(book.shareUrl).toBe(json.shareUrl);
     expect(json.assumptions).toEqual(ASSUMPTIONS);
     expect(Object.values(json.assumptionLabels).every((l) => String(l).startsWith("assumption:"))).toBe(true);
     expect(json.period.days).toBeGreaterThan(0);
