@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runTraces } from "../src/cli/traces.ts";
 import { _resetObsForTests, _useSdkForTests, flushObs, withSpan } from "../src/obs/index.ts";
-import { type OtlpTraceRequest, listSpool } from "../src/obs/spool.ts";
+import { type OtlpTraceRequest, listSpool, traceRequestProto } from "../src/obs/spool.ts";
 
 const KEY = "nl-test-key-7f3a9c2e";
 const TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
@@ -51,12 +51,12 @@ function allSpoolText(): string {
 interface Call {
   url: string;
   headers: Record<string, string>;
-  body: string;
+  body: unknown;
 }
 function fakeFetch(statuses: number[]): { fetch: typeof fetch; calls: Call[] } {
   const calls: Call[] = [];
   const f = async (url: string | URL | Request, init?: RequestInit) => {
-    calls.push({ url: String(url), headers: init?.headers as Record<string, string>, body: String(init?.body) });
+    calls.push({ url: String(url), headers: init?.headers as Record<string, string>, body: init?.body });
     const status = statuses[Math.min(calls.length - 1, statuses.length - 1)]!;
     return new Response("", { status });
   };
@@ -170,8 +170,17 @@ describe("roster traces", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]!.url).toBe("https://ingest.neatlogs.com/v1/traces");
     expect(calls[0]!.headers["x-api-key"]).toBe(KEY);
-    expect(calls[0]!.headers["content-type"]).toBe("application/json");
-    expect(calls[0]!.body).toBe(body);
+    expect(calls[0]!.headers["content-type"]).toBe("application/x-protobuf");
+    // The body is OTLP protobuf; decoded back it is the spooled request, with hex ids as bytes.
+    const Req = traceRequestProto();
+    const decoded = Req.toObject(Req.decode(calls[0]!.body as Uint8Array), { longs: String, bytes: String }) as {
+      resourceSpans: { scopeSpans: { spans: { traceId: string; name: string; startTimeUnixNano: string }[] }[] }[];
+    };
+    const sent = JSON.parse(body) as OtlpTraceRequest;
+    const spans = decoded.resourceSpans[0]!.scopeSpans[0]!.spans;
+    expect(spans.map((s) => s.name)).toEqual(sent.resourceSpans[0]!.scopeSpans[0]!.spans.map((s) => s.name));
+    expect(Buffer.from(spans[0]!.traceId, "base64").toString("hex")).toBe(TRACE_ID);
+    expect(spans[0]!.startTimeUnixNano).toBe(sent.resourceSpans[0]!.scopeSpans[0]!.spans[0]!.startTimeUnixNano);
     expect(existsSync(join(dir, `${TRACE_ID}.json`))).toBe(false);
     expect(printed).toEqual([`trace ${TRACE_ID}: HTTP 200, sent`]);
   });

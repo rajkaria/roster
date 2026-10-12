@@ -1,8 +1,10 @@
 // Durable neatlogs traces (T81). Alongside the SDK, obs keeps a local copy of each run's span tree as the OTLP/JSON
 // trace request the SDK would POST to <endpoint>/v1/traces. When a flush drops spans or fails, the trace is written
-// to .roster/traces/<trace-id>.json; `roster traces flush` re-sends it later. The API key is never written here.
+// to .roster/traces/<trace-id>.json; `roster traces flush` re-sends it later, encoded as OTLP protobuf (neatlogs
+// ingest rejects OTLP/JSON with "Invalid protobuf payload"). The API key is never written here.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 
 export const DEFAULT_SPOOL_DIR = join(".roster", "traces");
@@ -211,6 +213,35 @@ export function tracesUrl(endpoint: string = DEFAULT_INGEST_ENDPOINT): string {
   return base.endsWith(TRACES_PATH) ? base : `${base}${TRACES_PATH}`;
 }
 
+type ProtoMessage = {
+  fromObject(o: unknown): unknown;
+  encode(m: unknown): { finish(): Uint8Array };
+  decode(b: Uint8Array): unknown;
+  toObject(m: unknown, o?: Record<string, unknown>): unknown;
+};
+
+/** The OTLP ExportTraceServiceRequest protobuf type, from the generated root the SDK's own exporter uses. */
+export function traceRequestProto(): ProtoMessage {
+  const root = createRequire(import.meta.url)("@opentelemetry/otlp-transformer/build/src/generated/root");
+  return root.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest as ProtoMessage;
+}
+
+const hexBytes = (hex: string): Uint8Array => Uint8Array.from((hex.match(/../g) ?? []).map((b) => Number.parseInt(b, 16)));
+
+/** Encodes a spooled OTLP/JSON request as the protobuf body ingest accepts. Hex ids become bytes, as OTLP requires. */
+export function encodeTraceRequest(req: OtlpTraceRequest): Uint8Array<ArrayBuffer> {
+  const copy = structuredClone(req) as unknown as {
+    resourceSpans: { scopeSpans: { spans: Record<string, unknown>[] }[] }[];
+  };
+  for (const rs of copy.resourceSpans)
+    for (const ss of rs.scopeSpans)
+      for (const span of ss.spans)
+        for (const k of ["traceId", "spanId", "parentSpanId"])
+          if (typeof span[k] === "string") span[k] = hexBytes(span[k] as string);
+  const Req = traceRequestProto();
+  return new Uint8Array(Req.encode(Req.fromObject(copy)).finish());
+}
+
 /** 429 and 5xx are worth another try; any other non-2xx answer will not change. */
 const retryable = (status: number): boolean => status === 429 || status >= 500;
 
@@ -226,7 +257,7 @@ export async function flushSpool(opts: SpoolFlushOptions): Promise<SpoolFlushRes
   const url = tracesUrl(opts.endpoint);
   const results: SpoolFlushResult[] = [];
   for (const t of listSpool(opts.dir)) {
-    const body = readFileSync(t.path, "utf8");
+    const body = encodeTraceRequest(JSON.parse(readFileSync(t.path, "utf8")) as OtlpTraceRequest);
     let status: number | null = null;
     let error = "";
     for (let i = 0; i < attempts; i++) {
@@ -234,7 +265,7 @@ export async function flushSpool(opts: SpoolFlushOptions): Promise<SpoolFlushRes
       try {
         const res = await doFetch(url, {
           method: "POST",
-          headers: { "content-type": "application/json", "x-api-key": opts.apiKey },
+          headers: { "content-type": "application/x-protobuf", "x-api-key": opts.apiKey },
           body,
         });
         status = res.status;
