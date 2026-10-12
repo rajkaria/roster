@@ -1,7 +1,7 @@
 // T47: the landing page's data helper renders the table straight from a review file.
 // Fixtures are the real published review (reports/rajkaria__roster/review.json) and clones of it with fields overridden.
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Review } from "../web/lib/types.ts";
@@ -84,7 +84,16 @@ describe("page source", () => {
   });
 
   test("no em dashes in landing copy", () => {
-    for (const f of ["web/app/page.tsx", "web/components/LandingSections.tsx", "web/components/LandingData.tsx"]) {
+    const files = [
+      "web/app/page.tsx",
+      "web/components/LandingSections.tsx",
+      "web/components/LandingData.tsx",
+      "web/components/LandingResult.tsx",
+      "web/components/Nav.tsx",
+      "web/components/Footer.tsx",
+      ...readdirSync(join(ROOT, "web", "components", "landing")).map((f) => `web/components/landing/${f}`),
+    ];
+    for (const f of files) {
       expect(readFileSync(join(ROOT, f), "utf8")).not.toContain("—");
     }
   });

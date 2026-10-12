@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { Metadata } from "next";
 import { GITHUB } from "@/components/LandingData";
 import { loadForwardFile, loadPreregFile, type Forward, type ForwardRow } from "@/lib/forward";
+import { parseExclusions } from "@/lib/landing";
 
 export const metadata: Metadata = {
   title: "Experiment · Roster",
@@ -16,7 +17,21 @@ const PREREG_URL = `${GITHUB}/blob/main/experiments/PREREGISTRATION.md`;
 const pass = (v: boolean) => (v ? "pass" : "fail");
 const usd = (v: number | null) => (v === null ? <span className="na">n/a</span> : `$${v.toFixed(2)}`);
 
+/** forward-exclusions.json, parsed; an unreadable file gives no exclusions. */
+function exclusionsJson(): unknown {
+  const file = join(DATA, "self", "forward-exclusions.json");
+  try {
+    return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A row's exclusion: its own written reason, else the reason forward-exclusions.json gives for its task. */
+const excludedOf = (r: ForwardRow, reasons: Map<string, string>): string | undefined => r.excluded ?? reasons.get(r.task);
+
 function Pairs({ rows, summary }: { rows: ForwardRow[]; summary: Forward["summary"] }) {
+  const reasons = new Map(parseExclusions(exclusionsJson()).map((e) => [e.task, e.reason]));
   return (
     <section style={{ marginTop: 32 }}>
       <h2 style={{ fontSize: "1.15rem", margin: "0 0 12px" }}>Pairs</h2>
@@ -54,7 +69,7 @@ function Pairs({ rows, summary }: { rows: ForwardRow[]; summary: Forward["summar
                   <td>{pass(r.new)}</td>
                   <td className="num">{usd(r.costOld)}</td>
                   <td className="num">{usd(r.costNew)}</td>
-                  <td>{r.excluded === undefined ? "none" : r.excluded}</td>
+                  <td>{excludedOf(r, reasons) ?? "none"}</td>
                 </tr>
               ))}
             </tbody>
@@ -67,13 +82,7 @@ function Pairs({ rows, summary }: { rows: ForwardRow[]; summary: Forward["summar
 
 /** Exclusions with no row in forward.json (excluded before pairing), with their written reason and amendment. */
 function unpaired(forward: Forward | null): { task: string; reason: string; amendment: number | null }[] {
-  const file = join(DATA, "self", "forward-exclusions.json");
-  let json: unknown = null;
-  try {
-    json = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
-  } catch {
-    json = null;
-  }
+  const json = exclusionsJson();
   const list = (json as { exclusions?: unknown } | null)?.exclusions;
   if (!Array.isArray(list)) return [];
   const shown = new Set((forward?.rows ?? []).map((r) => r.task));
