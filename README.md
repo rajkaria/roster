@@ -4,7 +4,7 @@
 
 ## The result
 
-Four AI coding setups built this repo. Roster reviewed them and replaced Claude Code + Sonnet 5.5 (**B**) with Claude Code on DeepSeek Flash (**E**). Before it made that call, we froze 40 new build tasks and their acceptance tests (hash published). Then each task was built twice, once by B and once by E, and graded blind.
+Four AI coding setups built this repo. Roster reviewed them and replaced Claude Code + Sonnet 5.5 (**B**) with Claude Code on DeepSeek Flash (**E**). Before it made that call, we froze 40 new build tasks and their acceptance tests (hash published). Then each task was built twice, once by B and once by E, and graded against those frozen tests (a blind diff judge only breaks merge ties).
 
 | Forward test, pre-registered (final: 35 valid pairs) | |
 |---|---|
@@ -106,7 +106,7 @@ The build log in [`hackathon.md`](hackathon.md) has the details.
 bun install
 bun src/cli.ts review https://github.com/<owner>/<repo> --observational   # level A, read-only, no model calls
 bun src/cli.ts run <repo> --budget 5                                        # coordinator: plan, replay, gate (DeepSeek)
-bun src/cli.ts forward --backlog <file> --pair OLD,NEW                      # paired forward run, blind grading
+bun src/cli.ts forward --backlog <file> --pair OLD,NEW                      # paired forward run, graded against frozen acceptance tests
 bun src/cli.ts traces flush                                                 # re-send neatlogs traces a run could not deliver
 bun scripts/book-self.ts --write                                            # this repo's book, written into cfo.ai and read back
 ```
