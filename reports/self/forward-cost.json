@@ -1,0 +1,8 @@
+{
+  "source": "reports/self/forward.json",
+  "pairs": 35,
+  "cheaperNew": 35,
+  "medianNewUsd": 0.019686534,
+  "medianOldUsd": 0.14844899999999997,
+  "wilcoxonP": 2.587691416700011e-7
+}

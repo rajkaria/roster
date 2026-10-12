@@ -25,6 +25,7 @@ export type FactSpec = {
 const SELF = "rajkaria__roster/review.json";
 const REVIEW1 = "self/review-1/decisions.json";
 const FORWARD = "self/forward.json";
+const FORWARD_COST = "self/forward-cost.json";
 const BEFORE_AFTER = "self/neatlogs-before-after.json";
 const CFO_PLAN = "self/cfo-plan.json";
 const BOOK = "self/book.json";
@@ -50,6 +51,11 @@ export const FACT_SPECS: FactSpec[] = [
   { key: "FORWARD_OLD_ONLY", file: FORWARD, path: "$.mcnemar.old_only", unit: "pairs" },
   { key: "FORWARD_P", file: FORWARD, path: "$.mcnemar.p", decimals: 3 },
   { key: "FORWARD_WORDING", file: FORWARD, path: "$.wording" },
+  { key: "FORWARD_COST_PAIRS", file: FORWARD_COST, path: "$.pairs", unit: "pairs priced on both sides" },
+  { key: "FORWARD_CHEAPER_NEW", file: FORWARD_COST, path: "$.cheaperNew", unit: "pairs where the promoted setup cost less" },
+  { key: "FORWARD_COST_MEDIAN_NEW_USD", file: FORWARD_COST, path: "$.medianNewUsd", unit: "USD per task, promoted setup", decimals: 3 },
+  { key: "FORWARD_COST_MEDIAN_OLD_USD", file: FORWARD_COST, path: "$.medianOldUsd", unit: "USD per task, old setup", decimals: 3 },
+  { key: "FORWARD_COST_P", file: FORWARD, path: "$.cost_p", unit: "(Wilcoxon signed-rank)", decimals: 7 },
   { key: "NEATLOGS_BEFORE_TRACE", file: BEFORE_AFTER, path: "$.before.traceId" },
   { key: "NEATLOGS_BEFORE_VERDICT", file: BEFORE_AFTER, path: "$.before.verdict" },
   { key: "NEATLOGS_BEFORE_HIDDEN_B", file: BEFORE_AFTER, path: "$.before.hiddenPass.B", unit: "of 10 tasks" },

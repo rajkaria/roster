@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Metadata } from "next";
 import { GITHUB } from "@/components/LandingData";
@@ -64,8 +65,27 @@ function Pairs({ rows, summary }: { rows: ForwardRow[]; summary: Forward["summar
   );
 }
 
+/** Exclusions with no row in forward.json (excluded before pairing), with their written reason and amendment. */
+function unpaired(forward: Forward | null): { task: string; reason: string; amendment: number | null }[] {
+  const file = join(DATA, "self", "forward-exclusions.json");
+  let json: unknown = null;
+  try {
+    json = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
+  } catch {
+    json = null;
+  }
+  const list = (json as { exclusions?: unknown } | null)?.exclusions;
+  if (!Array.isArray(list)) return [];
+  const shown = new Set((forward?.rows ?? []).map((r) => r.task));
+  return list
+    .filter((e): e is { task: string; reason: string; amendment?: unknown } => typeof e?.task === "string" && typeof e?.reason === "string")
+    .filter((e) => !shown.has(e.task))
+    .map((e) => ({ task: e.task, reason: e.reason, amendment: typeof e.amendment === "number" ? e.amendment : null }));
+}
+
 export default function ExperimentPage() {
   const forward = loadForwardFile(DATA);
+  const notShown = unpaired(forward);
   const sha256 = loadPreregFile(DATA);
 
   return (
@@ -86,6 +106,11 @@ export default function ExperimentPage() {
       ) : (
         <Pairs rows={forward.rows} summary={forward.summary} />
       )}
+      {notShown.map((e) => (
+        <p className="meta" key={e.task}>
+          {e.task} is excluded and not shown: {e.reason}{e.amendment !== null && ` (amendment ${e.amendment})`}.
+        </p>
+      ))}
     </>
   );
 }

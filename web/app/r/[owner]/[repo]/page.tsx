@@ -3,6 +3,7 @@ import type { SetupRow } from "@/lib/types";
 import { Section, SuspectCard, ReplaysTable, GateList, ForwardTable } from "@/components/Sections";
 import { Detections, loadDetections } from "@/components/Detections";
 import { loadReplays,loadGate, loadForward, loadOutcomes } from "./sidecar";
+import { SELF_OWNER, SELF_REPO } from "@/components/LandingData";
 
 export const dynamicParams = false;
 
@@ -13,8 +14,9 @@ export function generateStaticParams() {
 const pct = (v: number | null) => (v === null ? <span className="na">n/a</span> : `${(v * 100).toFixed(0)}%`);
 const usd = (v: number | null) => (v === null ? <span className="na">n/a</span> : `$${v.toFixed(2)}`);
 
+/** The review's own figure (mature sessions' cost over their survival), the number REVIEW.md and the book's ranking use. */
 function costPerSurviving(s: SetupRow) {
-  return s.spend_usd !== null && s.surviving_changes > 0 ? s.spend_usd / s.surviving_changes : null;
+  return s.cost_per_surviving_change;
 }
 
 /** An unknown spend is never shown as $0: say how many sessions are priced. A lower bound reads "≥ $x". */
@@ -28,9 +30,19 @@ function spendPerSession(s: SetupRow) {
   return s.sessions > 0 ? `${s.spend_lower_bound ? "≥ " : ""}$${(s.spend_usd / s.sessions).toFixed(2)}` : <span className="na">n/a</span>;
 }
 
+/** This repo's own replays, gate calls and forward run are published under reports/self, shown on / and /experiment. */
+function SelfPointer({ what }: { what: string }) {
+  return (
+    <div className="empty">
+      This repo&apos;s {what} on the <a href="/">home page</a> and <a href="/experiment">/experiment</a>.
+    </div>
+  );
+}
+
 export default async function ReviewPage({ params }: { params: Promise<{ owner: string; repo: string }> }) {
   const { owner, repo } = await params;
   const review = loadReview(owner, repo);
+  const self = owner === SELF_OWNER && repo === SELF_REPO;
 
   if (!review) {
     return (
@@ -99,14 +111,20 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
         <SuspectCard review={review} />
       </Section>
       <Section title="Replays" level="B">
-        <ReplaysTable replays={loadReplays(owner, repo)} terciles={terciles} setups={review.setups} />
+        {self && loadReplays(owner, repo).length === 0 ? <SelfPointer what="replays and both gate calls are" /> : (
+          <ReplaysTable replays={loadReplays(owner, repo)} terciles={terciles} setups={review.setups} />
+        )}
       </Section>
       <Section title="Gate decisions" level="B">
-        <GateList rows={loadGate(owner, repo)} />
+        {self && loadGate(owner, repo).length === 0 ? <SelfPointer what="gate decisions (the first promoted, the second rejected) are" /> : (
+          <GateList rows={loadGate(owner, repo)} />
+        )}
       </Section>
       <Detections rows={loadDetections(owner, repo)} />
       <Section title="Forward" level="C">
-        <ForwardTable rows={loadForward(owner, repo)} />
+        {self && loadForward(owner, repo).length === 0 ? <SelfPointer what="forward run is" /> : (
+          <ForwardTable rows={loadForward(owner, repo)} />
+        )}
       </Section>
     </>
   );

@@ -174,6 +174,52 @@ describe("POST /api/review", () => {
     }
   });
 
+  test("200s for a review published under public/data/<owner>__<repo>, the directory /r/<owner>/<repo> reads", async () => {
+    const owner = uniq();
+    const repo = uniq();
+    const dir = join(process.cwd(), "public", "data", `${owner}__${repo}`.toLowerCase());
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "review.json"), "{}");
+    try {
+      const res = await POST(makeRequest(`https://github.com/${owner.toUpperCase()}/${repo}`));
+      expect(res.status).toBe(200);
+      // macOS disks match either case; Linux (Vercel) finds the lowercased slug.
+      const body = (await res.json()) as { cached: boolean; path: string };
+      expect(body.cached).toBe(true);
+      expect(body.path.toLowerCase()).toBe(`public/data/${`${owner}__${repo}`.toLowerCase()}/review.json`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      clean(owner);
+    }
+  });
+
+  test("asks its own origin for the static file when public/ is not on disk", async () => {
+    const owner = uniq();
+    const repo = uniq();
+    const seen: string[] = [];
+    const server = Bun.serve({
+      port: 0,
+      fetch(req) {
+        const path = new URL(req.url).pathname;
+        seen.push(`${req.method} ${path}`);
+        return new Response(null, { status: path === `/data/${owner}__${repo}/review.json` ? 200 : 404 });
+      },
+    });
+    try {
+      const req = new Request(`http://localhost:${server.port}/api/review`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": `origin-${uniq()}` },
+        body: JSON.stringify({ repo: `${owner}/${repo}` }),
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ cached: true, path: `public/data/${owner}__${repo}/review.json` });
+      expect(seen[0]).toBe(`HEAD /data/${owner}__${repo}/review.json`);
+    } finally {
+      server.stop(true);
+    }
+  });
+
   test("429s a client that spends its budget and leaves other clients alone", async () => {
     const owner = uniq();
     const repo = uniq();

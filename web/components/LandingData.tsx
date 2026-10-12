@@ -1,7 +1,8 @@
 // Data helpers for the landing page. Pure functions over a Review, no React, so tests can import them directly.
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Review, SetupRow } from "../lib/types";
+import type { BuiltWithData } from "./LandingSections";
 
 /** The repo whose own review the landing page shows. */
 export const SELF_OWNER = "rajkaria";
@@ -51,4 +52,32 @@ export function landingTotals(review: Review): { sessions: number; spend: string
 /** The forward run counts as started once its results file is published. */
 export function forwardStarted(dataDir: string): boolean {
   return existsSync(join(dataDir, "self", "forward.json"));
+}
+
+const readJson = (file: string): unknown => {
+  try {
+    return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
+  } catch {
+    return null;
+  }
+};
+const HEX32 = /^[0-9a-f]{32}$/;
+const httpsOn = (v: unknown, host: string): string | null => {
+  if (typeof v !== "string") return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" && (u.hostname === host || u.hostname.endsWith(`.${host}`)) ? v : null;
+  } catch {
+    return null;
+  }
+};
+
+/** The "Built with" evidence: the neatlogs before/after trace ids and the cfo.ai share links, from the published reports. */
+export function builtWithData(dataDir: string): BuiltWithData {
+  const n = readJson(join(dataDir, "self", "neatlogs-before-after.json")) as { before?: { traceId?: unknown }; after?: { traceId?: unknown } } | null;
+  const before = n?.before?.traceId;
+  const after = n?.after?.traceId;
+  const traces = typeof before === "string" && typeof after === "string" && HEX32.test(before) && HEX32.test(after) ? { before, after } : null;
+  const c = readJson(join(dataDir, "self", "cfo-plan.json")) as { shareUrls?: { plan?: unknown; book?: unknown } } | null;
+  return { traces, cfo: { plan: httpsOn(c?.shareUrls?.plan, "cfo.ai"), book: httpsOn(c?.shareUrls?.book, "cfo.ai") } };
 }

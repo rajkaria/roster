@@ -3,6 +3,7 @@
 // The database is opened read-only; this script never writes to .roster/.
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { forwardCost } from "./forward-cost";
 import { join } from "node:path";
 import { forwardSummary } from "../src/forward/analysis.ts";
 import type { ForwardAnalysisPair, ForwardSummary } from "../src/forward/analysis.ts";
@@ -160,7 +161,7 @@ export interface ExportOptions {
   out?: string;
 }
 
-/** Reads the database and writes forward.json and prereg.json under `out`. Returns the forward report. */
+/** Reads the database and writes forward.json, prereg.json and forward-cost.json under `out`. Returns the forward report. */
 export function exportForward(opts: ExportOptions = {}): ForwardReport {
   const out = opts.out ?? DEFAULT_OUT;
   const report = buildForwardReport(readPairs(opts.db ?? DEFAULT_DB), readExclusions(opts.exclusions ?? DEFAULT_EXCLUSIONS));
@@ -168,6 +169,7 @@ export function exportForward(opts: ExportOptions = {}): ForwardReport {
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, "forward.json"), JSON.stringify(report, null, 2) + "\n");
   writeFileSync(join(out, "prereg.json"), JSON.stringify(prereg, null, 2) + "\n");
+  writeFileSync(join(out, "forward-cost.json"), JSON.stringify(forwardCost(report), null, 2) + "\n");
   return report;
 }
 

@@ -4,7 +4,7 @@ import { GITHUB, SELF_OWNER, SELF_REPO, landingRows, landingTotals } from "./Lan
 export function Hero() {
   return (
     <section className="hero">
-      <h1>Roster runs performance reviews for your AI coding agents.</h1>
+      <h1>Roster is an agent that runs performance reviews for your AI coding agents.</h1>
       <p className="lede">
         It finds the setup that&apos;s quietly making your codebase worse, tests a better one on your own past tasks,
         and ships it only if nothing regresses.
@@ -101,21 +101,24 @@ export function HowItWorks() {
   );
 }
 
-export function Experiment({ started }: { started: boolean }) {
+export function Experiment({ started, forward }: { started: boolean; forward?: { n: number; wording: string } | null }) {
   const blob = `${GITHUB}/blob/main/experiments`;
   return (
     <section className="land">
       <H2>The experiment</H2>
       <p>
-        Roster is building itself with several agent setups, and its first review of this repo picks which setup to
+        Roster built itself with several agent setups, and its first review of this repo picked which setup to
         promote. Before that review ran, we froze a backlog of new tasks and their acceptance tests and published
         their hashes in <a href={`${blob}/FREEZE.txt`} rel="noopener noreferrer">FREEZE.txt</a>. The hypotheses, tests
         and stop rules are fixed in <a href={`${blob}/PREREGISTRATION.md`} rel="noopener noreferrer">PREREGISTRATION.md</a>.
         Results get published whatever they show.
       </p>
       <p className="banner">
-        Status: {started ? (
-          <>forward run started. <a href={`/r/${SELF_OWNER}/${SELF_REPO}`}>See the results so far →</a></>
+        Status:{" "}
+        {forward ? (
+          <>forward run complete: {forward.n} valid pairs, {forward.wording}. <a href="/experiment">See every pair →</a></>
+        ) : started ? (
+          <>forward run started. <a href="/experiment">See the pairs so far →</a></>
         ) : (
           "forward run not started."
         )}
@@ -124,20 +127,44 @@ export function Experiment({ started }: { started: boolean }) {
   );
 }
 
+export type BuiltWithData = {
+  traces: { before: string; after: string } | null;
+  cfo: { plan: string | null; book: string | null };
+};
+
 const TOOLS = [
   { name: "Entire", href: "https://entire.io", text: "records every coding agent session with its prompts, tokens and commit, and Roster reads those records as its input." },
-  { name: "neatlogs", href: "https://neatlogs.com", text: "traces every Roster run, from ingest to each replay attempt and gate decision, so each result links to how it was produced." },
+  { name: "neatlogs", href: "https://neatlogs.com", text: "traces Roster's runs, from ingest to each replay attempt and gate decision." },
   { name: "cfo.ai", href: "https://cfo.ai", text: "is where Roster books the AI team's spend per setup as a department in the company plan." },
 ];
 
-export function BuiltWith() {
+const Share = ({ href, children }: { href: string | null; children: React.ReactNode }) =>
+  href ? <a href={href} rel="noopener noreferrer" target="_blank">{children}</a> : null;
+
+function ToolExtra({ name, data }: { name: string; data: BuiltWithData }) {
+  if (name === "neatlogs" && data.traces) {
+    return (
+      <> The first and second gate calls on the same tasks are traces <code>{data.traces.before}</code> and{" "}
+        <code>{data.traces.after}</code>, re-emitted from the recorded results, so span timings are emission times.</>
+    );
+  }
+  if (name === "cfo.ai" && (data.cfo.plan || data.cfo.book)) {
+    return (
+      <> Read-only: <Share href={data.cfo.plan}>business plan</Share>
+        {data.cfo.plan && data.cfo.book ? ", " : null}<Share href={data.cfo.book}>AI workforce book</Share>.</>
+    );
+  }
+  return null;
+}
+
+export function BuiltWith({ data = { traces: null, cfo: { plan: null, book: null } } }: { data?: BuiltWithData }) {
   return (
     <section className="land">
       <H2>Built with Entire, neatlogs and cfo.ai</H2>
       <ul className="tools">
         {TOOLS.map((t) => (
           <li key={t.name}>
-            <a href={t.href} rel="noopener noreferrer">{t.name}</a> {t.text}
+            <a href={t.href} rel="noopener noreferrer">{t.name}</a> {t.text}<ToolExtra name={t.name} data={data} />
           </li>
         ))}
       </ul>

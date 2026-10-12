@@ -24,7 +24,7 @@ export default function ReviewsIndex() {
       <p className="meta">Evidence: level A: observational. A setup is never called worse on level A alone.</p>
       {totals && (
         <p className="meta">
-          Totals: {totals.repos} repos, {totals.sessions} sessions
+          Totals for the {totals.repos} public repos (rajkaria/roster not included): {totals.sessions} sessions
           {totals.costUsd !== null && `, $${totals.costUsd.toFixed(2)} spend (priced sessions only)`}.
         </p>
       )}

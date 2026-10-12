@@ -105,7 +105,7 @@ So review 1's call held on new work, even though the evidence review 1 used for 
 This repo's own review after the forward run: 154 sessions across 5 setups, at least $44.03 of spend. DeepSeek Flash cost $1.26 over 40 sessions, the least per surviving change. Level A finds no suspect (odds ratio 8.10, p = 1.000).
 
 ## Demo
-- Live: https://roster-five-chi.vercel.app (the result on the home page; `/experiment`, `/r`, `/r/rajkaria/roster`, `/try`, `/book`).
+- Live: https://tryroster.dev, also at https://roster-five-chi.vercel.app (the result on the home page; `/experiment`, `/r`, `/r/rajkaria/roster`, `/try`, `/book`).
 - CLI: `bun src/cli.ts review <github-url> --observational`.
 
 ## Limitations

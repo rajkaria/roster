@@ -169,3 +169,17 @@ describe("page source", () => {
     expect(SRC).toMatch(/book\.shareUrl\s*&&/);
   });
 });
+
+describe("bookContext", () => {
+  test("reads the period and the assumed sessions a week from book.json, and nulls when absent", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { bookContext } = await import("../web/lib/book.ts");
+    const dir = mkdtempSync(join(tmpdir(), "book-ctx-"));
+    expect(bookContext(dir)).toEqual({ periodDays: null, sessionsPerWeek: null });
+    mkdirSync(join(dir, "self"));
+    writeFileSync(join(dir, "self", "book.json"), JSON.stringify({ period: { days: 1.4231 }, assumptions: { scaleSessionsPerWeek: 50 } }));
+    expect(bookContext(dir)).toEqual({ periodDays: "1.42", sessionsPerWeek: 50 });
+  });
+});

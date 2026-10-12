@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import type { Metadata } from "next";
 import { loadReview } from "@/lib/reviews";
-import { SELF_OWNER, SELF_REPO, forwardStarted } from "@/components/LandingData";
+import { SELF_OWNER, SELF_REPO, builtWithData, forwardStarted } from "@/components/LandingData";
 import { Hero, OwnReview, HowItWorks, Experiment, BuiltWith } from "@/components/LandingSections";
 import { LandingResult } from "@/components/LandingResult";
 import { loadResultFile } from "@/lib/result";
@@ -24,8 +24,8 @@ export default function Home() {
       <LandingResult result={result} />
       <OwnReview review={review} />
       <HowItWorks />
-      <Experiment started={started} />
-      <BuiltWith />
+      <Experiment started={started} forward={result.forward} />
+      <BuiltWith data={builtWithData(join(process.cwd(), "public", "data"))} />
     </>
   );
 }

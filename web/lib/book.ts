@@ -108,3 +108,18 @@ export function loadBookFromData(dataDir: string = join(process.cwd(), "public",
     return emptyBook();
   }
 }
+
+/** The book's context for its labels: the session window it scales (days, 2 decimals) and the assumed sessions a week. Null when absent. */
+export function bookContext(dataDir: string): { periodDays: string | null; sessionsPerWeek: number | null } {
+  const file = join(dataDir, "self", "book.json");
+  let json: unknown = null;
+  try {
+    json = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
+  } catch {
+    json = null;
+  }
+  const r = (isRecord(json) ? json : {}) as { period?: { days?: unknown }; assumptions?: { scaleSessionsPerWeek?: unknown } };
+  const fin = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null);
+  const days = fin(r.period?.days);
+  return { periodDays: days === null ? null : days.toFixed(2), sessionsPerWeek: fin(r.assumptions?.scaleSessionsPerWeek) };
+}

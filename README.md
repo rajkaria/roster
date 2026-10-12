@@ -20,7 +20,7 @@ What changed these numbers, each disclosed in a dated [amendment](experiments/PR
 - **Costs** are re-priced from each run's tokens, because Claude Code priced DeepSeek tokens at Claude rates (amendment 10).
 - **Build-only merges** put F04, F05, F06, F08 and F09 on `main` so later tasks could build on them (amendments 17 and 18). They change no recorded result.
 
-Every number here comes from [`docs/FACTS.md`](docs/FACTS.md) or [`reports/self/forward.json`](reports/self/forward.json), both generated from the run. The pairs are on the [experiment page](https://roster-five-chi.vercel.app/experiment).
+Every number here comes from [`docs/FACTS.md`](docs/FACTS.md) or [`reports/self/forward.json`](reports/self/forward.json), both generated from the run. The pairs are on the [experiment page](https://tryroster.dev/experiment).
 
 **How the call was made: v1, then v2.**
 - **v1:** Roster's first review promoted E on a 0–0 tie. B and E both failed all 10 replayed tasks that have hidden tests, so the cheaper one won, with no quality signal. We disclosed that before the forward run (amendment 7).
@@ -38,10 +38,10 @@ It reads every session your coding agents recorded with [Entire](https://entire.
 Then it tests a better setup on your own past tasks, and promotes that setup only if nothing regresses.
 
 **Live:**
-- [roster-five-chi.vercel.app](https://roster-five-chi.vercel.app)
-- [our own AI team's review](https://roster-five-chi.vercel.app/r/rajkaria/roster)
-- [all reviews](https://roster-five-chi.vercel.app/r)
-- [the AI-workforce book](https://roster-five-chi.vercel.app/book)
+- [tryroster.dev](https://tryroster.dev) (also at [roster-five-chi.vercel.app](https://roster-five-chi.vercel.app))
+- [our own AI team's review](https://tryroster.dev/r/rajkaria/roster)
+- [all reviews](https://tryroster.dev/r)
+- [the AI-workforce book](https://tryroster.dev/book)
 
 ## How it works
 
@@ -86,7 +86,7 @@ The test was fixed in advance in [`experiments/PREREGISTRATION.md`](experiments/
 
 **Status:** the forward run is complete: 40 tasks, 39 recorded pairs, 35 valid (exclusions under amendments 11 and 18, above). The exploratory secondary outcome (blind judge preference, not H1; amendments 8 and 10) preferred E in 14 pairs and B in 11, with 1 tie and 9 with no eligible side ([`reports/self/forward.json`](reports/self/forward.json)).
 
-**This repo's own review** (level A, [live](https://roster-five-chi.vercel.app/r/rajkaria/roster)), after the forward run: 154 sessions across 5 setups, at least $44.03 of spend (some Haiku sessions are priced as a lower bound). DeepSeek Flash cost $1.26 over 40 sessions, the least per surviving change. Level A finds no suspect (odds ratio 8.10, p = 1.000), so this review alone calls no setup worse.
+**This repo's own review** (level A, [live](https://tryroster.dev/r/rajkaria/roster)), after the forward run: 154 sessions across 5 setups, at least $44.03 of spend (some Haiku sessions are priced as a lower bound). DeepSeek Flash cost $1.26 over 40 sessions, the least per surviving change. Level A finds no suspect (odds ratio 8.10, p = 1.000), so this review alone calls no setup worse.
 
 ## Roster caught its own silent mistakes
 

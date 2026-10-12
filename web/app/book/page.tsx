@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import type { Metadata } from "next";
-import { loadBookFromData } from "@/lib/book";
+import { bookContext, loadBookFromData } from "@/lib/book";
 
 const TITLE = "Book: the AI workforce Roster runs on cfo.ai";
 const DESCRIPTION =
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 
 export default function BookPage() {
   const book = loadBookFromData(join(process.cwd(), "public", "data"));
+  const assumed = bookContext(join(process.cwd(), "public", "data"));
 
   return (
     <>
@@ -26,6 +27,13 @@ export default function BookPage() {
 
       <section className="land">
         <h2 className="land-h2">AI workforce department</h2>
+        {assumed.periodDays !== null && (
+          <p className="meta">
+            Monthly figures scale {assumed.periodDays} days of this repo&apos;s sessions to a month. Per surviving
+            change here is monthly spend over monthly surviving changes, all sessions; the review&apos;s own figure counts
+            mature sessions only.
+          </p>
+        )}
         {!book.rows.length ? (
           <div className="empty">No book has been published yet.</div>
         ) : (
@@ -65,11 +73,11 @@ export default function BookPage() {
           <div className="cards">
             <div className="card">
               <strong>Hire an engineer</strong>
-              <p>{book.scenario.hire} a month, loaded.</p>
+              <p>{book.scenario.hire} a month, loaded (an assumption).</p>
             </div>
             <div className="card">
               <strong>Scale the promoted setup</strong>
-              <p>{book.scenario.scale} a month at the promoted setup&apos;s own rate.</p>
+              <p>{book.scenario.scale} a month at the promoted setup&apos;s own rate{assumed.sessionsPerWeek !== null && `, at an assumed ${assumed.sessionsPerWeek} sessions a week`}.</p>
             </div>
           </div>
         )}
