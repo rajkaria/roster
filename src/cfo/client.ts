@@ -62,6 +62,8 @@ export function bridgeArgs(tool: string, args: Record<string, unknown>, mcpConfi
     "",
     "--allowedTools",
     `mcp__${CFO_SERVER}__${tool}`,
+    // --tools and --allowedTools take lists: without "--" the prompt is read as one more tool name.
+    "--",
     bridgePrompt(tool, args),
   ];
 }

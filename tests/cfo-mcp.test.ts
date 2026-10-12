@@ -1,6 +1,20 @@
 import { expect, test } from "bun:test";
 import { buildBook } from "../src/cfo/book";
-import { diffBook, writeBook } from "../src/cfo/mcp";
+import { BOOK_COLUMNS, bookUpdateArgs, diffBook, parseBookTable, writeBook } from "../src/cfo/mcp";
+
+/** An inspect_table_blocks read of the department table, in the shape the live cfo.ai server returns. */
+function tableRead(b: { department: { setup: string; label: string; monthlySpendUsd: number | null; survivingChangesPerMonth: number; costPerSurvivingChangeUsd: number | null; unattendedPct: number }[] }) {
+  return {
+    columns: BOOK_COLUMNS.map((display_name) => ({ display_name })),
+    rows: [
+      { axis: true, display_name: "Book setup" },
+      ...b.department.map((d) => ({
+        member: d.setup,
+        values: [d.label, d.monthlySpendUsd, d.survivingChangesPerMonth, d.costPerSurvivingChangeUsd, d.unattendedPct].map((value) => ({ value })),
+      })),
+    ],
+  };
+}
 
 const book = buildBook({
   periodDays: 30,
@@ -24,7 +38,7 @@ function fake(readbacks: unknown[]) {
 }
 
 test("matching readback succeeds in one attempt", async () => {
-  const c = fake([{ book: clone() }]);
+  const c = fake([tableRead(clone())]);
   expect(await writeBook(book, c)).toEqual({ ok: true, attempts: 1, diffs: [] });
   expect(c.calls).toEqual(["edit_table_blocks", "inspect_table_blocks"]);
 });
@@ -46,7 +60,7 @@ test("diff reports path, sent and got", () => {
 test("mismatch retries once then fails with diffs", async () => {
   const bad = clone();
   bad.department[0].label = "Z";
-  const r = await writeBook(book, fake([{ book: bad }]));
+  const r = await writeBook(book, fake([tableRead(bad)]));
   expect(r.ok).toBe(false);
   expect(r.attempts).toBe(2);
   expect(r.diffs[0]!.path).toBe("department[0].label");
@@ -55,7 +69,7 @@ test("mismatch retries once then fails with diffs", async () => {
 test("retry can recover", async () => {
   const bad = clone();
   bad.department[0].label = "Z";
-  const r = await writeBook(book, fake([{ book: bad }, { book: clone() }]));
+  const r = await writeBook(book, fake([tableRead(bad), tableRead(clone())]));
   expect(r).toEqual({ ok: true, attempts: 2, diffs: [] });
 });
 
@@ -76,4 +90,23 @@ test("client errors count as attempts and are not thrown", async () => {
   expect(r.ok).toBe(false);
   expect(r.attempts).toBe(2);
   expect(r.diffs[0]!.got).toBe("boom");
+});
+
+test("update args name the table, the scenario and one row per setup", () => {
+  const args = bookUpdateArgs(book) as { update: { target: string; scenario: string; values: { columns: string[]; rows: unknown[][] } } };
+  expect(args.update.target).toBe("AI workforce department");
+  expect(args.update.scenario).toBe("Main Scenario");
+  expect(args.update.values.columns).toEqual([...BOOK_COLUMNS]);
+  expect(args.update.values.rows).toEqual([["Book setup[a]", "A", book.department[0]!.monthlySpendUsd, book.department[0]!.survivingChangesPerMonth, book.department[0]!.costPerSurvivingChangeUsd, book.department[0]!.unattendedPct]]);
+});
+
+test("a read of some other table parses to null", () => {
+  expect(parseBookTable({ columns: [{ display_name: "Revenue" }], rows: [] }, ["a"])).toBeNull();
+  expect(parseBookTable(null, ["a"])).toBeNull();
+});
+
+test("a cell echoed as a bare value still parses", () => {
+  const read = tableRead(clone());
+  (read.rows[1] as { values: unknown[] }).values[0] = "A";
+  expect(parseBookTable(read, ["a"])?.department[0]?.label).toBe("A");
 });

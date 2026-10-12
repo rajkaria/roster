@@ -74,8 +74,8 @@
   ],
   "shareUrl": null,
   "cfo": {
-    "written": false,
-    "verified": false,
-    "error": "not attempted: run with --write"
+    "written": true,
+    "verified": true,
+    "error": null
   }
 }

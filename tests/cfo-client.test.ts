@@ -40,10 +40,15 @@ const prompt = argv[argv.length - 1];
 const tool = /^TOOL: (.+)$/m.exec(prompt)[1];
 const args = JSON.parse(/^ARGS: (.+)$/m.exec(prompt)[1]);
 const state = dir + "/state.json";
-if (tool === "edit_table_blocks") { writeFileSync(state, JSON.stringify(args.book)); out(JSON.stringify({ ok: true })); }
+if (tool === "edit_table_blocks") { writeFileSync(state, JSON.stringify(args.update.values)); out(JSON.stringify({ ok: true })); }
 else if (tool === "inspect_table_blocks") {
-  const book = existsSync(state) ? JSON.parse(readFileSync(state, "utf8")) : null;
-  out("\`\`\`json\\n" + JSON.stringify({ book }) + "\\n\`\`\`");
+  // The live server's read shape: columns by display_name, one row per dimension member with values in column order.
+  const v = existsSync(state) ? JSON.parse(readFileSync(state, "utf8")) : { columns: [], rows: [] };
+  const read = {
+    columns: v.columns.map((display_name) => ({ display_name })),
+    rows: [{ axis: true }, ...v.rows.map(([key, ...cells]) => ({ member: /\\[(.+)\\]$/.exec(key)[1], values: cells.map((value) => ({ value })) }))],
+  };
+  out("\`\`\`json\\n" + JSON.stringify(read) + "\\n\`\`\`");
 } else { out("CFO_NOT_CONNECTED"); }
 `,
 );
@@ -80,6 +85,8 @@ describe("cfo.ai bridge", () => {
     }
     expect(calls[0]![calls[0]!.indexOf("--allowedTools") + 1]).toBe("mcp__cfoai__edit_table_blocks");
     expect(calls[1]![calls[1]!.indexOf("--allowedTools") + 1]).toBe("mcp__cfoai__inspect_table_blocks");
+    // The prompt follows "--": --tools and --allowedTools are lists and would otherwise swallow it.
+    for (const argv of calls) expect(argv[argv.length - 2]).toBe("--");
   });
 
   test("a server that is not configured gives the typed not-connected error", async () => {
@@ -94,7 +101,7 @@ describe("cfo.ai bridge", () => {
 
   test("a server that is not authenticated gives the same typed error", async () => {
     const { client } = stubClient("unauthenticated", "auth");
-    const err = (await client.call("edit_table_blocks", { book: {} }).catch((e) => e)) as CfoNotConnectedError;
+    const err = (await client.call("edit_table_blocks", { update: {} }).catch((e) => e)) as CfoNotConnectedError;
     expect(err).toBeInstanceOf(CfoNotConnectedError);
     expect(err.message).toBe(NOT_CONNECTED_MESSAGE);
   });
