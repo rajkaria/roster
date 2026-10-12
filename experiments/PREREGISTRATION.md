@@ -247,12 +247,12 @@ How it's handled:
   - **Procedure.** Current main is merged into that branch (any conflict fix is a `human:` commit). The full suite and typecheck must pass. It's then merged as `Fxx: build-only merge (side), H1 unchanged`.
   - **What stays.** Recorded H1 and merge fields are unchanged, and these merges are excluded from every comparison. If a branch isn't green, it isn't merged, and that's noted.
 
-### Amendment 19: 2026-10-12 10:50 IST, four operator commits without the `ops:` prefix (disclosure only)
+### Amendment 19: 2026-10-12 10:05 IST, four operator commits without the `ops:` prefix (disclosure only)
 - **What happened.** Four operator commits on Mon 12 Oct carry `fix`/`feat` prefixes instead of `ops:`:
   - `38172cc` prices DeepSeek sessions by start time
   - `6c425ce` sends spooled traces as OTLP protobuf
   - `a8e8117` re-sends lost traces
   - `c8b3287` targets cfo.ai's real table shapes
-- **Why it doesn't touch any result.** They were written by the operator after the forward run finished (04:15 IST), outside every recorded setup session. No task branch contains them.
+- **Why it doesn't touch any result.** They were written by the operator after the forward run finished (04:54 IST), outside every recorded setup session. No task branch contains them.
 - **Rule.** They're treated as `ops:` commits and excluded from every comparison, exactly as the rule above requires. The forward result, its exclusions and every regrade are unchanged.
 - **Also.** The 2026-10-10 23:44 burst of six commits is `T26` plus five `--no-ff` merges of separately recorded task sessions (`Merge task/T26`, `T36`, `T37`, `T38`, `T39`), not one session's work.

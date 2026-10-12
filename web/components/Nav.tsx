@@ -5,6 +5,7 @@ const LINKS: { href: string; label: string; external?: boolean }[] = [
   { href: "/r", label: "Reviews" },
   { href: "/try", label: "Try" },
   { href: "/experiment", label: "Experiment" },
+  { href: "/book", label: "Book" },
   { href: GITHUB, label: "GitHub", external: true },
 ];
 

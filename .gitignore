@@ -13,3 +13,4 @@ coverage/
 CLAUDE.local.md
 *.tsbuildinfo
 .ocean/
+.claude/settings.local.json
