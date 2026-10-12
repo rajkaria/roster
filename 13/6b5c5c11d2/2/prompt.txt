@@ -1,0 +1,5 @@
+Call the MCP tool mcp__cfoai__inspect_table_blocks exactly once, with the JSON arguments below.
+Return the tool result verbatim as JSON and nothing else: no prose, no code fences.
+If that tool is not available, or the server is not configured or not authenticated, reply with exactly CFO_NOT_CONNECTED.
+TOOL: inspect_table_blocks
+ARGS: {"read":{"target":"AI workforce department","scenario":"Main Scenario","depth":"all"}}
