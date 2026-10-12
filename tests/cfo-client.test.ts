@@ -2,7 +2,7 @@
 // server (edit stores the book, inspect returns it), a server that is not configured, or one not authenticated.
 // The book under test is built from the real published review (reports/rajkaria__roster/review.json).
 import { afterAll, describe, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -28,6 +28,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs
 const argv = process.argv.slice(2);
 const dir = process.env.STUB_DIR;
 appendFileSync(dir + "/argv.jsonl", JSON.stringify(argv) + "\\n");
+appendFileSync(dir + "/cwd.txt", process.cwd() + "\\n");
 const mode = process.env.STUB_MODE;
 const out = (result, isError = false) => console.log(JSON.stringify({ type: "result", is_error: isError, result }));
 if (mode === "unauthenticated") {
@@ -115,6 +116,20 @@ describe("cfo.ai bridge", () => {
   test("a missing claude binary is a bridge error", async () => {
     const client = createCfoClient({ bin: join(DIR, "no-such-claude") });
     expect(await client.call("inspect_table_blocks", {}).catch((e) => e)).toBeInstanceOf(CfoBridgeError);
+  });
+});
+
+describe("bridge isolation", () => {
+  test("runs with project settings only, from a temp dir outside the repo", async () => {
+    const { client, argvLog } = stubClient("ok", "isolation");
+    const dir = join(DIR, "isolation");
+    await client.call("inspect_table_blocks", {});
+    const argv = argvLog()[0]!;
+    expect(argv[argv.indexOf("--setting-sources") + 1]).toBe("project");
+    expect(argv.indexOf("--setting-sources")).toBeLessThan(argv.indexOf("--"));
+    const cwd = realpathSync(readFileSync(join(dir, "cwd.txt"), "utf8").trim());
+    expect(cwd.startsWith(realpathSync(ROOT))).toBe(false);
+    expect(cwd.startsWith(realpathSync(tmpdir()))).toBe(true);
   });
 });
 

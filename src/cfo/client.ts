@@ -2,6 +2,9 @@
 // `claude -p` with only the `cfoai` MCP server loaded (--strict-mcp-config) and only the named tool allowed,
 // asks it to call that tool with the given JSON and return the tool result verbatim as JSON. A server that is
 // missing or not authenticated surfaces as CfoNotConnectedError with the exact command that fixes it.
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 export const CFO_MCP_URL = "https://api.cfo.ai/mcp";
 export const CFO_SERVER = "cfoai";
@@ -33,6 +36,8 @@ export type CfoClientOptions = {
   mcpConfig?: string;
   timeoutMs?: number;
   env?: Record<string, string | undefined>;
+  /** Where the bridge runs. Defaults to a fresh temp dir, outside any repo, so session recorders (Entire) never log it. */
+  cwd?: string;
 };
 
 export type CfoClient = { call(tool: string, args: Record<string, unknown>): Promise<unknown> };
@@ -55,6 +60,9 @@ export function bridgeArgs(tool: string, args: Record<string, unknown>, mcpConfi
     "-p",
     "--output-format",
     "json",
+    // Project settings only: the operator's own CLAUDE.md and user settings stay out of the bridge session.
+    "--setting-sources",
+    "project",
     "--strict-mcp-config",
     "--mcp-config",
     mcpConfig,
@@ -105,12 +113,15 @@ export function createCfoClient(opts: CfoClientOptions = {}): CfoClient {
   const bin = opts.bin ?? env.ROSTER_CLAUDE_BIN ?? "claude";
   const mcpConfig = opts.mcpConfig ?? env.ROSTER_CFO_MCP_CONFIG ?? defaultMcpConfig();
   const timeoutMs = opts.timeoutMs ?? 180_000;
+  let cwd = opts.cwd;
 
   return {
     async call(tool, args) {
       let proc: ReturnType<typeof Bun.spawn>;
       try {
+        cwd ??= mkdtempSync(join(tmpdir(), "roster-cfo-bridge-"));
         proc = Bun.spawn([bin, ...bridgeArgs(tool, args, mcpConfig)], {
+          cwd,
           stdin: "ignore",
           stdout: "pipe",
           stderr: "pipe",
