@@ -448,9 +448,27 @@ interface SideState {
   scopeOk: boolean;
 }
 
+/**
+ * The merge's environment. The repo's configured identity is used when there is one; a fresh clone or a CI runner
+ * has none, and `git merge --no-ff` cannot commit without it, so Roster's own identity fills the gap.
+ */
+export function mergeEnv(repo: string, env: Record<string, string | undefined> = process.env): Record<string, string | undefined> {
+  const configured = (key: string) => Bun.spawnSync(["git", "config", key], { cwd: repo, env }).stdout.toString().trim() !== "";
+  const out: Record<string, string | undefined> = { ...env, GIT_EDITOR: "true" };
+  if (!configured("user.name")) {
+    out.GIT_AUTHOR_NAME ??= "Roster";
+    out.GIT_COMMITTER_NAME ??= "Roster";
+  }
+  if (!configured("user.email")) {
+    out.GIT_AUTHOR_EMAIL ??= "roster@example.invalid";
+    out.GIT_COMMITTER_EMAIL ??= "roster@example.invalid";
+  }
+  return out;
+}
+
 function mergeBranch(ctx: SettleContext, taskId: string, branch: string, setup: string): Promise<boolean> {
   return ctx.git.run(() => {
-    const r = Bun.spawnSync(["git", "merge", "--no-ff", "-m", `${taskId}: merge forward winner (${setup})`, branch], { cwd: ctx.repo, env: { ...process.env, GIT_EDITOR: "true" } });
+    const r = Bun.spawnSync(["git", "merge", "--no-ff", "-m", `${taskId}: merge forward winner (${setup})`, branch], { cwd: ctx.repo, env: mergeEnv(ctx.repo) });
     if (r.exitCode !== 0) {
       Bun.spawnSync(["git", "merge", "--abort"], { cwd: ctx.repo });
       ctx.log(`forward: ${taskId}: merge of ${branch} failed, left unmerged: ${r.stderr.toString().trim()}`);
