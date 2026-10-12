@@ -331,7 +331,7 @@ export async function runReview(args: ReviewArgs): Promise<number> {
             output: s.tokens_out,
             cache_read: s.cache_read,
             cache_write: s.cache_write,
-          }).usd;
+          }, s.started_at).usd;
           out.push({ ...stripParsed(s), setup_id: id.setupId, cost_usd: cost });
           const o = scoredAll[i]!;
           if (o instanceof Error) {

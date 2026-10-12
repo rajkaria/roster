@@ -1,8 +1,8 @@
 {
-  "id": "rajkaria__roster-20261011232532",
+  "id": "rajkaria__roster-20261012015931",
   "repo": "rajkaria/roster",
-  "created_at": "2026-10-11T23:25:32.869Z",
-  "generated_at": "2026-10-11T23:25:32.869Z",
+  "created_at": "2026-10-12T01:59:31.458Z",
+  "generated_at": "2026-10-12T01:59:31.458Z",
   "has_entire_data": true,
   "setups": [
     {
@@ -30,17 +30,17 @@
       "harness": "Claude Code",
       "model": "claude-sonnet-5-5",
       "rules_hash": "243fa26caa1f686668b910cedfda21d5bb8a4c1a1e185b1e27c63f729bc5398f",
-      "sessions": 14,
+      "sessions": 15,
       "mature_sessions": 12,
-      "spend_usd": 6.1434892,
-      "priced_sessions": 14,
+      "spend_usd": 6.3707007,
+      "priced_sessions": 15,
       "spend_lower_bound": false,
-      "unattended": 0.5714285714285714,
-      "survival": 0.9549342848846275,
+      "unattended": 0.5333333333333333,
+      "survival": 0.9540477600619325,
       "reverted": 0,
       "rework_human": 0.009755785326951294,
-      "surviving_changes": 11.45921141861553,
-      "cost_per_surviving_change": 0.49046218755243376,
+      "surviving_changes": 11.44857312074319,
+      "cost_per_surviving_change": 0.49091793717217014,
       "evidence_level": "A"
     },
     {
@@ -49,17 +49,17 @@
       "harness": "Claude Code",
       "model": "claude-sonnet-5-5",
       "rules_hash": "dabdd04c2d924f1e355b9f5ad27c1268a39177cf5579f9cfe3a35647be309801",
-      "sessions": 59,
-      "mature_sessions": 39,
-      "spend_usd": 10.559648,
-      "priced_sessions": 59,
+      "sessions": 60,
+      "mature_sessions": 44,
+      "spend_usd": 10.789076199999998,
+      "priced_sessions": 60,
       "spend_lower_bound": false,
-      "unattended": 0.5932203389830508,
-      "survival": 0.7074906575645131,
+      "unattended": 0.5833333333333334,
+      "survival": 0.6725485373867275,
       "reverted": 0,
-      "rework_human": 0.0021407867467560524,
-      "surviving_changes": 27.59213564501601,
-      "cost_per_surviving_change": 0.28809787333137715,
+      "rework_human": 0.0018975155255337738,
+      "surviving_changes": 29.59213564501601,
+      "cost_per_surviving_change": 0.28695229711918974,
       "evidence_level": "A"
     },
     {
@@ -88,16 +88,16 @@
       "model": "deepseek-flash",
       "rules_hash": "dabdd04c2d924f1e355b9f5ad27c1268a39177cf5579f9cfe3a35647be309801",
       "sessions": 40,
-      "mature_sessions": 16,
-      "spend_usd": null,
-      "priced_sessions": 0,
+      "mature_sessions": 22,
+      "spend_usd": 1.2592004759999995,
+      "priced_sessions": 40,
       "spend_lower_bound": false,
       "unattended": 0.625,
-      "survival": 0.6875,
+      "survival": 0.6363636363636364,
       "reverted": 0,
       "rework_human": 0,
-      "surviving_changes": 11,
-      "cost_per_surviving_change": null,
+      "surviving_changes": 14,
+      "cost_per_surviving_change": 0.06008825399999999,
       "evidence_level": "A"
     }
   ],
@@ -110,7 +110,7 @@
         ]
       },
       "B": {
-        "sessions": 55,
+        "sessions": 56,
         "setup_ids": [
           "a9544a002085"
         ]
@@ -122,7 +122,7 @@
         ]
       },
       "D": {
-        "sessions": 18,
+        "sessions": 19,
         "setup_ids": [
           "97433f7b4446",
           "a9544a002085"
@@ -135,14 +135,14 @@
         ]
       }
     },
-    "tag_accuracy": 0.9605263157894737
+    "tag_accuracy": 0.961038961038961
   },
   "label": "no_suspect",
   "suspect": null,
-  "odds_ratio": 7.416137566137565,
+  "odds_ratio": 8.102553286518946,
   "ci95": [
-    0.6630886331889103,
-    82.94380818349491
+    0.7078715915731929,
+    92.74474430450526
   ],
   "p_value": 1,
   "evidence_level": "A"
