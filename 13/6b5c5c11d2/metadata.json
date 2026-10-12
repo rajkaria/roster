@@ -3,7 +3,7 @@
   "checkpoint_id": "136b5c5c11d2",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 6,
+  "checkpoints_count": 7,
   "files_touched": [
     ".ocean/state.json",
     "reports/self/tasks.jsonl"
@@ -50,6 +50,13 @@
       "compact_transcript": "/13/6b5c5c11d2/5/transcript.jsonl",
       "content_hash": "/13/6b5c5c11d2/5/content_hash.txt",
       "prompt": "/13/6b5c5c11d2/5/prompt.txt"
+    },
+    {
+      "metadata": "/13/6b5c5c11d2/6/metadata.json",
+      "transcript": "/13/6b5c5c11d2/6/full.jsonl",
+      "compact_transcript": "/13/6b5c5c11d2/6/transcript.jsonl",
+      "content_hash": "/13/6b5c5c11d2/6/content_hash.txt",
+      "prompt": "/13/6b5c5c11d2/6/prompt.txt"
     }
   ],
   "token_usage": {
