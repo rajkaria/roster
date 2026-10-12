@@ -4,7 +4,7 @@
 import type { TraceOptions } from "neatlogs";
 import { EvidenceLevel, FailureCode } from "../types.ts";
 import { type SpanAttrs, type SpanKind, capAttr, toAttributes } from "./attributes.ts";
-import { DEFAULT_SPOOL_DIR, TraceRecorder, saveTrace, toTraceRequest } from "./spool.ts";
+import { DEFAULT_SPOOL_DIR, TraceRecorder, flushSpool, saveTrace, toTraceRequest } from "./spool.ts";
 
 export type { SpanAttrs, SpanKind } from "./attributes.ts";
 
@@ -187,6 +187,14 @@ export interface FlushOptions {
   spoolDir?: string;
   /** Where the "saved for retry" lines go. Default console.error. */
   notify?: (msg: string) => void;
+  /**
+   * Re-send the spooled traces at once, as OTLP protobuf over fetch, when the SDK lost spans. Under Bun the SDK's
+   * own OTLP exporter times out on every export, so this is how a run's traces reach neatlogs. Default: on, except
+   * under `bun test` (NODE_ENV=test), where tests opt in.
+   */
+  resend?: boolean;
+  /** The fetch the re-send uses. Default the global fetch. */
+  fetch?: typeof fetch;
 }
 
 /** What flushAllDetailed resolves to (neatlogs FlushAllResult). */
@@ -288,9 +296,23 @@ export async function flushObs(opts: FlushOptions = {}): Promise<boolean> {
   const dropped = dropsBefore !== null && dropsAfter !== null ? Math.max(0, dropsAfter - dropsBefore) : null;
   const exported = ok ? Math.max(0, batch - (dropped ?? 0)) : 0;
   print(`[roster] neatlogs: ${exported} spans exported, ${dropped ?? "unknown"} dropped${ok ? "" : " (flush failed)"}`);
-  spoolLost(!ok || (dropped ?? 0) > 0, opts);
+  const lost = !ok || (dropped ?? 0) > 0;
+  spoolLost(lost, opts);
   for (const id of traces) print(`[roster] neatlogs trace ${id}`);
+  if (lost && (opts.resend ?? process.env.NODE_ENV !== "test")) await resendSpool(opts, print);
   return ok;
+}
+
+/** Sends the spool now (see FlushOptions.resend). A trace that arrives leaves the spool. Never throws. */
+async function resendSpool(opts: FlushOptions, print: (msg: string) => void): Promise<void> {
+  const apiKey = process.env.NEATLOGS_API_KEY;
+  if (!apiKey) return;
+  try {
+    print("[roster] neatlogs: re-sending what the SDK lost (OTLP protobuf)");
+    await flushSpool({ dir: opts.spoolDir, apiKey, fetch: opts.fetch, attempts: 2, backoffMs: 500, print });
+  } catch (err) {
+    print(`[roster] neatlogs: re-send failed (${err instanceof Error ? err.message : String(err)}); run \`roster traces flush\``);
+  }
 }
 
 /**

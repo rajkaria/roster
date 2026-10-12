@@ -163,6 +163,28 @@ describe("roster traces", () => {
     return body;
   }
 
+  test("flushObs re-sends what the SDK lost at once when resend is on", async () => {
+    await runReviewTrace();
+    flushImpl = async () => {
+      throw TIMEOUT;
+    };
+    const { fetch: f, calls } = fakeFetch([200]);
+    await flushObs({ timeoutMs: 50, retries: 0, spoolDir: dir, notify: (m) => notes.push(m), log: () => {}, print: (m) => printed.push(m), resend: true, fetch: f });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.headers["content-type"]).toBe("application/x-protobuf");
+    expect(existsSync(join(dir, `${TRACE_ID}.json`))).toBe(false);
+    expect(printed).toContain(`trace ${TRACE_ID}: HTTP 200, sent`);
+  });
+
+  test("flushObs leaves the spool alone under bun test unless resend is on", async () => {
+    await runReviewTrace();
+    flushImpl = async () => {
+      throw TIMEOUT;
+    };
+    await flush();
+    expect(existsSync(join(dir, `${TRACE_ID}.json`))).toBe(true);
+  });
+
   test("flush re-sends with x-api-key and deletes the file on 200", async () => {
     const body = await spoolOne();
     const { fetch: f, calls } = fakeFetch([200]);

@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-10-12T02:43:34.930Z",
+  "note": "Spans re-emitted from recorded results; span timings are emission times. Same 10 tests-track tasks, setups B and E.",
+  "exported": true,
+  "before": {
+    "traceId": "820af0a5dd1c888b70af931671d9cbb8",
+    "gate": "v1 (recorded)",
+    "verdict": "promote",
+    "reasons": [
+      "tie on hidden_pass 0; candidate cheaper $0.4385 < $2.5181"
+    ],
+    "replays": 20,
+    "tasks": 10,
+    "hiddenRan": {
+      "B": 10,
+      "E": 10
+    },
+    "hiddenPass": {
+      "B": 0,
+      "E": 0
+    },
+    "suitePass": {
+      "B": 7,
+      "E": 8
+    },
+    "costUsd": {
+      "B": 2.2472,
+      "E": 0.3806
+    },
+    "detections": {
+      "D1": 15,
+      "D3": 0,
+      "D4": 0
+    }
+  },
+  "after": {
+    "traceId": "38f71c40ceb5fca5b7046542fa9e17f2",
+    "gate": "v2",
+    "verdict": "reject",
+    "reasons": [
+      "hidden_pass 0 < incumbent 1",
+      "1 regression(s) after reruns: ea846f90-734e-4fb0-bd01-0ce8658c6b0c",
+      "1 scope violation(s): 8d77769a-b6f0-44cb-b3d4-928acc638e1b"
+    ],
+    "replays": 20,
+    "tasks": 10,
+    "hiddenRan": {
+      "B": 10,
+      "E": 10
+    },
+    "hiddenPass": {
+      "B": 1,
+      "E": 0
+    },
+    "suitePass": {
+      "B": 8,
+      "E": 8
+    },
+    "costUsd": {
+      "B": 2.144,
+      "E": 0.504
+    },
+    "detections": {
+      "D1": 16,
+      "D3": 0,
+      "D4": 0
+    }
+  },
+  "sources": [
+    ".roster/roster.db replays (plan review-1-p1)",
+    "reports/self/review-1/decisions.json",
+    "reports/self/review-1b/replays.json",
+    "reports/self/review-1b/decision.json"
+  ]
+}
