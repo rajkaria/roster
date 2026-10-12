@@ -25,6 +25,9 @@ export type FactSpec = {
 const SELF = "rajkaria__roster/review.json";
 const REVIEW1 = "self/review-1/decisions.json";
 const FORWARD = "self/forward.json";
+const BEFORE_AFTER = "self/neatlogs-before-after.json";
+const CFO_PLAN = "self/cfo-plan.json";
+const BOOK = "self/book.json";
 const NOT_CORPUS = ["rajkaria__roster", "_sample"];
 
 // Public numbers. Add a spec here before publishing a number anywhere.
@@ -47,6 +50,19 @@ export const FACT_SPECS: FactSpec[] = [
   { key: "FORWARD_OLD_ONLY", file: FORWARD, path: "$.mcnemar.old_only", unit: "pairs" },
   { key: "FORWARD_P", file: FORWARD, path: "$.mcnemar.p", decimals: 3 },
   { key: "FORWARD_WORDING", file: FORWARD, path: "$.wording" },
+  { key: "NEATLOGS_BEFORE_TRACE", file: BEFORE_AFTER, path: "$.before.traceId" },
+  { key: "NEATLOGS_BEFORE_VERDICT", file: BEFORE_AFTER, path: "$.before.verdict" },
+  { key: "NEATLOGS_BEFORE_HIDDEN_B", file: BEFORE_AFTER, path: "$.before.hiddenPass.B", unit: "of 10 tasks" },
+  { key: "NEATLOGS_BEFORE_HIDDEN_E", file: BEFORE_AFTER, path: "$.before.hiddenPass.E", unit: "of 10 tasks" },
+  { key: "NEATLOGS_AFTER_TRACE", file: BEFORE_AFTER, path: "$.after.traceId" },
+  { key: "NEATLOGS_AFTER_VERDICT", file: BEFORE_AFTER, path: "$.after.verdict" },
+  { key: "NEATLOGS_AFTER_HIDDEN_B", file: BEFORE_AFTER, path: "$.after.hiddenPass.B", unit: "of 10 tasks" },
+  { key: "NEATLOGS_AFTER_HIDDEN_E", file: BEFORE_AFTER, path: "$.after.hiddenPass.E", unit: "of 10 tasks" },
+  { key: "CFO_RUNWAY_BASE", file: CFO_PLAN, path: "$.runway.Base" },
+  { key: "CFO_RUNWAY_DOWNSIDE", file: CFO_PLAN, path: "$.runway.Downside" },
+  { key: "CFO_RUNWAY_UPSIDE", file: CFO_PLAN, path: "$.runway.Upside" },
+  { key: "CFO_STARTING_CASH_USD", file: CFO_PLAN, path: "$.assumptions.startingCashUsd", unit: "USD (assumption)" },
+  { key: "CFO_BOOK_VERIFIED", file: BOOK, path: "$.cfo.verified" },
   { key: "BACKLOG_SHA256", file: "experiments/FREEZE.txt", base: "root", path: "re:^forward-backlog\\.md\\s+sha256\\s+([0-9a-f]{64})\\s*$" },
 ];
 
