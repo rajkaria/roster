@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 import { buildBook, type BookInput, type BookOutput } from "../src/cfo/book";
 import { createCfoClient, type CfoClient } from "../src/cfo/client";
 import { writeBook } from "../src/cfo/mcp";
+import { loadSetups, type RunnableSetup } from "../src/setups/registry";
 
 const ROOT = join(import.meta.dir, "..");
 const DAY_MS = 86_400_000;
@@ -26,13 +27,20 @@ export const ASSUMPTION_LABELS: Record<keyof BookInput["assumptions"], string> =
 type ReviewSetup = {
   setup_id: string;
   label: string;
+  harness?: string;
+  model?: string;
   sessions: number;
   spend_usd: number | null;
   spend_lower_bound?: boolean;
   unattended: number | null;
   surviving_changes: number | null;
 };
-type Review = { id: string; repo: string; setups: ReviewSetup[] };
+type Review = {
+  id: string;
+  repo: string;
+  setups: ReviewSetup[];
+  tags?: { by_tag?: Record<string, { sessions: number; setup_ids: string[] }> };
+};
 type Session = { setup_id?: string; started_at?: string | null; ended_at?: string | null };
 
 export type CfoOutcome = { written: boolean; verified: boolean; error: string | null };
@@ -40,7 +48,7 @@ export type CfoOutcome = { written: boolean; verified: boolean; error: string | 
 export type BookFile = BookOutput & {
   source: { review: string; repo: string };
   period: { from: string; to: string; days: number };
-  promoted: { id: string | null; source: string | null; note: string | null };
+  promoted: { id: string | null; source: string | null; note: string | null; matchedBy: "id" | "tag" | "model" | null };
   assumptionLabels: Record<string, string>;
   notes: string[];
   shareUrl: string | null;
@@ -60,14 +68,36 @@ export function sessionPeriod(sessions: Session[]): BookFile["period"] {
   return { from: new Date(from).toISOString(), to: new Date(to).toISOString(), days: (to - from) / DAY_MS };
 }
 
-/** The promoted setup, if the review measured it. A promotion of an unmeasured setup cannot be scaled. */
-function promotedOf(review: Review, promotion: { promoted?: unknown } | null): BookFile["promoted"] {
+type Definition = Pick<RunnableSetup, "id" | "harness" | "model">;
+const norm = (s: string) => s.toLowerCase().replace(/[\s_-]+/g, "");
+
+/**
+ * The review setup for a promotion. A promotion names a definition id (setups/*.json); the review's setups are
+ * hashed ids. Order: the review's own id, the review's prompt-tag map (most sessions wins), then the one setup with
+ * the definition's model and harness. Otherwise the promotion is unmeasured and cannot be scaled.
+ */
+function promotedOf(review: Review, promotion: { promoted?: unknown } | null, definitions: Definition[]): BookFile["promoted"] {
   const id = typeof promotion?.promoted === "string" ? promotion.promoted : null;
-  if (id === null) return { id: null, source: null, note: "no promotion record" };
-  const inReview = review.setups.some((s) => s.setup_id === id);
-  return inReview
-    ? { id, source: id, note: null }
-    : { id: null, source: id, note: `promoted setup ${id} has no sessions in this review, so the scale scenario has no rate` };
+  if (id === null) return { id: null, source: null, note: "no promotion record", matchedBy: null };
+  const find = (sid: string) => review.setups.find((s) => s.setup_id === sid);
+  if (find(id)) return { id, source: id, note: null, matchedBy: "id" };
+
+  const tagged = (review.tags?.by_tag?.[id]?.setup_ids ?? []).filter((sid) => find(sid));
+  if (tagged.length > 0) {
+    const top = tagged.reduce((best, sid) => ((find(sid)?.sessions ?? 0) > (find(best)?.sessions ?? 0) ? sid : best));
+    return { id: top, source: id, note: null, matchedBy: "tag" };
+  }
+
+  const def = definitions.find((d) => d.id === id);
+  const same = def ? review.setups.filter((s) => s.model === def.model && norm(s.harness ?? "") === norm(def.harness)) : [];
+  if (same.length === 1) return { id: same[0]!.setup_id, source: id, note: null, matchedBy: "model" };
+
+  return {
+    id: null,
+    source: id,
+    note: `promoted setup ${id} has no sessions in this review, so the scale scenario has no rate`,
+    matchedBy: null,
+  };
 }
 
 export function bookFromReview(
@@ -75,10 +105,11 @@ export function bookFromReview(
   sessions: Session[],
   promotion: { promoted?: unknown } | null,
   reviewPath: string,
+  definitions: Definition[] = [],
 ): BookFile {
   const period = sessionPeriod(sessions);
   if (period.days <= 0) throw new Error("the review's sessions span no time");
-  const promoted = promotedOf(review, promotion);
+  const promoted = promotedOf(review, promotion, definitions);
   const book = buildBook({
     periodDays: period.days,
     promoted: promoted.id,
@@ -134,7 +165,7 @@ export async function main(
   const promotionPath = join(root, "reports/self/review-1/promotion.json");
   const promotion = existsSync(promotionPath) ? (readJson(promotionPath) as { promoted?: unknown }) : null;
 
-  const file = bookFromReview(review, sessions, promotion, reviewRel);
+  const file = bookFromReview(review, sessions, promotion, reviewRel, loadSetups(root, {}));
   if (argv.includes("--write")) file.cfo = await writeToCfo(file, opts.client ?? createCfoClient());
 
   const out = opts.out ?? join(root, "reports/self/book.json");

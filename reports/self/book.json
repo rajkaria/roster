@@ -9,9 +9,10 @@
     "days": 1.4076688657407408
   },
   "promoted": {
-    "id": null,
+    "id": "f656e13e2af0",
     "source": "E",
-    "note": "promoted setup E has no sessions in this review, so the scale scenario has no rate"
+    "note": null,
+    "matchedBy": "tag"
   },
   "department": [
     {
@@ -58,7 +59,7 @@
   "scenario": {
     "hireMonthlyUsd": 12000,
     "scaleMonthlyUsd": null,
-    "scaleSurvivingChangesPerMonth": null
+    "scaleSurvivingChangesPerMonth": 58.92857142857143
   },
   "assumptions": {
     "engineerMonthlyLoadedUsd": 12000,
@@ -69,8 +70,7 @@
     "scaleSessionsPerWeek": "assumption: sessions per week the promoted setup would run at scale"
   },
   "notes": [
-    "c8d6907735ec: spend is a lower bound (some sessions could not be fully priced)",
-    "promoted setup E has no sessions in this review, so the scale scenario has no rate"
+    "c8d6907735ec: spend is a lower bound (some sessions could not be fully priced)"
   ],
   "shareUrl": null,
   "cfo": {
