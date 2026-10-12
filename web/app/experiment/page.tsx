@@ -94,7 +94,7 @@ export default function ExperimentPage() {
       <p className="lede">
         Roster built itself with several agent setups, reviewed its own sessions, and promoted one setup. Before
         that review ran, we froze a backlog of new tasks and their acceptance tests. This page reports the forward
-        run: every frozen task, run through both the demoted and the promoted setup, graded blind. The
+        run: every frozen task, run through both the demoted and the promoted setup, graded against those frozen tests. The
         hypotheses, tests and stop rules are fixed in{" "}
         <a href={PREREG_URL} rel="noopener noreferrer">PREREGISTRATION.md</a>.
       </p>

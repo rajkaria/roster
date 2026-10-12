@@ -57,7 +57,7 @@ A **setup** is a coding-agent harness, a model and a rules file, for example Cla
    - Each attempt is graded with the tests the team kept, the full suite, a scope guard and a blind diff judge.
    - **Level B.**
 3. **Gates:** a deterministic gate promotes a candidate only if nothing regresses. The model decides what to try next, and the gate decides what ships.
-4. **Tests forward:** new tasks, written and hashed before the decision, run through the old and the new setup side by side and are graded blind. **Level C.**
+4. **Tests forward:** new tasks, written and hashed before the decision, run through the old and the new setup side by side and are graded against acceptance tests frozen before the decision (a blind diff judge only breaks merge ties). **Level C.**
 5. **Books:** it writes the AI team's spend per setup into the company's [cfo.ai](https://cfo.ai) plan, with a hire-or-scale scenario, and reads it back to verify. This repo's book is written and verified.
 
 With `NEATLOGS_API_KEY` set, each Roster run sends a trace to [neatlogs](https://neatlogs.com).

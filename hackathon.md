@@ -43,7 +43,7 @@
 - **10:39, review 1:** Roster's first performance review of this repo.
   - Level A found no suspect.
   - The coordinator replayed setup B's past tasks under B and the DeepSeek candidates E and F. The gate promoted E on a 0–0 hidden-test tie: cheaper wins. That is no quality signal, and amendment 7 disclosed it at 10:40, before the forward run.
-- **10:41:** the forward run started: the 40 frozen tasks, each built by B and by E in paired worktrees from the same `main` commit, and graded blind.
+- **10:41:** the forward run started: the 40 frozen tasks, each built by B and by E in paired worktrees from the same `main` commit, and graded against the frozen acceptance tests.
 - **10:54:** T63 merged the v2 fixes: hidden tests now come with their support files, and the gate refuses a tie with no signal.
 - **11:40 → Monday 03:15:** problems found during the forward run, each fixed by an `ops:` commit and dated in the pre-registration before the affected results were seen:
   - The frozen acceptance tests were over-specified (amendment 8). H1 stayed as registered.
