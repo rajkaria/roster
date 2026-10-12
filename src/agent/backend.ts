@@ -15,7 +15,7 @@ import { parseCheckpoints } from "../ingest/parse.ts";
 import { discordant, gate as decideGate, MAX_ATTEMPTS } from "../gate/index.ts";
 import type { GradeResult } from "../grade/index.ts";
 import { type Classified, classify, parseTranscript, type Transcript } from "../grade/taxonomy.ts";
-import { reviewSlug, summarizeSetups } from "../review/export.ts";
+import { repoSlug, reviewSlug, slugDir, summarizeSetups } from "../review/export.ts";
 import { defaultWorkRoot, replayRunner, runReplays, type ReplayRunnerDeps, type SkippedRun } from "../replay/run.ts";
 import { buildReplayTasks, type ReplayTask } from "../replay/tasks.ts";
 import { loadSetups, type RunnableSetup } from "../setups/registry.ts";
@@ -244,9 +244,12 @@ function failuresOf(r: Replay): Classified[] {
   return found.sort((a, b) => FAILURE_ORDER.indexOf(a.code) - FAILURE_ORDER.indexOf(b.code));
 }
 
-/** Writes reports/<slug>/promotion.json: the latest promotion decision for this repo. */
+/**
+ * Writes reports/<slug>/promotion.json: the latest promotion decision for this repo. The slug is the review's
+ * (owner/name from origin for a local path), so a promotion on "." lands beside the review, not in reports/.
+ */
 function writePromotion(reportsDir: string, repo: string, doc: Record<string, unknown>): void {
-  const dir = join(reportsDir, reviewSlug(repo));
+  const dir = join(reportsDir, slugDir(repoSlug(repo)));
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "promotion.json"), JSON.stringify(doc, null, 2) + "\n");
 }

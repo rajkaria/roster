@@ -8,6 +8,7 @@ import { flushObs, initObs, setSession, withSpan } from "../obs/index.ts";
 import { repoLabel, repoSlug, slugDir, summarizeSetups } from "../review/export.ts";
 import { DEFAULT_DB, newRunId, runCoordinator } from "../agent/coordinator.ts";
 import { defaultBackend } from "../agent/backend.ts";
+import { openPromotion } from "../agent/promote-pr.ts";
 import { ToolError, type ToolBackend } from "../agent/tools.ts";
 import { fetchCheckpoints } from "../ingest/fetch.ts";
 import type { Outcome, Review, Session } from "../types.ts";
@@ -22,6 +23,8 @@ const USAGE = `usage: roster run <repo> --budget <usd> [--out <dir>] [--run-id <
   --db <path>      state database (default ${DEFAULT_DB})
   --model <m>      coordinator model (default env ROSTER_LLM_MODEL, else deepseek-flash)
   --cache <dir>    fetch cache (default ${DEFAULT_CACHE})
+  --pr             after a promotion, open a pull request (dry run: the command is recorded, nothing runs)
+  --open           with --pr, actually run gh; the repo must be allowed in opt-ins.json
 
 Roster's own model calls go to DeepSeek; set DEEPSEEK_API_KEY in .env.`;
 
@@ -33,6 +36,8 @@ export interface RunArgs {
   db: string;
   model: string | undefined;
   cache: string;
+  pr: boolean;
+  open: boolean;
 }
 
 /** Parses the arguments after `run`. Throws UsageError on anything it does not accept. */
@@ -45,6 +50,8 @@ export function parseRunArgs(args: string[]): RunArgs {
     db: DEFAULT_DB,
     model: undefined,
     cache: DEFAULT_CACHE,
+    pr: false,
+    open: false,
   };
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
@@ -62,12 +69,15 @@ export function parseRunArgs(args: string[]): RunArgs {
     else if (name === "--db") parsed.db = takeValue();
     else if (name === "--model") parsed.model = takeValue();
     else if (name === "--cache") parsed.cache = takeValue();
+    else if (a === "--pr") parsed.pr = true;
+    else if (a === "--open") parsed.open = true;
     else if (a.startsWith("-")) throw new UsageError(`unknown flag ${a}`);
     else if (repo === undefined) repo = a;
     else throw new UsageError(`unexpected argument ${a}`);
   }
   if (repo === undefined) throw new UsageError("missing <repo>");
   if (budget === undefined) throw new UsageError("--budget is required");
+  if (parsed.open && !parsed.pr) throw new UsageError("--open needs --pr");
   const budgetUsd = Number(budget);
   if (!Number.isFinite(budgetUsd) || budgetUsd <= 0) throw new UsageError(`--budget must be a positive number, got ${budget}`);
   return { repo, budgetUsd, ...parsed };
@@ -155,13 +165,14 @@ export async function runRun(args: RunArgs): Promise<number> {
   const runId = args.runId ?? newRunId(new Date());
   await initObs({ workflowName: "roster-run" });
   setSession(runId);
+  const backend = scorecardAt(defaultBackend({ cacheDir: args.cache, dbPath: resolve(args.db), replay: { repo: args.repo } }), boot.reviewDir);
   try {
     const res = await withSpan("WORKFLOW", "review", { repo: label }, () =>
       runCoordinator({
         repo: args.repo,
         budgetUsd: args.budgetUsd,
         llm,
-        backend: scorecardAt(defaultBackend({ cacheDir: args.cache, dbPath: resolve(args.db), replay: { repo: args.repo } }), boot.reviewDir),
+        backend,
         outDir,
         dbPath: resolve(args.db),
         runId,
@@ -177,6 +188,16 @@ export async function runRun(args: RunArgs): Promise<number> {
       console.warn(`warning: ${res.unpricedLlmCalls} LLM calls have no price in src/price; their cost is not in the total`);
     }
     console.log(`wrote ${[res.planPath, res.decisionsPath].filter(Boolean).join(", ")}`);
+    if (args.pr && res.promoted !== null) {
+      try {
+        const repoPath = (await fetchCheckpoints(args.repo, { cacheDir: args.cache })).repoPath;
+        const pr = await openPromotion({ reviewDir: boot.reviewDir, repoPath, backend, decisions: res.decisions, dryRun: !args.open });
+        if (pr?.opened) console.log(`pull request opened: ${pr.url ?? "(gh printed no URL)"}`);
+        else if (pr) console.log(`pull request not opened: ${pr.reason ?? "unknown reason"} (recorded in promotion.json)`);
+      } catch (err) {
+        console.error(`roster run: the promotion stands, but the pull request step failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
     return res.outcome === "promoted" || res.outcome === "no_better_setup" ? 0 : 1;
   } finally {
     await flushObs();
