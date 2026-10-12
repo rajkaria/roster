@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-10-12T03:05:00Z",
+  "tool": "cfo.ai (MCP https://api.cfo.ai/mcp), built from the operator's inputs; numbers labelled MEASURED or ASSUMPTION in cfo.ai",
+  "pages": [
+    "Roster: AI workforce book",
+    "Roster: business plan"
+  ],
+  "tables": [
+    {
+      "name": "AI workforce department",
+      "page": "Roster: AI workforce book"
+    },
+    {
+      "name": "Hire vs scale",
+      "page": "Roster: AI workforce book"
+    },
+    {
+      "name": "Pricing",
+      "page": "Roster: business plan"
+    },
+    {
+      "name": "Plan inputs",
+      "page": "Roster: business plan"
+    },
+    {
+      "name": "Unit economics",
+      "page": "Roster: business plan"
+    },
+    {
+      "name": "Revenue",
+      "page": "Roster: business plan"
+    },
+    {
+      "name": "Opex & headcount",
+      "page": "Roster: business plan"
+    },
+    {
+      "name": "Cash & runway",
+      "page": "Roster: business plan"
+    },
+    {
+      "name": "Runway by scenario",
+      "page": "Roster: business plan"
+    }
+  ],
+  "scenarios": [
+    "Base",
+    "Downside",
+    "Upside"
+  ],
+  "runway": {
+    "Base": "17 months (cash < 0 in plan month 18, Mar 2028)",
+    "Downside": "15 months (cash < 0 in plan month 16, Jan 2028)",
+    "Upside": "beyond 24 months (cash low point ~$139.6k in month 11; ~$697.9k at month 24)"
+  },
+  "cashflowPositiveMonth": {
+    "Base": "never sustained within 24 months (net cash flow positive only in months 3-6, before the month-7 founder salary and engineer)",
+    "Downside": "never sustained within 24 months (net cash flow positive only in months 3-6)",
+    "Upside": "plan month 12 (Sep 2027), positive every month from then to month 24"
+  },
+  "assumptions": {
+    "startingCashUsd": 150000,
+    "founderSalary": "$0 months 1-6, then $6,000/month",
+    "firstEngineer": "month 7, $12,000/month loaded",
+    "pricing": "Team $499/month incl. 200 replayed tasks; overage $0.50/task; revenue per paying team $549/month",
+    "growth": {
+      "Base": "4 teams from month 3, +10%/month",
+      "Downside": "2 teams, +5%/month",
+      "Upside": "8 teams, +18%/month"
+    },
+    "modelCostPerReplayUsd": {
+      "Base": 0.207,
+      "Downside": 0.207,
+      "Upside": 0.036
+    }
+  },
+  "measured": {
+    "replayCostSonnetUsd": 0.207,
+    "replayCostDeepSeekFlashUsd": 0.036,
+    "source": "replays table (.roster/roster.db), review-1"
+  },
+  "readBackVerified": true,
+  "shareUrls": null,
+  "issues": [
+    "The only workspace is 'Hunch' (id 103244), so it was used as is.",
+    "inspect_skills (build-model) was denied permission. Table and formula calls were checked against inspect_documentation plus a dry_run instead.",
+    "Main Scenario's calendar range_end was extended from 2027-12-31 to 2028-12-31 to hold 24 months. Plan month 1 = Oct 2026, the first forecast month after last close (2026-09-30).",
+    "Main Scenario holds the Base inputs. 'Base' inherits them with no overrides. 'Downside' overrides starting teams (2) and growth (5%). 'Upside' overrides starting teams (8), growth (18%) and the model cost per replay formula (points to DeepSeek Flash, $0.036).",
+    "Paying teams are compounded and not rounded, so they can be fractional.",
+    "ASSUMPTION added: the 5 design partners use the free observational tier ($0 model calls), so they add no replay cost.",
+    "Every scenario has positive net cash flow in plan months 3-6, before the founder salary and the first engineer start in month 7. cashflowPositiveMonth reports the month from which cash flow stays positive through month 24.",
+    "Runway = full months before the first month with cash < 0.",
+    "Hire vs scale: option A's surviving changes per month were not measured, so the cell is deliberately empty. Option B's $6.75/month and 75 changes/month come from book.json's scenario block, and its basis cell is labelled MEASURED cost per session \u00d7 ASSUMED 50 sessions/week.",
+    "Starting cash of $150,000 is an ASSUMPTION; the operator has to confirm it.",
+    "updateArgsExample uses placeholder numbers to show the shape only. It has not been executed.",
+    "No share links were created and no pages were shared."
+  ]
+}
