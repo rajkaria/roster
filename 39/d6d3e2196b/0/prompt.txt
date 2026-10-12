@@ -1,0 +1,39 @@
+[roster setup=C task=T68]
+
+HACKATHON GUARDRAILS (non-negotiable):
+- DEADLINE: 2026-10-12T18:25Z. Feature freeze 2026-10-12T06:25Z. You work on ONE task; stop when its acceptance passes.
+- Read docs/DESIGN.md sections named in your task before writing code. src/types.ts is the shared contract:
+  if you need a change, make it minimal and say so in your final message.
+- Touch only the files your task OWNS. Never edit another task's files, CLAUDE.md, AGENTS.md, setups/, experiments/.
+- Tests: `bun test <your test path>` must pass and `bun test` (whole suite) must not regress. Never modify existing tests
+  unless your task says so. Fixtures are built by scripts from real samples, never hand-invented payloads.
+- Commit in small steps as work lands, message prefix "<task id>: ". Never rewrite history. Never commit secrets or .env.
+- Never describe unbuilt work as done in README/docs. No numbers in docs except those generated into docs/FACTS.md.
+- Use `entire graph impact --symbol <name> --json` (or `entire graph query`) before editing an existing module, if available.
+- Final message: what you built, test output summary, any types.ts change, anything you could not finish.
+- Never start a command in the background or wait for a notification: this session ends when you stop. Run tests and builds in the foreground, then commit.
+
+TASK T68 · W4 · Promotion opens a pull request (dry run by default)
+GOAL: When the gate promotes a setup, `roster run <repo> --pr` builds the PR body with renderPrBody (src/act/pr-body.ts) from the
+run's replay rows and opens it through openPr (src/act/open-pr.ts), only on a repo the opt-in registry allows (src/review/opt-in.ts,
+action "open-pr"). The PR URL, or the dry-run command, or the refusal reason, is recorded in promotion.json. Without `--pr` nothing changes.
+Also fix the slug bug: promote() for a local path such as "." wrote reports/promotion.json, because reviewSlug(".") is ".". It must
+write reports/<owner>__<name>/promotion.json, with owner/name taken from the repo's origin remote (parseRemote in src/review/export.ts),
+as the review command does.
+READ: src/agent/backend.ts (writePromotion, promote, revert), src/act/pr-body.ts, src/act/open-pr.ts, src/review/opt-in.ts,
+src/review/export.ts (reviewSlug, parseRemote, repoLabel), src/cli/run.ts, src/agent/tools.ts (the promote tool contract),
+reports/self/review-1/promotion.json (what the bug wrote, moved here by hand).
+OWNS: src/agent/backend.ts (writePromotion, promote and revert only), src/agent/promote-pr.ts (new), src/cli/run.ts (the --pr and
+--open flags only), opt-ins.json (new, repo root: [{"repo":"rajkaria/roster","public":true,"prAllowed":true}]), tests/promote-pr.test.ts
+BUILD: (1) writePromotion resolves the slug from the origin remote when `repo` is a local path; a path with no readable origin keeps
+its basename as the slug (never an empty or "." slug). (2) src/agent/promote-pr.ts exports `promotionPr({ repoPath, decision, replays,
+optIns, dryRun, run })`: builds the title "Roster: promote <candidate> over <incumbent>" and the body with renderPrBody, then calls
+openPr with allowRepo = isAllowed(optIns, ownerRepo, "open-pr"). Returns { opened, url, command, reason }. (3) `roster run --pr`
+calls it after a promote and merges the result into promotion.json under "pr". Dry run unless `--open` is also passed. The registry
+is read from opt-ins.json at the reviewed repo's root, or Roster's own repo root; missing file = nothing allowed.
+ACCEPTANCE: with stubbed git and gh (the Runner injection openPr already has): a promotion on rajkaria/roster with dryRun gives the gh
+command containing the rendered body and opened false; with --open and a stub gh that prints a URL, promotion.json records that URL;
+a repo not in the registry is refused with the reason and gh is never run; promote() on "." in a checkout whose origin is
+github.com/rajkaria/roster writes reports/rajkaria__roster/promotion.json. Whole suite green.
+TEST: bun test tests/promote-pr.test.ts && bun test && bun run typecheck
+DO NOT TOUCH: anything outside OWNS. Never run a real `gh pr create`; tests stub the runner.
