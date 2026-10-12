@@ -256,3 +256,14 @@ How it's handled:
 - **Why it doesn't touch any result.** They were written by the operator after the forward run finished (04:54 IST), outside every recorded setup session. No task branch contains them.
 - **Rule.** They're treated as `ops:` commits and excluded from every comparison, exactly as the rule above requires. The forward result, its exclusions and every regrade are unchanged.
 - **Also.** The 2026-10-10 23:44 burst of six commits is `T26` plus five `--no-ff` merges of separately recorded task sessions (`Merge task/T26`, `T36`, `T37`, `T38`, `T39`), not one session's work.
+
+### Amendment 20: 2026-10-12 10:57 IST, personal data redacted from the checkpoint branch (disclosure only)
+- **What happened.** Entire's redactor missed operator-private text in 21 transcript files on `entire/checkpoints/v1`:
+  - the operator's email, which Claude Code injects as `userEmail`, in 5 setup sessions (`8f34b10fe125`, `af36f6e46c81`, `67c30060ae2c`, `1924a193d447`, `056e5e08a02e`);
+  - the operator's user-level CLAUDE.md and personal hook output in the two cfo.ai bridge checkpoints (`02a4bb915e3d`, `136b5c5c11d2`), which loaded user settings until `c9f8111`;
+  - the path to the operator's private notes folder, visible in a process listing, in 3 setup sessions (`9ec475897732`, `b66242bd6a1f`, `ff38daae0ff6`).
+- **What changed.** Only that branch was rewritten:
+  - Those strings were replaced with `[REDACTED_…]` markers, each affected `content_hash.txt` was recomputed, and the branch was force-pushed (`8968e8f` → `a2f94d6`).
+  - All 412 commits keep their messages, authors, dates and order, and the first 107 keep their ids.
+  - `main` is untouched, and every `Entire-Checkpoint` trailer still resolves.
+- **Why it doesn't touch any result.** Roster parses the branch identically before and after: 164 sessions, the same fields and the same setup identities. No number in `docs/FACTS.md` or `reports/` changes.

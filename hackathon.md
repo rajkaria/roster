@@ -61,6 +61,7 @@
 - **07:27:** DeepSeek sessions in the review priced by their start time (T83); the book finds the promoted setup in the review (T84).
 - **08:10–08:13:** neatlogs delivery fixed and the before/after traces sent (below).
 - **08:24–08:38:** the AI-workforce book written into cfo.ai and verified; the business plan built in cfo.ai; read-only share links created.
+- **10:57:** personal data that Entire's redactor missed was removed from the checkpoint branch; parsed sessions are unchanged (amendment 20).
 
 ## The three tools
 
