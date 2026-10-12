@@ -12,3 +12,4 @@ coverage/
 .worktrees/
 CLAUDE.local.md
 *.tsbuildinfo
+.ocean/
