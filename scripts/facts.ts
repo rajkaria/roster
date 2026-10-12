@@ -62,6 +62,8 @@ export const FACT_SPECS: FactSpec[] = [
   { key: "CFO_RUNWAY_DOWNSIDE", file: CFO_PLAN, path: "$.runway.Downside" },
   { key: "CFO_RUNWAY_UPSIDE", file: CFO_PLAN, path: "$.runway.Upside" },
   { key: "CFO_STARTING_CASH_USD", file: CFO_PLAN, path: "$.assumptions.startingCashUsd", unit: "USD (assumption)" },
+  { key: "CFO_SHARE_BOOK", file: CFO_PLAN, path: "$.shareUrls.book" },
+  { key: "CFO_SHARE_PLAN", file: CFO_PLAN, path: "$.shareUrls.plan" },
   { key: "CFO_BOOK_VERIFIED", file: BOOK, path: "$.cfo.verified" },
   { key: "BACKLOG_SHA256", file: "experiments/FREEZE.txt", base: "root", path: "re:^forward-backlog\\.md\\s+sha256\\s+([0-9a-f]{64})\\s*$" },
 ];

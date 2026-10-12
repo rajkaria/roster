@@ -80,9 +80,11 @@
     "source": "replays table (.roster/roster.db), review-1"
   },
   "readBackVerified": true,
-  "shareUrls": null,
+  "shareUrls": {
+    "book": "https://app.cfo.ai/s/lITFLQ-6eGU21WPi",
+    "plan": "https://app.cfo.ai/s/dt32CtLs-jXlUkoT"
+  },
   "issues": [
-    "The only workspace is 'Hunch' (id 103244), so it was used as is.",
     "inspect_skills (build-model) was denied permission. Table and formula calls were checked against inspect_documentation plus a dry_run instead.",
     "Main Scenario's calendar range_end was extended from 2027-12-31 to 2028-12-31 to hold 24 months. Plan month 1 = Oct 2026, the first forecast month after last close (2026-09-30).",
     "Main Scenario holds the Base inputs. 'Base' inherits them with no overrides. 'Downside' overrides starting teams (2) and growth (5%). 'Upside' overrides starting teams (8), growth (18%) and the model cost per replay formula (points to DeepSeek Flash, $0.036).",
@@ -94,5 +96,6 @@
     "Starting cash of $150,000 is an ASSUMPTION; the operator has to confirm it.",
     "updateArgsExample uses placeholder numbers to show the shape only. It has not been executed.",
     "No share links were created and no pages were shared."
-  ]
+  ],
+  "workspace": "Roster"
 }
