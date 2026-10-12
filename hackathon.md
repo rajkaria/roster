@@ -65,7 +65,7 @@
 
 ## The three tools
 
-**Entire** is Roster's input. Roster reads its checkpoints (sessions, prompts, tokens, model, commit) to review a repo. Entire also recorded every agent session that built Roster: the [`entire/checkpoints/v1`](https://github.com/rajkaria/roster/tree/entire/checkpoints/v1) branch holds them, and agent commits name their checkpoint in an `Entire-Checkpoint` trailer.
+**Entire** is Roster's input. Roster reads its checkpoints (sessions, prompts, tokens, model, commit) to review a repo. Entire also recorded every agent session that built Roster: they are browsable at [entire.io/gh/rajkaria/roster](https://entire.io/gh/rajkaria/roster), the [`entire/checkpoints/v1`](https://github.com/rajkaria/roster/tree/entire/checkpoints/v1) branch holds them, and agent commits name their checkpoint in an `Entire-Checkpoint` trailer (for example [the T63 session](https://entire.io/gh/rajkaria/roster/session/8dd7b762-fcec-4319-b8df-862a07469dad), which added the gate's `no_signal` rule).
 
 **neatlogs** traces Roster's runs: ingest, each replay attempt, each gate decision, and the detections.
 - The neatlogs SDK's exporter times out under Bun, so traces never arrived. Roster spools what the SDK loses and re-sends it itself as OTLP protobuf, because neatlogs ingest rejects OTLP/JSON ([6c425ce](https://github.com/rajkaria/roster/commit/6c425ce), [a8e8117](https://github.com/rajkaria/roster/commit/a8e8117)). `roster traces list|flush` re-sends anything still undelivered.

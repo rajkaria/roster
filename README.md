@@ -122,6 +122,7 @@ bun scripts/book-self.ts --write                                            # th
 ## Built with
 
 **[Entire](https://entire.io)** is the data Roster reads (sessions, prompts, tokens, model, commit), and it recorded every agent session that built Roster.
+- Sessions: [entire.io/gh/rajkaria/roster](https://entire.io/gh/rajkaria/roster) (opens logged out). For example, [the T63 session](https://entire.io/gh/rajkaria/roster/session/8dd7b762-fcec-4319-b8df-862a07469dad) is the recorded Claude Code + Haiku 5.5 session that taught the gate to refuse a tie with no signal: three commits, 183.8K tokens.
 - Checkpoints: the [`entire/checkpoints/v1`](https://github.com/rajkaria/roster/tree/entire/checkpoints/v1) branch. Agent commits name their checkpoint in an `Entire-Checkpoint` trailer, for example [T36's fix](https://github.com/rajkaria/roster/commit/a33938b) and checkpoint `ff38daae0ff6`.
 
 **[neatlogs](https://neatlogs.com)** traces Roster's runs, from ingest to each replay attempt and gate decision.
