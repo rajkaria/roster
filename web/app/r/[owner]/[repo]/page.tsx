@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { loadReview, listParams } from "@/lib/reviews";
 import { loadLiveReview } from "@/lib/live-reviews";
 import type { SetupRow } from "@/lib/types";
@@ -12,6 +13,14 @@ export const dynamicParams = true;
 
 export function generateStaticParams() {
   return listParams();
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ owner: string; repo: string }> }): Promise<Metadata> {
+  const { owner, repo } = await params;
+  return {
+    title: `${owner}/${repo} · Roster`,
+    description: `Roster's review of the coding-agent setups that worked on ${owner}/${repo}.`,
+  };
 }
 
 const pct = (v: number | null) => (v === null ? <span className="na">n/a</span> : `${(v * 100).toFixed(0)}%`);

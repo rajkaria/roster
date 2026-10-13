@@ -1,10 +1,10 @@
 // Server-side reads of live reviews (post-deadline) from rajkaria/roster-reviews, for /r/<owner>/<repo> and /api/live.
-// Fresh through the contents API when ROSTER_DISPATCH_TOKEN is set, else from GitHub's raw CDN; cached 30 s either way.
+// Fresh through the contents API when ROSTER_DISPATCH_TOKEN is set, else from GitHub's raw CDN. Never through Next's
+// data cache: it kept serving a "not found" for index.json that it had cached at build time, before the worker repo
+// existed. Callers cache whole responses instead (s-maxage on /api/live).
 import { github, slugOf, workerFile, type Gh, type LiveStatus } from "./live";
 import { normalize } from "./reviews";
 import type { Review } from "./types";
-
-const REVALIDATE_S = 30;
 
 export interface LiveIndexEntry {
   repo: string;
@@ -38,7 +38,7 @@ export interface LiveReview {
 
 function source(): { gh?: Gh; init: RequestInit } {
   const token = process.env.ROSTER_DISPATCH_TOKEN?.trim();
-  return { ...(token ? { gh: github(token) } : {}), init: { next: { revalidate: REVALIDATE_S } } as RequestInit };
+  return { ...(token ? { gh: github(token) } : {}), init: { cache: "no-store" } };
 }
 
 async function readJson<T>(path: string): Promise<T | null> {

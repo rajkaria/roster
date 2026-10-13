@@ -2,7 +2,8 @@
 // this from the browser, so the frozen reviews it lists are never re-rendered.
 import { loadLiveIndex } from "../../../lib/live-reviews";
 
-export const revalidate = 30;
+// Rendered per request and cached by the CDN for 30 s (the cache-control below), not by Next.
+export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const reviews = (await loadLiveIndex()).filter((r) => r.outcome === "ok");
