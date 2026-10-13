@@ -23,9 +23,16 @@ export interface ModelRow {
   cost_per_surviving_change: number | null;
 }
 
-/** "claude-opus-4-6[1m]" and "claude-opus-4-6" are one model; a missing model is "unknown". */
+/**
+ * One key per model: "claude-opus-4-6[1m]", "anthropic.claude-opus-4-6" and "us.anthropic.claude-opus-4-6-v1:0" are
+ * all "claude-opus-4-6". A missing model is "unknown".
+ */
 export function modelKey(model: string | null): string {
-  const m = (model ?? "").replace(/\[[^\]]*\]$/, "").trim();
+  const m = (model ?? "")
+    .trim()
+    .replace(/\[[^\]]*\]$/, "")
+    .replace(/^(?:[a-z]{2}\.)?(?:anthropic|openai|google|meta|mistral|deepseek)\./i, "")
+    .replace(/-v\d+:\d+$/, "");
   return m || "unknown";
 }
 

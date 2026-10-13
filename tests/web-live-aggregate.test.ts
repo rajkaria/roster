@@ -6,6 +6,10 @@ const s = (model: string | null, sessions: number, mature: number, spend: number
   model, sessions, mature_sessions: mature, spend_usd: spend, survival, surviving_changes: surviving,
 });
 
+test("model keys drop provider prefixes and Bedrock version suffixes", () => {
+  expect([modelKey("anthropic.claude-sonnet-5-5"), modelKey("us.anthropic.claude-opus-4-6-v1:0"), modelKey("openai.gpt-5.6-luna")]).toEqual(["claude-sonnet-5-5", "claude-opus-4-6", "gpt-5.6-luna"]);
+});
+
 test("model keys drop the context-window suffix", () => {
   expect([modelKey("claude-opus-4-6[1m]"), modelKey("claude-opus-4-6"), modelKey(null), modelKey("")]).toEqual(["claude-opus-4-6", "claude-opus-4-6", "unknown", "unknown"]);
 });
