@@ -128,7 +128,7 @@ tasks/<tool_use_id>/          subagents: task.json, agent-<id>.jsonl
 
 ### Ingest
 - **What it does:**
-  - Partial clone (`--filter=blob:none`).
+  - Full clone without checkout. (Until 13 Oct it was a partial clone, `--filter=blob:none`. On a cold machine that fetched every blob lazily during scoring, and `git log -p` and `git blame` timed out on every mature session.)
   - Fetch the `entire/checkpoints/v1` branch. If it's missing, fetch `refs/entire/checkpoints/*`. If neither exists, report "no Entire data" with a one-line how-to.
   - Parse each checkpoint into `Session` rows.
   - Map each checkpoint to its commit through the trailers on all branches.

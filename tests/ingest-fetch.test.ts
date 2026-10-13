@@ -63,6 +63,18 @@ test("cache hit on same URL + HEAD, miss when HEAD moves", async () => {
   expect(b.headSha).toBe(await g(plain, "rev-parse", "HEAD"));
 });
 
+test("a remote that allows blob filters still gives a clone with every blob (no lazy fetches while scoring)", async () => {
+  // A local path ignores --filter, so serve the fixture over file:// with filtering allowed, the way GitHub does.
+  await g(fixture, "config", "uploadpack.allowFilter", "true");
+  await g(fixture, "config", "uploadpack.allowAnySHA1InWant", "true");
+  const r = await fetchCheckpoints("file://" + fixture, opts);
+  expect(r.backend).toBe("branch");
+  const promisor = Bun.spawnSync(["git", "config", "--get", "remote.origin.promisor"], { cwd: r.repoPath });
+  expect(promisor.stdout.toString().trim()).toBe("");
+  const missing = await g(r.repoPath, "rev-list", "--objects", "--all", "--missing=print");
+  expect(missing.split("\n").filter((l) => l.startsWith("?"))).toEqual([]);
+});
+
 test("failure retries twice with numbered attempts, then throws", async () => {
   logs.length = 0;
   await expect(fetchCheckpoints(join(root, "missing"), opts)).rejects.toThrow();

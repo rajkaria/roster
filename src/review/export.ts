@@ -278,7 +278,7 @@ export function buildSetupRows(sessions: Session[], outcomes: Outcome[]): SetupR
       setup_id: s.setup_id,
       commit_sha: s.commit_sha,
       cost_usd: s.cost_usd,
-      censored: o.status === "mature" ? null : s.commit_sha === null ? "no_commit" : "too_young",
+      censored: o.status === "mature" ? null : o.status === "not_scored" ? "not_scored" : s.commit_sha === null ? "no_commit" : "too_young",
     });
   }
   const first = new Map<string, Session>();

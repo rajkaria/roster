@@ -115,6 +115,19 @@ const tooYoung = (session_id: string, unattended: boolean | null = null): Outcom
 });
 
 /**
+ * The outcome to record for one session's scoring result. A scoring error (git failed or timed out) becomes
+ * `not_scored` with null metrics plus a "<session>: <reason>" line for the review's notes. It is never recorded
+ * as too_young: that once turned a cold review's 73 timed-out mature sessions into "0 mature".
+ */
+export function settleOutcome(session: ParsedSession, result: Outcome | Error): { outcome: Outcome; failure?: string } {
+  if (!(result instanceof Error)) return { outcome: result };
+  return {
+    outcome: { ...tooYoung(session.id, isUnattended(session)), status: "not_scored" },
+    failure: `${session.id}: ${result.message}`,
+  };
+}
+
+/**
  * Scores one session from its commit. Sessions without a trailer-linked commit, and commits that are not yet
  * mature, come back too_young with null metrics. Throws when git cannot read the commit.
  */
@@ -333,16 +346,15 @@ export async function runReview(args: ReviewArgs): Promise<number> {
             cache_write: s.cache_write,
           }, s.started_at).usd;
           out.push({ ...stripParsed(s), setup_id: id.setupId, cost_usd: cost });
-          const o = scoredAll[i]!;
-          if (o instanceof Error) {
-            failed.push(`${s.id}: ${o.message}`);
-            outcomes.push(tooYoung(s.id, isUnattended(s)));
-          } else outcomes.push(o);
+          const { outcome, failure } = settleOutcome(s, scoredAll[i]!);
+          outcomes.push(outcome);
+          if (failure !== undefined) failed.push(failure);
         });
         const mature = outcomes.filter((o) => o.status === "mature").length;
+        const young = outcomes.filter((o) => o.status === "too_young").length;
         return [
           { out, outcomes, failed },
-          `${mature} mature, ${outcomes.length - mature} too young${failed.length ? `, ${failed.length} failed` : ""}`,
+          `${mature} mature, ${young} too young${failed.length ? `, ${failed.length} not scored (git failed or timed out)` : ""}`,
         ];
       });
 
@@ -366,6 +378,9 @@ export async function runReview(args: ReviewArgs): Promise<number> {
 
       const notes = [
         `${scored.outcomes.filter((o) => o.status === "too_young").length} sessions are too young or have no commit: a session is mature at ≥ ${MIN_DEPTH} first-parent commits and ≥ ${MIN_AGE_S / 3600} h before HEAD`,
+        ...(scored.failed.length
+          ? [`${scored.failed.length} sessions could not be scored (git failed or timed out), so they count as neither mature nor too young`]
+          : []),
         ...scored.failed.map((f) => `could not be scored: ${f}`),
         `${scored.out.filter((s) => s.cost_usd === null).length} sessions have no price (unknown model, or a price that depends on prompt size)`,
         `${scored.out.filter((s) => s.setup_id === null).length} sessions have no setup because their rules hash is unknown`,

@@ -1,5 +1,7 @@
 // Fetch Entire checkpoint data from a git URL or local path (DESIGN.md §"Ingest").
-// Partial clone, then the `entire/checkpoints/v1` branch, else `refs/entire/checkpoints/*`.
+// Full clone (no checkout), then the `entire/checkpoints/v1` branch, else `refs/entire/checkpoints/*`.
+// Not a partial clone: scoring runs `git log -p` and `git blame` over the history, and a `--filter=blob:none`
+// clone fetched every blob lazily, one process at a time, so a cold review timed out on every mature session.
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -25,6 +27,8 @@ export interface FetchOptions {
 export const CHECKPOINT_BRANCH = "entire/checkpoints/v1";
 export const CHECKPOINT_REFS = "refs/entire/checkpoints/";
 const META_FILE = "roster-fetch.json";
+/** In the cache key, so clones made in an older format (the lazy partial clones) are never reused. */
+const CLONE_FORMAT = "full-v2";
 
 type RetryOpts = Required<Omit<FetchOptions, "cacheDir">>;
 
@@ -80,7 +84,7 @@ export async function fetchCheckpoints(source: string, opts: FetchOptions): Prom
 
   // Cache by URL + remote HEAD; the checkpoint refs are in the key so new checkpoints invalidate it.
   const key = createHash("sha256")
-    .update(JSON.stringify([src, remoteHead, lines.filter(([, r]) => r !== "HEAD")]))
+    .update(JSON.stringify([CLONE_FORMAT, src, remoteHead, lines.filter(([, r]) => r !== "HEAD")]))
     .digest("hex")
     .slice(0, 24);
   const cacheDir = resolve(opts.cacheDir);
@@ -97,7 +101,7 @@ export async function fetchCheckpoints(source: string, opts: FetchOptions): Prom
     "clone",
     async () => {
       rmSync(tmp, { recursive: true, force: true });
-      await git(["clone", "--quiet", "--filter=blob:none", "--no-checkout", src, tmp]);
+      await git(["clone", "--quiet", "--no-checkout", src, tmp]);
     },
     o,
   );

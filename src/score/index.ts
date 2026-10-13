@@ -13,8 +13,8 @@ export const MATURE_MIN_AGE_MS = 6 * 3600 * 1000;
 /** Bucket for sessions whose setup is unknown (`setup_id` null). */
 export const UNKNOWN_SETUP = "unknown";
 
-/** Why a session has no metrics. `too_young`: the commit is not old enough yet. */
-export type Censor = "too_young" | "no_commit" | "not_on_head";
+/** Why a session has no metrics. `too_young`: the commit is not old enough yet. `not_scored`: git failed on it. */
+export type Censor = "too_young" | "no_commit" | "not_on_head" | "not_scored";
 
 /** An Outcome plus what aggregation needs. Cost is a spend, not a quality metric, so censored rows keep it. */
 export interface ScoredOutcome extends Outcome {

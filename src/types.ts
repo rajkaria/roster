@@ -54,10 +54,11 @@ export interface Session {
   source: SessionSource;
 }
 
-export type OutcomeStatus = "mature" | "too_young";
+/** `not_scored`: git failed or timed out on the session, so it is neither mature nor too young. */
+export type OutcomeStatus = "mature" | "too_young" | "not_scored";
 export type Tercile = 1 | 2 | 3;
 
-/** Score of one session. Metrics are null when status is too_young. Table `outcomes`. */
+/** Score of one session. Metrics are null unless status is mature. Table `outcomes`. */
 export interface Outcome {
   session_id: string;
   status: OutcomeStatus;
