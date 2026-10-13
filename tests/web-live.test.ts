@@ -83,6 +83,14 @@ describe("requestReview", () => {
     }
   });
 
+  test("a repo created during neatHack is held until results, then reviewed", async () => {
+    const entry = at("/repos/octo/cat", { ...REPO, created_at: "2026-10-10T09:00:00Z" });
+    const f = fakeGitHub(entry, cpBranch, mainHead, noRuns, dispatched);
+    expect(await requestReview(deps(f.gh), "octo", "cat")).toMatchObject({ status: 403, body: { error: "held" } });
+    const later = { ...deps(fakeGitHub(entry, cpBranch, mainHead, noRuns, dispatched).gh), now: () => new Date("2026-10-17T00:00:01Z") };
+    expect((await requestReview(later, "octo", "cat")).status).toBe(202);
+  });
+
   test("a repo over the size cap is refused", async () => {
     const f = fakeGitHub(at("/repos/octo/cat", { ...REPO, size: SIZE_CAP_KB + 1 }));
     expect(await requestReview(deps(f.gh), "octo", "cat")).toMatchObject({ status: 413, body: { error: "too_large" } });

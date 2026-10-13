@@ -54,7 +54,7 @@ export function mapResponse(status: number, body: unknown, input: string, now: n
   }
   if (status === 422 && err === "no_entire_data") return { kind: "no_entire_data", repo: field(b, "repo") ?? label };
   const message = field(b, "message");
-  if ([404, 413, 502, 503].includes(status) && message) return { kind: "refused", message };
+  if ([403, 404, 413, 502, 503].includes(status) && message) return { kind: "refused", message };
   return { kind: "error", message: "Something went wrong. Nothing was reviewed." };
 }
 

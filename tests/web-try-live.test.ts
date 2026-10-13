@@ -28,7 +28,7 @@ describe("mapResponse, live", () => {
     expect(mapResponse(422, { error: "no_entire_data", repo: "Octo/Cat" }, IN)).toEqual({ kind: "no_entire_data", repo: "Octo/Cat" });
   });
   test("refusals show the API's message", () => {
-    for (const status of [404, 413, 502, 503]) {
+    for (const status of [403, 404, 413, 502, 503]) {
       expect(mapResponse(status, { error: "x", message: "why" }, IN)).toEqual({ kind: "refused", message: "why" });
     }
     expect(mapResponse(503, {}, IN).kind).toBe("error");

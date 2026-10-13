@@ -6,6 +6,12 @@ export const WORKER_REPO = "rajkaria/roster-reviews";
 export const WORKFLOW = "review.yml";
 /** Repos bigger than this (GitHub's `size`, in KB) are refused: the worker makes a full clone. */
 export const SIZE_CAP_KB = 300 * 1024;
+/**
+ * Repos created from this time on are held until HOLD_UNTIL: they are most likely other neatHack 2026 entries, and
+ * Roster (itself an entry) does not publish reviews of competing entries while judging is open.
+ */
+export const HOLD_CREATED_FROM = "2026-10-08T00:00:00Z";
+export const HOLD_UNTIL = "2026-10-17T00:00:00Z";
 /** Most dispatches in any 24 hours, across all callers. */
 export const DAILY_CAP = 150;
 const API = "https://api.github.com";
@@ -81,18 +87,18 @@ async function json<T>(res: Response): Promise<T | null> {
 const enc = (fullName: string) => fullName.split("/").map(encodeURIComponent).join("/");
 
 export type RepoInfo =
-  | { kind: "ok"; fullName: string; sizeKb: number; defaultBranch: string }
+  | { kind: "ok"; fullName: string; sizeKb: number; defaultBranch: string; createdAt: string | null }
   | { kind: "not_found" }
   | { kind: "private" };
 
 /** The repo as GitHub names it. A token that cannot see a private repo gets a 404, so both read as not found. */
 export async function lookupRepo(gh: Gh, owner: string, repo: string): Promise<RepoInfo> {
-  const r = await json<{ full_name: string; private: boolean; size: number; default_branch: string }>(
+  const r = await json<{ full_name: string; private: boolean; size: number; default_branch: string; created_at?: string }>(
     await gh(`/repos/${enc(`${owner}/${repo}`)}`),
   );
   if (!r) return { kind: "not_found" };
   if (r.private) return { kind: "private" };
-  return { kind: "ok", fullName: r.full_name, sizeKb: r.size, defaultBranch: r.default_branch };
+  return { kind: "ok", fullName: r.full_name, sizeKb: r.size, defaultBranch: r.default_branch, createdAt: r.created_at ?? null };
 }
 
 /** Head of a branch, or null when it does not exist. */
@@ -201,6 +207,15 @@ export async function requestReview(d: Deps, owner: string, repo: string): Promi
     return { status: 404, body: { error: "not_found", message: "No public GitHub repo by that name. Private repos can't be reviewed live." } };
   }
   const { fullName } = info;
+  if (d.now().toISOString() < HOLD_UNTIL && info.createdAt !== null && info.createdAt >= HOLD_CREATED_FROM) {
+    return {
+      status: 403,
+      body: {
+        error: "held",
+        message: "This repo was created during neatHack 2026. Roster is an entry too, so it doesn't publish reviews of other entries until results are announced on 16 Oct.",
+      },
+    };
+  }
   if (info.sizeKb > SIZE_CAP_KB) {
     return { status: 413, body: { error: "too_large", message: `This repo is over ${SIZE_CAP_KB / 1024} MB, too big for a live review. Run Roster locally instead.` } };
   }
