@@ -146,14 +146,36 @@ interface TranscriptInfo {
   last_ts: string | null;
 }
 
+/**
+ * A Claude transcript's token usage, counted once per API response. Claude Code writes one row per content block
+ * (thinking, text, each tool call), and every row repeats the response's usage, so rows are keyed by message id and
+ * request id; a row with neither counts on its own. Null when no row has usage.
+ */
+export function transcriptTokens(rows: Json[]): { in: number; out: number; cr: number; cw: number } | null {
+  const byResponse = new Map<string, Json>();
+  rows.forEach((r, i) => {
+    if (r?.type !== "assistant" || !r.message?.usage) return;
+    const id = typeof r.message.id === "string" ? r.message.id : null;
+    const req = typeof r.requestId === "string" ? r.requestId : "";
+    byResponse.set(id ? `${id}|${req}` : `row:${i}`, r.message.usage);
+  });
+  if (byResponse.size === 0) return null;
+  const sum = { in: 0, out: 0, cr: 0, cw: 0 };
+  for (const u of byResponse.values()) {
+    sum.in += u.input_tokens ?? 0;
+    sum.out += u.output_tokens ?? 0;
+    sum.cr += u.cache_read_input_tokens ?? 0;
+    sum.cw += u.cache_creation_input_tokens ?? 0;
+  }
+  return sum;
+}
+
 function readTranscript(rows: Json[]): TranscriptInfo {
   let model: string | null = null;
   let attachedModel: string | null = null;
   let rules: string | null = null;
   let cwd: string | null = null;
   const files = new Map<string, string>();
-  const sum = { in: 0, out: 0, cr: 0, cw: 0 };
-  let sawClaudeUsage = false;
   let codexTotal: Json | null = null;
   const prompts: string[] = [];
   const ts: string[] = [];
@@ -170,14 +192,6 @@ function readTranscript(rows: Json[]): TranscriptInfo {
       }
     } else if (r.type === "assistant" && r.message) {
       if (typeof r.message.model === "string" && r.message.model && r.message.model !== "<synthetic>") model ??= r.message.model;
-      const u = r.message.usage;
-      if (u) {
-        sawClaudeUsage = true;
-        sum.in += u.input_tokens ?? 0;
-        sum.out += u.output_tokens ?? 0;
-        sum.cr += u.cache_read_input_tokens ?? 0;
-        sum.cw += u.cache_creation_input_tokens ?? 0;
-      }
     } else if (r.type === "user" && r.message && !r.isMeta && !r.isCompactSummary && !r.isSidechain) {
       // tool results and approvals arrive as user rows holding tool_result blocks; they are not prompts
       const c = r.message.content;
@@ -209,9 +223,8 @@ function readTranscript(rows: Json[]): TranscriptInfo {
     rules = hashRules(body.join("\n"));
   }
 
-  let tokens: TranscriptInfo["tokens"] = null;
-  if (sawClaudeUsage) tokens = sum;
-  else if (codexTotal) {
+  let tokens: TranscriptInfo["tokens"] = transcriptTokens(rows);
+  if (!tokens && codexTotal) {
     const cached = codexTotal.cached_input_tokens ?? 0;
     tokens = {
       in: Math.max(0, (codexTotal.input_tokens ?? 0) - cached), // Entire's input excludes cached input
@@ -235,6 +248,10 @@ interface Slice {
   rules_hash: string | null;
   tokens: { in: number; out: number; cr: number; cw: number } | null;
   usage_source: UsageSource;
+  /** The checkpoint's created_at. */
+  created: string;
+  /** The tokens cover the session from its start (a running total), not just this checkpoint's slice. */
+  fromStart: boolean;
   prompts: string[];
   files: string[];
   start: string;
@@ -290,6 +307,10 @@ function parseCheckpoint(cp: RawCheckpoint): Slice[] {
       }
     }
     const created = typeof meta.created_at === "string" ? meta.created_at : "";
+    // token_usage covers the transcript from checkpoint_transcript_start, or from the session's start when it is
+    // null or 0. full.jsonl is always the whole transcript so far, so transcript-read tokens are from the start too.
+    const sliceStart = meta.checkpoint_transcript_start;
+    const fromStart = usage_source !== "metadata" || !(typeof sliceStart === "number" && sliceStart > 0);
     slices.push({
       session_id: meta.session_id,
       checkpoint_id: String(meta.checkpoint_id ?? root.checkpoint_id ?? cp.id),
@@ -300,6 +321,8 @@ function parseCheckpoint(cp: RawCheckpoint): Slice[] {
       rules_hash: tr.rules_hash,
       tokens,
       usage_source,
+      created,
+      fromStart,
       prompts,
       files: Array.isArray(meta.files_touched) ? meta.files_touched.map(String) : [],
       start: [created, tr.first_ts].filter(Boolean).sort()[0] ?? "",
@@ -307,6 +330,25 @@ function parseCheckpoint(cp: RawCheckpoint): Slice[] {
     });
   });
   return slices;
+}
+
+type Tokens = { in: number; out: number; cr: number; cw: number };
+
+/**
+ * One session's tokens from its checkpoint slices, oldest first: a slice that covers the session from its start
+ * replaces the running count, and a slice that starts mid-transcript adds to it. Null when no slice has usage.
+ * Summing every slice instead counted a 72-checkpoint session's cache reads 33 times.
+ */
+export function mergeSliceTokens(slices: { created: string; fromStart: boolean; tokens: Tokens | null }[]): Tokens | null {
+  let total: Tokens | null = null;
+  for (const s of [...slices].sort((a, b) => a.created.localeCompare(b.created))) {
+    if (!s.tokens) continue;
+    total =
+      s.fromStart || total === null
+        ? { ...s.tokens }
+        : { in: total.in + s.tokens.in, out: total.out + s.tokens.out, cr: total.cr + s.tokens.cr, cw: total.cw + s.tokens.cw };
+  }
+  return total;
 }
 
 const normPrompt = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -362,7 +404,7 @@ export function parseCheckpoints(repoPath: string, backend: Backend = "auto", op
     group.sort((a, b) => a.start.localeCompare(b.start));
     const first = group[0]!;
     const withTokens = group.filter((g) => g.tokens);
-    const sum = (k: "in" | "out" | "cr" | "cw") => withTokens.reduce((n, g) => n + g.tokens![k], 0);
+    const tokens = mergeSliceTokens(group) ?? { in: 0, out: 0, cr: 0, cw: 0 };
     const usageSources = new Set(withTokens.map((g) => g.usage_source));
     const modelSlice = group.find((g) => g.model);
     const model = modelSlice?.model ?? "unknown";
@@ -377,10 +419,10 @@ export function parseCheckpoints(repoPath: string, backend: Backend = "auto", op
       model,
       rules_hash: group.find((g) => g.rules_hash)?.rules_hash ?? null,
       setup_id: null,
-      tokens_in: sum("in"),
-      tokens_out: sum("out"),
-      cache_read: sum("cr"),
-      cache_write: sum("cw"),
+      tokens_in: tokens.in,
+      tokens_out: tokens.out,
+      cache_read: tokens.cr,
+      cache_write: tokens.cw,
       cost_usd: null,
       n_user_prompts: prompts.length,
       first_prompt: prompts[0] ?? "",

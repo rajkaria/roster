@@ -54,7 +54,8 @@ beforeAll(() => {
   put("02/674b7ab946/0/full.jsonl", sample("claude-code-full.jsonl"));
   put("02/674b7ab946/0/prompt.txt", sample("prompt.txt"));
 
-  // B: two sessions in one checkpoint. 0 = the same claude session again (empty model), 1 = codex (no metadata tokens).
+  // B: two sessions in one checkpoint. 0 = the same claude session again (empty model), as a slice that starts
+  // mid-transcript (checkpoint_transcript_start), so its tokens add to A's; 1 = codex (no metadata tokens).
   const { token_usage: _drop, ...codexNoTokens } = codexMeta;
   put("aa/aaaaaaaaaa/metadata.json", JSON.stringify({ ...root, checkpoint_id: "aaaaaaaaaaaa" }));
   put(
@@ -64,6 +65,7 @@ beforeAll(() => {
       checkpoint_id: "aaaaaaaaaaaa",
       model: "",
       created_at: "2026-03-26T10:00:00Z",
+      checkpoint_transcript_start: 120,
       files_touched: ["src/a.ts", ".entire/settings.json"],
       token_usage: { input_tokens: 5, cache_creation_tokens: 10, cache_read_tokens: 1000, output_tokens: 100, api_call_count: 1 },
     }),

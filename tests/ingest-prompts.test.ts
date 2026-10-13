@@ -74,24 +74,26 @@ describe("n_user_prompts across checkpoints", () => {
   const get = (id: string) => sessions.find((s) => s.id === id)!;
   const tu = sampleJson("session-metadata-claude-code.json").token_usage;
 
-  test("one prompt repeated in 3 checkpoints counts once; tokens still summed", () => {
+  // These checkpoints carry no checkpoint_transcript_start, so each token_usage covers the session from its start:
+  // a running total. The session's tokens are the latest one, never the sum (post-deadline fix, 13 Oct).
+  test("one prompt repeated in 3 checkpoints counts once; tokens are the latest running total, not a sum", () => {
     expect(get(SID_SAME)).toMatchObject({
       n_user_prompts: 1,
       first_prompt: P1,
       checkpoint_id: "111111111111",
-      tokens_in: 3 * tu.input_tokens,
-      tokens_out: 3 * tu.output_tokens,
-      cache_read: 3 * tu.cache_read_tokens,
-      cache_write: 3 * tu.cache_creation_tokens,
+      tokens_in: tu.input_tokens,
+      tokens_out: tu.output_tokens,
+      cache_read: tu.cache_read_tokens,
+      cache_write: tu.cache_creation_tokens,
     });
   });
 
-  test("a later checkpoint adding a new prompt counts 2; tokens still summed", () => {
+  test("a later checkpoint adding a new prompt counts 2; tokens are the latest running total", () => {
     expect(get(SID_GROW)).toMatchObject({
       n_user_prompts: 2,
       first_prompt: P1,
-      tokens_in: 2 * tu.input_tokens,
-      tokens_out: 2 * tu.output_tokens,
+      tokens_in: tu.input_tokens,
+      tokens_out: tu.output_tokens,
     });
   });
 });
