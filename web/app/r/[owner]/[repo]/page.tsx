@@ -1,11 +1,14 @@
 import { loadReview, listParams } from "@/lib/reviews";
+import { loadLiveReview } from "@/lib/live-reviews";
 import type { SetupRow } from "@/lib/types";
-import { Section, SuspectCard, ReplaysTable, GateList, ForwardTable } from "@/components/Sections";
+import { Section, SuspectCard, ReplaysTable, GateList, ForwardTable, Empty } from "@/components/Sections";
 import { Detections, loadDetections } from "@/components/Detections";
 import { loadReplays,loadGate, loadForward, loadOutcomes } from "./sidecar";
 import { SELF_OWNER, SELF_REPO } from "@/components/LandingData";
 
-export const dynamicParams = false;
+// The reviews published at submission are prerendered from public/data. Any other repo renders on demand from
+// its live review in rajkaria/roster-reviews (post-deadline, 13 Oct), if one exists.
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return listParams();
@@ -41,24 +44,46 @@ function SelfPointer({ what }: { what: string }) {
 
 export default async function ReviewPage({ params }: { params: Promise<{ owner: string; repo: string }> }) {
   const { owner, repo } = await params;
-  const review = loadReview(owner, repo);
+  const frozen = loadReview(owner, repo);
+  const live = frozen ? null : await loadLiveReview(owner, repo);
+  const review = frozen ?? live?.review ?? null;
   const self = owner === SELF_OWNER && repo === SELF_REPO;
 
   if (!review) {
     return (
       <>
         <h1>{owner}/{repo}</h1>
-        <div className="empty">No review has been published for this repo.</div>
+        <div className="empty">
+          No review has been published for this repo. <a href={`/try?repo=${encodeURIComponent(`${owner}/${repo}`)}`}>Review it live</a>.
+        </div>
       </>
     );
   }
 
-  const terciles = new Map(loadOutcomes(owner, repo).map((o) => [o.session_id, o.tercile]));
+  const terciles = new Map((live ? live.outcomes : loadOutcomes(owner, repo)).map((o) => [o.session_id, o.tercile]));
+  const notRunLive = (what: string) => (
+    <Empty>
+      {what} are not run for live reviews: a live review is level A only. They run with <code>roster run</code> and{" "}
+      <code>roster forward</code>.
+    </Empty>
+  );
 
   return (
     <>
       <h1>{review.repo}</h1>
       <p className="meta">Generated {review.generated_at}</p>
+      {live && (
+        <div className="banner">
+          Reviewed live by Roster on {review.generated_at.slice(0, 10)}, after the neatHack deadline. Evidence level A,
+          observational: no model calls, and nothing from the repo is run.
+          {live.status && (
+            <>
+              {" "}At commit <code>{live.status.target_head.slice(0, 7)}</code> · <a href={live.status.run_url}>run log</a> ·{" "}
+              <a href={`https://github.com/rajkaria/roster-reviews/tree/main/reviews/${live.status.repo.replace("/", "__")}`}>raw data</a>
+            </>
+          )}
+        </div>
+      )}
       {review.sample && (
         <div className="banner">Sample data for layout purposes. These are not real results.</div>
       )}
@@ -111,18 +136,18 @@ export default async function ReviewPage({ params }: { params: Promise<{ owner: 
         <SuspectCard review={review} />
       </Section>
       <Section title="Replays" level="B">
-        {self && loadReplays(owner, repo).length === 0 ? <SelfPointer what="replays and both gate calls are" /> : (
+        {live ? notRunLive("Replays") : self && loadReplays(owner, repo).length === 0 ? <SelfPointer what="replays and both gate calls are" /> : (
           <ReplaysTable replays={loadReplays(owner, repo)} terciles={terciles} setups={review.setups} />
         )}
       </Section>
       <Section title="Gate decisions" level="B">
-        {self && loadGate(owner, repo).length === 0 ? <SelfPointer what="gate decisions (the first promoted, the second rejected) are" /> : (
+        {live ? notRunLive("Gate decisions") : self && loadGate(owner, repo).length === 0 ? <SelfPointer what="gate decisions (the first promoted, the second rejected) are" /> : (
           <GateList rows={loadGate(owner, repo)} />
         )}
       </Section>
-      <Detections rows={loadDetections(owner, repo)} />
+      {!live && <Detections rows={loadDetections(owner, repo)} />}
       <Section title="Forward" level="C">
-        {self && loadForward(owner, repo).length === 0 ? <SelfPointer what="forward run is" /> : (
+        {live ? notRunLive("Forward tests") : self && loadForward(owner, repo).length === 0 ? <SelfPointer what="forward run is" /> : (
           <ForwardTable rows={loadForward(owner, repo)} />
         )}
       </Section>

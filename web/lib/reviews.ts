@@ -19,7 +19,7 @@ function readReview(dir: string): Review | null {
  * Older files without mature_sessions or cost_per_surviving_change get those filled in; rows with no mature
  * session have every rate nulled so the page never shows 0% for a setup that has no scored work.
  */
-function normalize(raw: unknown): Review | null {
+export function normalize(raw: unknown): Review | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Partial<Review>;
   if (typeof r.repo !== "string" || !Array.isArray(r.setups)) return null;

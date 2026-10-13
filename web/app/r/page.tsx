@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { listReviews, loadCorpusTotals } from "@/lib/reviews";
 import type { ReviewLabel } from "@/lib/types";
+import { LiveReviews } from "@/components/LiveReviews";
 
 export const metadata: Metadata = {
   title: "Reviews · Roster",
@@ -60,6 +61,7 @@ export default function ReviewsIndex() {
           </table>
         </div>
       )}
+      <LiveReviews />
     </>
   );
 }
