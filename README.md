@@ -119,6 +119,23 @@ bun scripts/book-self.ts --write                                            # th
 
 [`docs/DESIGN.md`](docs/DESIGN.md) is the engineering contract.
 
+## After the deadline (from 13 Oct)
+
+Added during judging, with the organisers' go-ahead. Every commit is prefixed `post-deadline:`. Nothing above changed: `reports/`, `docs/FACTS.md` and the forward run are as submitted.
+
+- **Live reviews:** paste any public repo that records its agents' sessions with Entire into [tryroster.dev/try](https://tryroster.dev/try).
+  - Roster runs a level-A review on a GitHub Actions runner and publishes it on [tryroster.dev/r](https://tryroster.dev/r), usually within a few minutes.
+  - Every run and result is committed to [rajkaria/roster-reviews](https://github.com/rajkaria/roster-reviews), which also re-reviews known Entire repos daily.
+- **In your own CI:** add this to a workflow.
+  ```yaml
+  - uses: rajkaria/roster@main
+  ```
+  It writes the review to the job summary. [`action.yml`](action.yml) has the private-repo variant.
+- **Fixes found by running it on other repos:**
+  - Cold reviews now make a full clone. A partial clone timed out scoring every mature session.
+  - A session git fails on is `not_scored`, never `too_young`.
+  - A session's tokens are counted once. Entire stores a multi-checkpoint session's usage as a running total, and Claude Code repeats usage on every content-block row.
+
 ## Built with
 
 **[Entire](https://entire.io)** is the data Roster reads (sessions, prompts, tokens, model, commit), and it recorded every agent session that built Roster.

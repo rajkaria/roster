@@ -1,0 +1,79 @@
+# Roster as a GitHub Action (post-deadline, 13 Oct): a level-A review of a repo's coding-agent setups, from the
+# sessions Entire recorded, written to the job summary and uploaded as an artifact. No model calls, no API keys.
+#
+#   on: { schedule: [{ cron: "0 6 * * 1" }], workflow_dispatch: {} }
+#   jobs:
+#     roster:
+#       runs-on: ubuntu-latest
+#       steps:
+#         - uses: rajkaria/roster@main
+#
+# A private repo: check it out with its checkpoints first, then review the checkout.
+#         - uses: actions/checkout@v4
+#           with: { fetch-depth: 0 }
+#         - run: git fetch origin 'refs/heads/entire/*:refs/heads/entire/*' '+refs/entire/*:refs/entire/*' || true
+#         - uses: rajkaria/roster@main
+#           with: { source: . }
+name: Roster review
+description: Reviews the AI coding-agent setups that worked on a repo, from the sessions Entire recorded.
+author: rajkaria
+branding:
+  icon: users
+  color: green
+
+inputs:
+  source:
+    description: A public git URL, or a path to a checkout that has the Entire checkpoints. Defaults to this repo on GitHub.
+    required: false
+    default: ""
+  bun-version:
+    description: Bun version to run Roster with.
+    required: false
+    default: "1.3.11"
+
+outputs:
+  label:
+    description: The review's level-A call (suspect, no_suspect or insufficient_data).
+    value: ${{ steps.review.outputs.label }}
+  review-json:
+    description: Path to review.json.
+    value: ${{ steps.review.outputs.review_json }}
+
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: ${{ inputs.bun-version }}
+
+    - name: Install Roster
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: bun install --frozen-lockfile
+
+    - name: Review
+      id: review
+      shell: bash
+      env:
+        SOURCE: ${{ inputs.source }}
+        REPO: ${{ github.repository }}
+        ACTION_PATH: ${{ github.action_path }}
+        GIT_TERMINAL_PROMPT: "0"
+      run: |
+        set -o pipefail
+        if [ -z "$SOURCE" ]; then SOURCE="https://github.com/$REPO"; fi
+        case "$SOURCE" in
+          https://*|git@*) ;;
+          *) SOURCE="$(cd "$GITHUB_WORKSPACE" && cd "$SOURCE" && pwd)" ;;
+        esac
+        out="$RUNNER_TEMP/roster-review"
+        mkdir -p "$out"
+        (cd "$ACTION_PATH" && bun src/cli.ts review "$SOURCE" --observational --out "$out" --cache "$RUNNER_TEMP/roster-cache") 2>&1 | tail -n 20
+        cat "$out/review.md" >> "$GITHUB_STEP_SUMMARY"
+        echo "label=$(jq -r .label "$out/review.json")" >> "$GITHUB_OUTPUT"
+        echo "review_json=$out/review.json" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: roster-review
+        path: ${{ runner.temp }}/roster-review
